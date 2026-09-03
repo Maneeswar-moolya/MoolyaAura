@@ -1,0 +1,1761 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Execution report — login-test-cases.xlsx</title>
+<style>
+:root {
+  --ground:#f4f6f8; --surface:#fff; --sunk:#edf0f4;
+  --rule:#d8dde5; --rule-strong:#bec6d2;
+  --ink:#161a21; --ink-soft:#4a5361; --ink-faint:#79828f;
+  --accent:#3f4fc0; --accent-soft:#e6e9fa;
+  --pass:#16785a; --pass-soft:#ddf0e8;
+  --fail:#b33526; --fail-soft:#fae2de;
+  --review:#8c6103; --review-soft:#f8ecd3;
+  --skip:#3f4fc0; --skip-soft:#e6e9fa;
+  --idle:#6e7684; --idle-soft:#e7eaef;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground:#0e1116; --surface:#161a21; --sunk:#1d222b;
+    --rule:#2a313c; --rule-strong:#3b4450;
+    --ink:#e8ebf0; --ink-soft:#a7b0bd; --ink-faint:#79828f;
+    --accent:#8b97f2; --accent-soft:#232a47;
+    --pass:#52c293; --pass-soft:#14312a;
+    --fail:#f07a69; --fail-soft:#38201d;
+    --review:#e0a83f; --review-soft:#33280f;
+    --skip:#8b97f2; --skip-soft:#232a47;
+    --idle:#8b93a1; --idle-soft:#232935;
+  }
+}
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body {
+  margin:0; background:var(--ground); color:var(--ink);
+  font:15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.mono { font-family:ui-monospace,"Cascadia Mono","SF Mono",Consolas,monospace; font-variant-numeric:tabular-nums; }
+.wrap { max-width:1140px; margin:0 auto; padding:40px 24px 72px; display:flex; flex-direction:column; gap:32px; }
+.visually-hidden {
+  position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+a { color:var(--accent); }
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+.eyebrow {
+  font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint);
+}
+h1 { margin:.35em 0 0; font-size:clamp(26px,4vw,36px); line-height:1.1; letter-spacing:-.022em; font-weight:640; text-wrap:balance; }
+h2 {
+  margin:0 0 12px; font-size:13px; letter-spacing:.1em; text-transform:uppercase;
+  font-weight:620; color:var(--ink-soft); padding-bottom:8px; border-bottom:1px solid var(--rule-strong);
+}
+
+.grid-strip { display:flex; flex-wrap:wrap; border:1px solid var(--rule); background:var(--surface); }
+.cell { flex:1 1 190px; padding:12px 16px; border-right:1px solid var(--rule); display:flex; flex-direction:column; gap:3px; min-width:0; }
+.cell:last-child { border-right:0; }
+.cell dt { font-size:10.5px; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-faint); }
+.cell dd { margin:0; font-size:13px; overflow-wrap:anywhere; }
+.ok { color:var(--pass); font-weight:600; display:inline-flex; align-items:center; gap:6px; }
+.ok::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--pass); flex:none; }
+
+.tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(126px,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); }
+.tile { background:var(--surface); padding:15px 18px 13px; display:flex; flex-direction:column; gap:2px; }
+.tile b { font-size:29px; line-height:1.05; font-weight:620; letter-spacing:-.02em; }
+.tile span { font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-faint); }
+.tile i { height:2px; width:24px; margin-top:8px; background:var(--rule-strong); display:block; }
+.tile.pass b{color:var(--pass)} .tile.pass i{background:var(--pass)}
+.tile.fail b{color:var(--fail)} .tile.fail i{background:var(--fail)}
+.tile.review b{color:var(--review)} .tile.review i{background:var(--review)}
+
+.bar { display:flex; height:12px; border:1px solid var(--rule); background:var(--surface); overflow:hidden; }
+.bar div { height:100%; }
+.legend { display:flex; flex-wrap:wrap; gap:18px; font-size:12.5px; color:var(--ink-soft); margin-top:10px; }
+.legend span { display:inline-flex; align-items:center; gap:7px; }
+.legend i { width:10px; height:10px; flex:none; }
+.t-pass{background:var(--pass)} .t-fail{background:var(--fail)} .t-review{background:var(--review)}
+.t-skip{background:var(--skip)} .t-idle{background:var(--idle)}
+
+.scroll { overflow-x:auto; border:1px solid var(--rule); background:var(--surface); }
+table { border-collapse:collapse; width:100%; min-width:900px; }
+caption { text-align:left; padding:0 0 10px; color:var(--ink-faint); font-size:12px; }
+th { text-align:left; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint);
+     font-weight:600; padding:11px 14px; background:var(--sunk); border-bottom:1px solid var(--rule-strong); white-space:nowrap; }
+td { padding:12px 14px; border-bottom:1px solid var(--rule); vertical-align:top; font-size:13.5px; }
+tbody tr:last-child td { border-bottom:0; }
+td.id { white-space:nowrap; font-weight:600; font-size:13px; }
+/* Arrived at via #TC_ID from the workbook - make the row obvious. */
+tr:target td { background:var(--accent-soft); }
+tr:target td.id { box-shadow:inset 3px 0 0 var(--accent); }
+tr:target { scroll-margin-top:60px; }
+td.num { text-align:right; white-space:nowrap; color:var(--ink-soft); }
+td.path { color:var(--ink-faint); font-size:12px; }
+.note { display:block; font-size:12px; color:var(--ink-soft); border-left:2px solid var(--rule-strong); padding-left:9px; margin-top:5px; }
+.note.review { border-left-color:var(--review); }
+.note.fail { border-left-color:var(--fail); }
+
+.lamp { display:inline-flex; align-items:center; gap:7px; white-space:nowrap; font-size:12.5px; }
+.lamp::before { content:""; width:8px; height:8px; border-radius:50%; flex:none; background:currentColor; }
+.pill { display:inline-block; padding:2px 8px; font-size:11px; letter-spacing:.04em; white-space:nowrap; border:1px solid currentColor; }
+.c-pass{color:var(--pass)} .c-fail{color:var(--fail)} .c-review{color:var(--review)}
+.c-skip{color:var(--skip)} .c-idle{color:var(--idle)}
+.pill.c-pass{background:var(--pass-soft)} .pill.c-fail{background:var(--fail-soft)}
+.pill.c-review{background:var(--review-soft)} .pill.c-skip{background:var(--skip-soft)} .pill.c-idle{background:var(--idle-soft)}
+
+.stack { display:flex; flex-direction:column; gap:1px; background:var(--rule); border:1px solid var(--rule); }
+.item { background:var(--surface); padding:14px 16px; display:grid; grid-template-columns:minmax(118px,auto) 1fr; gap:4px 18px; }
+.item > .k { font-size:13px; font-weight:600; color:var(--review); }
+.item > div > p { margin:0 0 4px; }
+.item > div > p:last-child { margin:0; font-size:12.5px; color:var(--ink-soft); }
+
+ul.plain { margin:0; padding-left:18px; color:var(--ink-soft); font-size:13px; display:flex; flex-direction:column; gap:6px; }
+
+footer { border-top:1px solid var(--rule); padding-top:16px; color:var(--ink-faint); font-size:12px; display:flex; flex-direction:column; gap:5px; }
+
+@media (max-width:620px) { .item { grid-template-columns:1fr; } .wrap { padding:26px 16px 52px; } }
+@media print {
+  :root { --ground:#fff; --surface:#fff; --sunk:#f2f2f2; --ink:#000; --ink-soft:#333; --ink-faint:#555; --rule:#bbb; --rule-strong:#888; }
+  body { font-size:11pt; }
+  .wrap { max-width:none; padding:0; gap:20px; }
+  .scroll { overflow:visible; }
+  table { min-width:0; }
+  tr, .item, .tile { break-inside:avoid; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Excel Test Case Integration · Execution Report</p>
+  <h1>login-test-cases.xlsx</h1>
+</header>
+
+<dl class="grid-strip">
+  <div class="cell"><dt>Source workbook</dt><dd class="mono">login-test-cases.xlsx</dd></div>
+  <div class="cell"><dt>Worksheets read</dt><dd>Login Test Cases, Create Project, Login Validation, DashBoard</dd></div>
+  <div class="cell"><dt>Playwright results</dt><dd class="mono">test-results-excel/results.json</dd></div>
+  <div class="cell"><dt>Generated</dt><dd class="mono">2026-09-02 13:48 UTC</dd></div>
+  <div class="cell"><dt>Source integrity</dt><dd><span class="ok">Read-only — unmodified</span></dd></div>
+</dl>
+
+<section class="tiles" aria-label="Totals">
+  <div class="tile"><b class="mono">173</b><span>Test cases</span><i></i></div>
+  <div class="tile pass"><b class="mono">59</b><span>Automated</span><i></i></div>
+  <div class="tile pass"><b class="mono">1</b><span>Passed</span><i></i></div>
+  <div class="tile fail"><b class="mono">0</b><span>Failed</span><i></i></div>
+  <div class="tile review"><b class="mono">2</b><span>Needs review</span><i></i></div>
+  <div class="tile"><b class="mono">0</b><span>Healed</span><i></i></div>
+</section>
+
+<section aria-label="Status distribution">
+  <div class="bar" role="img" aria-label="Final status: 1 passed, 2 needs review, 170 not run"><div class="t-pass" style="width:0.578%"></div><div class="t-review" style="width:1.156%"></div><div class="t-idle" style="width:98.266%"></div></div>
+  <div class="legend"><span><i class="t-pass"></i>Passed · 1</span><span><i class="t-review"></i>Needs review · 2</span><span><i class="t-idle"></i>Not run · 170</span></div>
+</section>
+
+<section aria-labelledby="h-ledger">
+  <h2 id="h-ledger">Results</h2>
+  <div class="scroll" tabindex="0" role="region" aria-labelledby="h-ledger">
+    <table>
+      <caption class="visually-hidden">Execution results for every test case in login-test-cases.xlsx</caption>
+      <thead><tr>
+        <th scope="col">Test case</th><th scope="col">Scenario</th><th scope="col">Module</th>
+        <th scope="col">Pri</th><th scope="col">Automation</th><th scope="col">Execution</th>
+        <th scope="col" style="text-align:right">Duration</th><th scope="col">Test file</th>
+      </tr></thead>
+      <tbody><tr id="TC_LOGIN_001">
+    <td class="id mono">TC_LOGIN_001</td>
+    <td>Valid Login</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login.spec.ts</td>
+  </tr><tr id="TC_LOGIN_002">
+    <td class="id mono">TC_LOGIN_002</td>
+    <td>Invalid Password</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login.spec.ts</td>
+  </tr><tr id="TC_LOGIN_003">
+    <td class="id mono">TC_LOGIN_003</td>
+    <td>Empty Email Validation</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login.spec.ts</td>
+  </tr><tr id="TC_LOGIN_004">
+    <td class="id mono">TC_LOGIN_004</td>
+    <td>Forgot Password Link</td>
+    <td>Login</td>
+    <td class="mono">P1</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login.spec.ts</td>
+  </tr><tr id="TC_LOGIN_005">
+    <td class="id mono">TC_LOGIN_005</td>
+    <td>Login should work properly<span class="note review">No expected result and vague steps - acceptance criteria would have to be invented</span><span class="note">Test case is not automatable as written</span></td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-review mono">Needs Review</span></td>
+    <td><span class="lamp c-review">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login-validation.spec.ts</td>
+  </tr><tr id="TC_LOGIN_006">
+    <td class="id mono">TC_LOGIN_006</td>
+    <td>Valid Login<span class="note review">Duplicate of TC_LOGIN_001 (100% similar) - retire one before automating</span><span class="note">Test case is not automatable as written</span></td>
+    <td>Login</td>
+    <td class="mono">P1</td>
+    <td><span class="pill c-review mono">Needs Review</span></td>
+    <td><span class="lamp c-review">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_007">
+    <td class="id mono">TC_LOGIN_007</td>
+    <td>Email Field Maximum Length</td>
+    <td>Login</td>
+    <td class="mono">P2</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login.spec.ts</td>
+  </tr><tr id="TC_LOGIN_017">
+    <td class="id mono">TC_LOGIN_017</td>
+    <td>Sign in with empty email refuses</td>
+    <td>—</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generic/generic.spec.ts</td>
+  </tr><tr id="TC_LOGIN_018">
+    <td class="id mono">TC_LOGIN_018</td>
+    <td>check all the fields present in the login page</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generic/generic.spec.ts</td>
+  </tr><tr id="TC_LOGIN_019">
+    <td class="id mono">TC_LOGIN_019</td>
+    <td>Check language option is is working in login page</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login.spec.ts</td>
+  </tr><tr id="TC_LOGIN_020">
+    <td class="id mono">TC_LOGIN_020</td>
+    <td>language chenged to german</td>
+    <td>—</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_021">
+    <td class="id mono">TC_LOGIN_021</td>
+    <td>check user name field</td>
+    <td>—</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_022">
+    <td class="id mono">TC_LOGIN_022</td>
+    <td>check indonesian language</td>
+    <td>—</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_023">
+    <td class="id mono">TC_LOGIN_023</td>
+    <td>Check Terms and conditions page is opening</td>
+    <td>—</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_024">
+    <td class="id mono">TC_LOGIN_024</td>
+    <td>Check Russia language</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/login.spec.ts</td>
+  </tr><tr id="TC_LOGIN_025">
+    <td class="id mono">TC_LOGIN_025</td>
+    <td>Check all language option is selected</td>
+    <td>—</td>
+    <td class="mono">P1</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_026">
+    <td class="id mono">TC_LOGIN_026</td>
+    <td>Password Not too short! enter</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_027">
+    <td class="id mono">TC_LOGIN_027</td>
+    <td>Div</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_028">
+    <td class="id mono">TC_LOGIN_028</td>
+    <td>Strong</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_029">
+    <td class="id mono">TC_LOGIN_029</td>
+    <td>Could not login with your — Sign In is visible</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_030">
+    <td class="id mono">TC_LOGIN_030</td>
+    <td>Cancel — #first_report_modal contains &quot;Create New Project&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_031">
+    <td class="id mono">TC_LOGIN_031</td>
+    <td>Iframe[name=&quot;fc_widget&quot;] — #loginForm contains &quot;Sign In&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_032">
+    <td class="id mono">TC_LOGIN_032</td>
+    <td>Sign In — #project_banner contains &quot;Multi tasking is hard. Focus is good.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_033">
+    <td class="id mono">TC_LOGIN_033</td>
+    <td>Cancel — heading contains &quot;Welcome to Bugasura&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_034">
+    <td class="id mono">TC_LOGIN_034</td>
+    <td>Explore — #project_banner contains &quot;Multi tasking is hard. Focus is good.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_035">
+    <td class="id mono">TC_LOGIN_035</td>
+    <td>Close — document contains &quot;Create New Team&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_036">
+    <td class="id mono">TC_LOGIN_036</td>
+    <td>Close — strong contains &quot;Welcome to Bugasura&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_037">
+    <td class="id mono">TC_LOGIN_037</td>
+    <td>Logo — heading contains &quot;Welcome to Bugasura&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_038">
+    <td class="id mono">TC_LOGIN_038</td>
+    <td>Close widget — heading contains &quot;Welcome to Bugasura&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_038.spec.ts</td>
+  </tr><tr id="TC_LOGIN_039">
+    <td class="id mono">TC_LOGIN_039</td>
+    <td>Faclon labs — heading contains &quot;Welcome to Bugasura&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_040">
+    <td class="id mono">TC_LOGIN_040</td>
+    <td>Line Chart | Time Config Page — heading contains &quot;Welcome to Bugasura&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_041">
+    <td class="id mono">TC_LOGIN_041</td>
+    <td>Line Chart | Time Config Page — #response_modal_dialog contains &quot;FAC9&quot;</td>
+    <td>Projects</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_042">
+    <td class="id mono">TC_LOGIN_042</td>
+    <td>Line Chart | Time Config Page — #response_modal_dialog contains &quot;Line Chart | Time Config Page: Note, under Periodicity Field is not displaying (NOTE: Applicable for periodicity higher than daily)&quot;</td>
+    <td>Projects</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_043">
+    <td class="id mono">TC_LOGIN_043</td>
+    <td>Line Chart : Getting flat — #response_modal_dialog contains &quot;Line Chart : Getting flat line for Weekly and monthly periodicities in the rendered line chart and also displaying wrong data points using Summation operator in Device Data source.&quot;</td>
+    <td>Projects</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_044">
+    <td class="id mono">TC_LOGIN_044</td>
+    <td>Faclon labs — #issues_banner contains &quot;+ Add Issue JIRA Import GlitchTip Import Sentry Import Automation Import CSV Import Google Sheets Import Excel Import&quot;</td>
+    <td>Projects</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_044.spec.ts</td>
+  </tr><tr id="TC_LOGIN_045">
+    <td class="id mono">TC_LOGIN_045</td>
+    <td>Faclon labs — #issue_stats_section contains &quot;Total Issues&quot;</td>
+    <td>Projects</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_045.spec.ts</td>
+  </tr><tr id="TC_LOGIN_046">
+    <td class="id mono">TC_LOGIN_046</td>
+    <td>Sign In — #project_banner contains &quot;Name your projects the way your teams recognize it.&quot;</td>
+    <td>Projects</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_046.spec.ts</td>
+  </tr><tr id="TC_LOGIN_047">
+    <td class="id mono">TC_LOGIN_047</td>
+    <td>Test Data Test Data — heading contains &quot;Team work&quot;</td>
+    <td>Projects</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_048">
+    <td class="id mono">TC_LOGIN_048</td>
+    <td>Cancel — #contributed_projects contains &quot;Following&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_048.spec.ts</td>
+  </tr><tr id="TC_LOGIN_049">
+    <td class="id mono">TC_LOGIN_049</td>
+    <td>.ba-switch__thumb — heading contains &quot;Team work&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_050">
+    <td class="id mono">TC_LOGIN_050</td>
+    <td>Notifications — #project_banner contains &quot;Name your projects the way your teams recognize it.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_050.spec.ts</td>
+  </tr><tr id="TC_LOGIN_051">
+    <td class="id mono">TC_LOGIN_051</td>
+    <td>.ba-switch__track — #project_banner contains &quot;Multi tasking is hard. Focus is good.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_052">
+    <td class="id mono">TC_LOGIN_052</td>
+    <td>Close — #tc_summary_639496 contains &quot;Line Chart Page| Compute Flow: Line is not displaying for the line chart using Compute flow ID as data source, It is showing only data points.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_053">
+    <td class="id mono">TC_LOGIN_053</td>
+    <td>Line Chart Page| Compute Flow</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_054">
+    <td class="id mono">TC_LOGIN_054</td>
+    <td>Close</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_055">
+    <td class="id mono">TC_LOGIN_055</td>
+    <td>Line Chart : Getting flat — #main-content contains &quot;Faclon labs&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_056">
+    <td class="id mono">TC_LOGIN_056</td>
+    <td>Line Chart | Time Config Page — #tc_summary_639496 contains &quot;Line Chart Page| Compute Flow: Line is not displaying for the line chart using Compute flow ID as data source, It is showing only data points.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_057">
+    <td class="id mono">TC_LOGIN_057</td>
+    <td>Italian — #login_area contains &quot;English&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_057.spec.ts</td>
+  </tr><tr id="TC_LOGIN_058">
+    <td class="id mono">TC_LOGIN_058</td>
+    <td>check italian language and check sign in</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/login.spec.ts</td>
+  </tr><tr id="TC_LOGIN_059">
+    <td class="id mono">TC_LOGIN_059</td>
+    <td>Close — #tc_summary_638717 contains &quot;Line Chart | Time Config Page: Note, under Periodicity Field is not displaying (NOTE: Applicable for periodicity higher than daily)&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_060">
+    <td class="id mono">TC_LOGIN_060</td>
+    <td>Line Chart | Time Config Page — #tc_summary_638717 contains &quot;Line Chart | Time Config Page: Note, under Periodicity Field is not displaying (NOTE: Applicable for periodicity higher than daily)&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_061">
+    <td class="id mono">TC_LOGIN_061</td>
+    <td>+ Create Project — #project_banner contains &quot;Multi tasking is hard. Focus is good.&quot;</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_061.spec.ts</td>
+  </tr><tr id="TC_LOGIN_062">
+    <td class="id mono">TC_LOGIN_062</td>
+    <td>check russian , itialian language is working</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_063">
+    <td class="id mono">TC_LOGIN_063</td>
+    <td>LineChart: Data labels are — #tc_summary_637609 contains &quot;After selecting Different date in calendar of line chart it is showing current date and time and also displaying daily line instead of hourly&quot;</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_064">
+    <td class="id mono">TC_LOGIN_064</td>
+    <td>Close — #tc_summary_637609 contains &quot;After selecting Different date in calendar of line chart it is showing current date and time and also displaying daily line instead of hourly&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_064.spec.ts</td>
+  </tr><tr id="TC_LOGIN_065">
+    <td class="id mono">TC_LOGIN_065</td>
+    <td>Line Chart | Time Config Page</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_066">
+    <td class="id mono">TC_LOGIN_066</td>
+    <td>Verify that the issue details/summary is displayed.</td>
+    <td>—</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/login-test-cases.spec.ts</td>
+  </tr><tr id="TC_LOGIN_067">
+    <td class="id mono">TC_LOGIN_067</td>
+    <td>Line Chart : Getting flat — #tc_summary_639978 contains &quot;Line Chart : Getting flat line for Weekly and monthly periodicities in the rendered line chart and also displaying wrong data points using Summation operator in Device Data source.&quot;</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_067.spec.ts</td>
+  </tr><tr id="TC_LOGIN_068">
+    <td class="id mono">TC_LOGIN_068</td>
+    <td>Close — #tc_summary_638416 contains &quot;Line Chart | Compare Mode : After selecting any one day in Calendar of line chart, the line graph should have duration of 24 hours (12 AM to 12 AM) of that particular day, but we are getting different duration for that day.&quot;</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_068.spec.ts</td>
+  </tr><tr id="TC_LOGIN_069">
+    <td class="id mono">TC_LOGIN_069</td>
+    <td>Close — #tc_update_status_1254476 contains &quot;New&quot;</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_069.spec.ts</td>
+  </tr><tr id="TC_LOGIN_070">
+    <td class="id mono">TC_LOGIN_070</td>
+    <td>Faclon labs — #tc_summary_639978 contains &quot;Line Chart : Getting flat line for Weekly and monthly periodicities in the rendered line chart and also displaying wrong data points using Summation operator in Device Data source.&quot;</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_070.spec.ts</td>
+  </tr><tr id="TC_LOGIN_071">
+    <td class="id mono">TC_LOGIN_071</td>
+    <td>Cancel — #project_banner contains &quot;Multi tasking is hard. Focus is good.&quot;</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_072">
+    <td class="id mono">TC_LOGIN_072</td>
+    <td>Close — #ap_notifications_panel contains &quot;Notification Preferences&quot;</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_072.spec.ts</td>
+  </tr><tr id="TC_LOGIN_073">
+    <td class="id mono">TC_LOGIN_073</td>
+    <td>Requirements Management — #tc_summary_639978 contains &quot;Line Chart : Getting flat line for Weekly and monthly periodicities in the rendered line chart and also displaying wrong data points using Summation operator in Device Data source.&quot;</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_073.spec.ts</td>
+  </tr><tr id="TC_LOGIN_074">
+    <td class="id mono">TC_LOGIN_074</td>
+    <td>.ba-switch__track — #project_banner contains &quot;Multi tasking is hard. Focus is good.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_075">
+    <td class="id mono">TC_LOGIN_075</td>
+    <td>ON — Enable Notifications Receive notifications for activity acro is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_076">
+    <td class="id mono">TC_LOGIN_076</td>
+    <td>Close — Enable Notifications Receive notifications for activity acro is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_077">
+    <td class="id mono">TC_LOGIN_077</td>
+    <td>.ba-switch__track — Enable Notifications Receive notifications for activity acro is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_078">
+    <td class="id mono">TC_LOGIN_078</td>
+    <td>Close — Enable Notifications Receive notifications for activity acro is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_079">
+    <td class="id mono">TC_LOGIN_079</td>
+    <td>.rounded-checkbox-ui — 639978 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_080">
+    <td class="id mono">TC_LOGIN_080</td>
+    <td>Compute Flow: Unable to — #tc_summary_637609 contains &quot;After selecting Different date in calendar of line chart it is showing current date and time and also displaying daily line instead of hourly&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_080.spec.ts</td>
+  </tr><tr id="TC_LOGIN_081">
+    <td class="id mono">TC_LOGIN_081</td>
+    <td>Line Chart : Getting flat — #tc_update_severity_639978 contains &quot;Critical&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_082">
+    <td class="id mono">TC_LOGIN_082</td>
+    <td>.rounded-checkbox-ui — 639978 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_083">
+    <td class="id mono">TC_LOGIN_083</td>
+    <td>.rounded-checkbox-ui — 639978 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_084">
+    <td class="id mono">TC_LOGIN_084</td>
+    <td>Faclon labs — 639978 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_085">
+    <td class="id mono">TC_LOGIN_085</td>
+    <td>Test Data Test Data — #main-content contains &quot;Environments&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_086">
+    <td class="id mono">TC_LOGIN_086</td>
+    <td>#tr_635838 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — #tc_summary_635838 contains &quot;Compute Flow: Unable to update date in line chart.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_086.spec.ts</td>
+  </tr><tr id="TC_LOGIN_087">
+    <td class="id mono">TC_LOGIN_087</td>
+    <td>Add Issue — #tc_summary_1749552 contains &quot;login is not working in moolya aura&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_088">
+    <td class="id mono">TC_LOGIN_088</td>
+    <td>.rounded-checkbox-ui — 1749553 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_089">
+    <td class="id mono">TC_LOGIN_089</td>
+    <td>#tr_1749558 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1749558 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_090">
+    <td class="id mono">TC_LOGIN_090</td>
+    <td>#tr_1749558 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1749558 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_091">
+    <td class="id mono">TC_LOGIN_091</td>
+    <td>Search — 1749558 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_092">
+    <td class="id mono">TC_LOGIN_092</td>
+    <td>.rounded-checkbox-ui — #tc_summary_639978 contains &quot;Line Chart : Getting flat line for Weekly and monthly periodicities in the rendered line chart and also displaying wrong data points using Summation operator in Device Data source.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_093">
+    <td class="id mono">TC_LOGIN_093</td>
+    <td>Faclon labs — 639978 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_093.spec.ts</td>
+  </tr><tr id="TC_LOGIN_094">
+    <td class="id mono">TC_LOGIN_094</td>
+    <td>#tr_1749558 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1749558 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_095">
+    <td class="id mono">TC_LOGIN_095</td>
+    <td>Notification settings — #ap_notifications_panel contains &quot;Notification Preferences&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_095.spec.ts</td>
+  </tr><tr id="TC_LOGIN_096">
+    <td class="id mono">TC_LOGIN_096</td>
+    <td>Avatar — #user_profile_form contains &quot;Maneeswar Reddy&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_097">
+    <td class="id mono">TC_LOGIN_097</td>
+    <td>Next — Next is enabled</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_097.spec.ts</td>
+  </tr><tr id="TC_LOGIN_098">
+    <td class="id mono">TC_LOGIN_098</td>
+    <td>Open chat — heading contains &quot;Talk to our support&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_098.spec.ts</td>
+  </tr><tr id="TC_LOGIN_099">
+    <td class="id mono">TC_LOGIN_099</td>
+    <td>Sample — #tc_summary_1749558 contains &quot;Copy of login is not working in moolya aura&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_099.spec.ts</td>
+  </tr><tr id="TC_LOGIN_100">
+    <td class="id mono">TC_LOGIN_100</td>
+    <td>.rounded-checkbox-ui — 1749553 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_101">
+    <td class="id mono">TC_LOGIN_101</td>
+    <td>.rounded-checkbox-ui — 1749553 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_102">
+    <td class="id mono">TC_LOGIN_102</td>
+    <td>.rounded-checkbox-ui — 1749553 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_103">
+    <td class="id mono">TC_LOGIN_103</td>
+    <td>.rounded-checkbox-ui — 1749553 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_104">
+    <td class="id mono">TC_LOGIN_104</td>
+    <td>#tr_1749558 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — heading contains &quot;All Issues&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_105">
+    <td class="id mono">TC_LOGIN_105</td>
+    <td>Requirements Management</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_106">
+    <td class="id mono">TC_LOGIN_106</td>
+    <td>Requirements Management — #requirements_banner contains &quot;Requirements management need not be hard&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_106.spec.ts</td>
+  </tr><tr id="TC_LOGIN_107">
+    <td class="id mono">TC_LOGIN_107</td>
+    <td>.rounded-checkbox-ui — 1749553 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_108">
+    <td class="id mono">TC_LOGIN_108</td>
+    <td>.rounded-checkbox-ui — 1749553 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_108.spec.ts</td>
+  </tr><tr id="TC_LOGIN_109">
+    <td class="id mono">TC_LOGIN_109</td>
+    <td>.rounded-checkbox-ui — 1749553 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_110">
+    <td class="id mono">TC_LOGIN_110</td>
+    <td>#tr_1749552 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — heading contains &quot;All Issues&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_111">
+    <td class="id mono">TC_LOGIN_111</td>
+    <td>.rounded-checkbox-ui — 639978 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_112">
+    <td class="id mono">TC_LOGIN_112</td>
+    <td>#tr_1749558 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1749558 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_112.spec.ts</td>
+  </tr><tr id="TC_LOGIN_113">
+    <td class="id mono">TC_LOGIN_113</td>
+    <td>#tr_637446 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 637446 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_113.spec.ts</td>
+  </tr><tr id="TC_LOGIN_114">
+    <td class="id mono">TC_LOGIN_114</td>
+    <td>#tr_637446 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 639978 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_114.spec.ts</td>
+  </tr><tr id="TC_LOGIN_115">
+    <td class="id mono">TC_LOGIN_115</td>
+    <td>#tr_1749558 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1749552 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_116">
+    <td class="id mono">TC_LOGIN_116</td>
+    <td>#tr_1749558 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1749558 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_117">
+    <td class="id mono">TC_LOGIN_117</td>
+    <td>.rounded-checkbox-ui — 1749553 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_118">
+    <td class="id mono">TC_LOGIN_118</td>
+    <td>#tr_1749552 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1749553 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_119">
+    <td class="id mono">TC_LOGIN_119</td>
+    <td>Add Add Issue — #add_issues_details contains &quot;Summary *&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_120">
+    <td class="id mono">TC_LOGIN_120</td>
+    <td>Sign In — #password_field-error contains &quot;[type=password]&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_121">
+    <td class="id mono">TC_LOGIN_121</td>
+    <td>#tr_1749552 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1749553 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_121.spec.ts</td>
+  </tr><tr id="TC_LOGIN_122">
+    <td class="id mono">TC_LOGIN_122</td>
+    <td>#tr_1749552 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1749552 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_122.spec.ts</td>
+  </tr><tr id="TC_LOGIN_123">
+    <td class="id mono">TC_LOGIN_123</td>
+    <td>#tr_1751001 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1751002 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_123.spec.ts</td>
+  </tr><tr id="TC_LOGIN_124">
+    <td class="id mono">TC_LOGIN_124</td>
+    <td>[id=&quot;1751001&quot;] — 1751002 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_125">
+    <td class="id mono">TC_LOGIN_125</td>
+    <td>#tr_1751001 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1751001 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_125.spec.ts</td>
+  </tr><tr id="TC_LOGIN_126">
+    <td class="id mono">TC_LOGIN_126</td>
+    <td>Cancel — span is visible</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_127">
+    <td class="id mono">TC_LOGIN_127</td>
+    <td>Cancel — #create_team_invite_form contains &quot;Owner&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_127.spec.ts</td>
+  </tr><tr id="TC_LOGIN_128">
+    <td class="id mono">TC_LOGIN_128</td>
+    <td>.rounded-checkbox-ui — h2 contains &quot;All Projects&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_129">
+    <td class="id mono">TC_LOGIN_129</td>
+    <td>.ba-switch__thumb — Enable Notifications Receive notifications for activity acro is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_130">
+    <td class="id mono">TC_LOGIN_130</td>
+    <td>Test Data Test Data — #main-content contains &quot;Customize Data Sets&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_131">
+    <td class="id mono">TC_LOGIN_131</td>
+    <td>Manage — #main-content contains &quot;Teams&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_131.spec.ts</td>
+  </tr><tr id="TC_LOGIN_132">
+    <td class="id mono">TC_LOGIN_132</td>
+    <td>Manage — h2 contains &quot;Team Projects&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_133">
+    <td class="id mono">TC_LOGIN_133</td>
+    <td>.rounded-checkbox-ui — Open is visible</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_133.spec.ts</td>
+  </tr><tr id="TC_LOGIN_134">
+    <td class="id mono">TC_LOGIN_134</td>
+    <td>Sign In — #password_field-error contains &quot;[type=password]&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_135">
+    <td class="id mono">TC_LOGIN_135</td>
+    <td>Compute Flow: Unable to — #tc_summary_635838 contains &quot;Compute Flow: Unable to update date in line chart.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_135.spec.ts</td>
+  </tr><tr id="TC_LOGIN_136">
+    <td class="id mono">TC_LOGIN_136</td>
+    <td>.ba-switch__track — #ap_notifications_panel contains &quot;Notification Preferences&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_137">
+    <td class="id mono">TC_LOGIN_137</td>
+    <td>.ba-switch__thumb — #ap_notifications_panel contains &quot;Notification Preferences&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_137.spec.ts</td>
+  </tr><tr id="TC_LOGIN_138">
+    <td class="id mono">TC_LOGIN_138</td>
+    <td>Manage — #ap_notifications_panel contains &quot;Notification Preferences&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_LOGIN_138.spec.ts</td>
+  </tr><tr id="TC_LOGIN_139">
+    <td class="id mono">TC_LOGIN_139</td>
+    <td>Activity — heading contains &quot;A comprehensive visual overview of bug status, trends, and metrics for effective monitoring and analysis.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-pass">Passed</span></td>
+    <td class="num mono">15.09s</td>
+    <td class="path mono">generated/TC_LOGIN_139.spec.ts</td>
+  </tr><tr id="TC_PROJ_001">
+    <td class="id mono">TC_PROJ_001</td>
+    <td>Create a project with a valid name and team</td>
+    <td>Projects</td>
+    <td class="mono">P1</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/projects/projects.spec.ts</td>
+  </tr><tr id="TC_PROJ_002">
+    <td class="id mono">TC_PROJ_002</td>
+    <td>Create Project form opens from the Projects page</td>
+    <td>Projects</td>
+    <td class="mono">P2</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/projects/projects.spec.ts</td>
+  </tr><tr id="TC_PROJ_003">
+    <td class="id mono">TC_PROJ_003</td>
+    <td>Team is mandatory</td>
+    <td>Projects</td>
+    <td class="mono">P1</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/projects/projects.spec.ts</td>
+  </tr><tr id="TC_PROJ_004">
+    <td class="id mono">TC_PROJ_004</td>
+    <td>Project name is mandatory</td>
+    <td>Projects</td>
+    <td class="mono">P1</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/projects/projects.spec.ts</td>
+  </tr><tr id="TC_PROJ_005">
+    <td class="id mono">TC_PROJ_005</td>
+    <td>Whitespace-only project name is rejected</td>
+    <td>Projects</td>
+    <td class="mono">P2</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/projects/projects.spec.ts</td>
+  </tr><tr id="TC_PROJ_006">
+    <td class="id mono">TC_PROJ_006</td>
+    <td>Cancel discards the form</td>
+    <td>Projects</td>
+    <td class="mono">P2</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/projects/projects.spec.ts</td>
+  </tr><tr id="TC_PROJ_007">
+    <td class="id mono">TC_PROJ_007</td>
+    <td>Project name field length limit</td>
+    <td>Projects</td>
+    <td class="mono">P3</td>
+    <td><span class="pill c-skip mono">Generated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/projects/projects.spec.ts</td>
+  </tr><tr id="TC_PROJ_008">
+    <td class="id mono">TC_PROJ_008</td>
+    <td>Duplicate project name is rejected</td>
+    <td>Projects</td>
+    <td class="mono">P2</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_PROJ_009">
+    <td class="id mono">TC_PROJ_009</td>
+    <td>create new team while creating new project</td>
+    <td>Create Project</td>
+    <td class="mono">P1</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_LOGIN_010">
+    <td class="id mono">TC_LOGIN_010</td>
+    <td>Sign in with an empty email is refused</td>
+    <td>Login</td>
+    <td class="mono">P1</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login-validation.spec.ts</td>
+  </tr><tr id="TC_LOGIN_011">
+    <td class="id mono">TC_LOGIN_011</td>
+    <td>Sign in with an empty password is refused</td>
+    <td>Login</td>
+    <td class="mono">P1</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login-validation.spec.ts</td>
+  </tr><tr id="TC_LOGIN_012">
+    <td class="id mono">TC_LOGIN_012</td>
+    <td>Sign in with both fields empty is refused</td>
+    <td>Login</td>
+    <td class="mono">P2</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login-validation.spec.ts</td>
+  </tr><tr id="TC_LOGIN_013">
+    <td class="id mono">TC_LOGIN_013</td>
+    <td>Sign in with a malformed email is refused</td>
+    <td>Login</td>
+    <td class="mono">P1</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login-validation.spec.ts</td>
+  </tr><tr id="TC_LOGIN_014">
+    <td class="id mono">TC_LOGIN_014</td>
+    <td>Sign in with an unregistered email is rejected</td>
+    <td>Login</td>
+    <td class="mono">P1</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login-validation.spec.ts</td>
+  </tr><tr id="TC_LOGIN_015">
+    <td class="id mono">TC_LOGIN_015</td>
+    <td>Sign in with the wrong password is rejected</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login-validation.spec.ts</td>
+  </tr><tr id="TC_LOGIN_016">
+    <td class="id mono">TC_LOGIN_016</td>
+    <td>Sign in with an email over the length limit is rejected</td>
+    <td>Login</td>
+    <td class="mono">P2</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/login/login-validation.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_001">
+    <td class="id mono">TC_DASHBOARD_001</td>
+    <td>Check menus present in the dashboard page</td>
+    <td>DashBoard</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/dashboard/dashboard.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_002">
+    <td class="id mono">TC_DASHBOARD_002</td>
+    <td>Notifications — #ap_notifications_panel contains &quot;Notification Preferences&quot;</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_DASHBOARD_002.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_003">
+    <td class="id mono">TC_DASHBOARD_003</td>
+    <td>Close — heading contains &quot;All Issues&quot;</td>
+    <td>Login</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_004">
+    <td class="id mono">TC_DASHBOARD_004</td>
+    <td>.ba-switch__thumb</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_005">
+    <td class="id mono">TC_DASHBOARD_005</td>
+    <td>Close — #project_banner contains &quot;Multi tasking is hard. Focus is good.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_006">
+    <td class="id mono">TC_DASHBOARD_006</td>
+    <td>Disabled — Enable Notifications Receive notifications for activity acro is enabled</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_007">
+    <td class="id mono">TC_DASHBOARD_007</td>
+    <td>Close — Enable Notifications Receive notifications for activity acro is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_DASHBOARD_007.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_008">
+    <td class="id mono">TC_DASHBOARD_008</td>
+    <td>.rounded-checkbox-ui — 639978 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_009">
+    <td class="id mono">TC_DASHBOARD_009</td>
+    <td>#total_issue_counts — #tc_summary_639978 contains &quot;Line Chart : Getting flat line for Weekly and monthly periodicities in the rendered line chart and also displaying wrong data points using Summation operator in Device Data source.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_DASHBOARD_009.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_010">
+    <td class="id mono">TC_DASHBOARD_010</td>
+    <td>.rounded-checkbox-ui — 637446 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_DASHBOARD_010.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_011">
+    <td class="id mono">TC_DASHBOARD_011</td>
+    <td>#tr_637446 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 639978 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_012">
+    <td class="id mono">TC_DASHBOARD_012</td>
+    <td>#tr_637446 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 639978 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_DASHBOARD_012.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_013">
+    <td class="id mono">TC_DASHBOARD_013</td>
+    <td>Line Chart : Getting flat — #tc_summary_639978 contains &quot;Line Chart : Getting flat line for Weekly and monthly periodicities in the rendered line chart and also displaying wrong data points using Summation operator in Device Data source.&quot;</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_014">
+    <td class="id mono">TC_DASHBOARD_014</td>
+    <td>Config Line Chart: Unable to — #all_apps contains &quot;Faclon labs&quot;</td>
+    <td>DashBoard</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_DASHBOARD_014.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_015">
+    <td class="id mono">TC_DASHBOARD_015</td>
+    <td>Faclon labs — 639978 is ticked</td>
+    <td>DashBoard</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_016">
+    <td class="id mono">TC_DASHBOARD_016</td>
+    <td>Config Line Chart: Unable to — #all_apps contains &quot;Faclon labs&quot;</td>
+    <td>DashBoard</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_DASHBOARD_016.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_017">
+    <td class="id mono">TC_DASHBOARD_017</td>
+    <td>Close — #all_apps contains &quot;iosense.io&quot;</td>
+    <td>DashBoard</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_DASHBOARD_017.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_018">
+    <td class="id mono">TC_DASHBOARD_018</td>
+    <td>Notification settings — #all_apps contains &quot;Faclon labs&quot;</td>
+    <td>DashBoard</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_DASHBOARD_018.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_019">
+    <td class="id mono">TC_DASHBOARD_019</td>
+    <td>Notification settings — #all_apps contains &quot;Faclon labs&quot;</td>
+    <td>DashBoard</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_DASHBOARD_019.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_020">
+    <td class="id mono">TC_DASHBOARD_020</td>
+    <td>.rounded-checkbox-ui — 639978 is not ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_021">
+    <td class="id mono">TC_DASHBOARD_021</td>
+    <td>Copy of login is not working</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_022">
+    <td class="id mono">TC_DASHBOARD_022</td>
+    <td>.rounded-checkbox-ui — 1749553 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_023">
+    <td class="id mono">TC_DASHBOARD_023</td>
+    <td>#tr_1749552 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1749552 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_024">
+    <td class="id mono">TC_DASHBOARD_024</td>
+    <td>[id=&quot;1749553&quot;] — All Issues is visible</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr><tr id="TC_DASHBOARD_025">
+    <td class="id mono">TC_DASHBOARD_025</td>
+    <td>.rounded-checkbox-ui — 639978 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_DASHBOARD_025.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_026">
+    <td class="id mono">TC_DASHBOARD_026</td>
+    <td>#tr_1749552 &gt; .tabulator-cell.tabulator-cell--checkbox &gt; .rounded-checkbox-cont &gt; .rounded-checkbox-ui — 1749558 is ticked</td>
+    <td>—</td>
+    <td class="mono">—</td>
+    <td><span class="pill c-pass mono">Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">tests-e2e/generated/TC_DASHBOARD_026.spec.ts</td>
+  </tr><tr id="TC_DASHBOARD_027">
+    <td class="id mono">TC_DASHBOARD_027</td>
+    <td>Activity — #critical_bugs_moving contains &quot;Rate at Which Critical Issues are Closed&quot;</td>
+    <td>DashBoard</td>
+    <td class="mono">P0</td>
+    <td><span class="pill c-idle mono">Not Automated</span></td>
+    <td><span class="lamp c-idle">Not Run</span></td>
+    <td class="num mono">—</td>
+    <td class="path mono">—</td>
+  </tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="h-review">
+      <h2 id="h-review">Needs review — returned to the author</h2>
+      <div class="stack"><div class="item">
+        <span class="k mono">TC_LOGIN_005</span>
+        <div>
+          <p>No expected result and vague steps - acceptance criteria would have to be invented</p>
+          <p>Not automated by design — automating an ambiguous case produces coverage that proves nothing.</p>
+        </div>
+      </div><div class="item">
+        <span class="k mono">TC_LOGIN_006</span>
+        <div>
+          <p>Duplicate of TC_LOGIN_001 (100% similar) - retire one before automating</p>
+          <p>Not automated by design — automating an ambiguous case produces coverage that proves nothing.</p>
+        </div>
+      </div></div>
+    </section>
+<section aria-labelledby="h-parser">
+      <h2 id="h-parser">Parser notes</h2>
+      <ul class="plain"><li><strong>1 malformed row(s) skipped.</strong> Create Project row 10: Row has no Test Case ID and cannot be traced; nearest label: &quot;Delete Project&quot;</li><li><strong>1 worksheet(s) skipped.</strong> “Read Me” — no row in this sheet looks like a test-case header</li><li><strong>23 column(s) mapped</strong> to canonical fields. Full interpretation table in <span class="mono">ai/reports/test-case-quality-report.md</span>.</li></ul>
+    </section>
+
+<footer>
+  <p>Spreadsheet edition of this report: <span class="mono">reports/login-test-cases-execution-report.xlsx</span></p>
+  <p>Automation status is earned — a case becomes <span class="mono">Automated</span> only after a green run, and reverts to <span class="mono">Generated</span> if it starts failing.</p>
+</footer>
+
+</div>
+</body>
+</html>

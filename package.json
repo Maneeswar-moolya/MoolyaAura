@@ -1,0 +1,74 @@
+{
+  "name": "@playwright/mcp",
+  "version": "0.0.79",
+  "description": "Playwright Tools for MCP",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/microsoft/playwright-mcp.git"
+  },
+  "homepage": "https://playwright.dev",
+  "engines": {
+    "node": ">=18"
+  },
+  "author": {
+    "name": "Microsoft Corporation"
+  },
+  "license": "Apache-2.0",
+  "mcpName": "io.github.microsoft/playwright-mcp",
+  "scripts": {
+    "lint": "node update-readme.js",
+    "test": "playwright test",
+    "ctest": "playwright test --project=chrome",
+    "ftest": "playwright test --project=firefox",
+    "wtest": "playwright test --project=webkit",
+    "dtest": "MCP_IN_DOCKER=1 playwright test --project=chromium-docker",
+    "build": "echo OK",
+    "npm-publish": "npm run lint && npm run test && npm publish",
+    "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
+    "docker-rm": "docker rm playwright-mcp-dev",
+    "docker-run": "docker run -it -p 8080:8080 --name playwright-mcp-dev playwright-mcp-dev:latest",
+    "roll": "node roll.js",
+    "excel": "tsx ai/excel/cli.ts",
+    "excel:demo": "tsx ai/excel/make-demo-workbook.ts",
+    "excel:list": "tsx ai/excel/cli.ts list",
+    "excel:quality": "tsx ai/excel/cli.ts quality",
+    "excel:mapping": "tsx ai/excel/cli.ts mapping",
+    "excel:report": "tsx ai/excel/cli.ts report",
+    "excel:test": "playwright test --config=playwright.excel.config.ts",
+    "excel:allure": "allure generate test-results-excel/allure-results --clean -o reports/allure",
+    "excel:allure:open": "allure open reports/allure",
+    "excel:allure:serve": "allure serve test-results-excel/allure-results",
+    "excel:run": "tsx ai/excel/cli.ts run",
+    "excel:sync-data": "tsx ai/excel/cli.ts sync-data",
+    "excel:dashboard": "tsx ai/dashboard/server.ts",
+    "excel:autocode": "tsx ai/autocode/cli.ts",
+    "excel:autocode:watch": "tsx ai/autocode/cli.ts --watch",
+    "excel:verify": "tsx ai/autocode/verify-cli.ts",
+    "excel:index": "tsx ai/knowledge/cli.ts",
+    "excel:independence": "tsx ai/autocode/independence.ts"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "dependencies": {
+    "playwright": "1.63.0-alpha-2026-08-05",
+    "playwright-core": "1.63.0-alpha-2026-08-05"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@playwright/test": "1.63.0-alpha-2026-08-05",
+    "@types/node": "^24.3.0",
+    "allure-commandline": "^2.43.0",
+    "allure-playwright": "^3.10.2",
+    "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
+    "tsx": "^4.23.12"
+  },
+  "bin": {
+    "playwright-mcp": "cli.js"
+  }
+}

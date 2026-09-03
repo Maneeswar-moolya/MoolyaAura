@@ -1,0 +1,44 @@
+node_modules/
+test-results/
+test-results-excel/
+playwright-report/
+.vscode/mcp.json
+.idea
+.DS_Store
+.env
+sessions/
+
+# Excel test case integration - generated output.
+# The source workbooks in excel/ and the traceability mapping in
+# ai/test-mapping/ are committed; everything generated from a run is not.
+reports/
+ai/reports/
+
+# Backups written before any in-place result write-back.
+excel/.backups/
+
+# Data-driven cache: rebuilt from the workbook by globalSetup before every run,
+# so committing it would only ever create merge conflicts over derived data.
+ai/test-data/
+
+# Dashboard run history: derived records of local runs.
+ai/dashboard/runs/
+# Dashboard generation history: the latest five generations, capped and pruned on
+# write. Derived from the generator's own output, so nothing here is a source.
+ai/dashboard/generations/
+# Playwright Codegen output for a recorded test, kept only until the deterministic
+# mapper has turned it into a spec. Short-lived internal artifact, never a
+# recording repository - see ai/autocode/from-recording.ts.
+ai/dashboard/recordings/
+
+# Autocode bookkeeping. `tests-e2e/generated/` is deliberately NOT ignored:
+# generated specs are real automation and have to be reviewable in a diff.
+# These three are not - the lock is transient, the quarantine holds specs that
+# were rejected for checking nothing, and state.json is derived row hashes.
+ai/autocode/.lock
+ai/autocode/quarantine/
+ai/autocode/state.json
+
+# Development experiments and local logs (cleanup 2026-08)
+ai/spike/
+*.log
