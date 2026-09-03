@@ -1,0 +1,99 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - link [ref=e11] [cursor=pointer]:
+          - /url: https://bugasura.io/
+          - img "Bugasura" [ref=e12]
+        - generic [ref=e13]:
+          - button "English " [expanded] [active] [ref=e14] [cursor=pointer]:
+            - generic [ref=e15]: English
+            - generic [ref=e20]: 
+          - list [ref=e60]:
+            - listitem [ref=e61]: Select Language
+            - generic [ref=e62]:
+              - listitem
+              - generic [ref=e63]:
+                - listitem [ref=e64]:
+                  - link "English done" [ref=e65] [cursor=pointer]:
+                    - /url: "#"
+                    - generic [ref=e66]: English
+                    - text: done
+                - listitem [ref=e67]:
+                  - link "German" [ref=e68] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e70]:
+                  - link "Indonesian" [ref=e71] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e73]:
+                  - link "Japanese" [ref=e74] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e76]:
+                  - link "Portuguese" [ref=e77] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e79]:
+                  - link "Spanish" [ref=e80] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e82]:
+                  - link "Thai" [ref=e83] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e85]:
+                  - link "Vietnamese" [ref=e86] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e88]:
+                  - link "French" [ref=e89] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e91]:
+                  - link "Russian" [ref=e92] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e94]:
+                  - link "Italian" [ref=e95] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e97]:
+                  - link "Greek" [ref=e98] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e100]:
+                  - link "Dutch" [ref=e101] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=e103]:
+                  - link "Turkish" [ref=e104] [cursor=pointer]:
+                    - /url: "#"
+      - generic [ref=e23]:
+        - heading [level=2] [ref=e24]:
+          - text: Welcome to
+          - strong [ref=e25]: Bugasura
+        - paragraph [ref=e26]: The operating system of building quality
+        - button "Google Google Sign In" [ref=e28] [cursor=pointer]:
+          - img "Google" [ref=e29]
+          - generic [ref=e30]: Google Sign In
+        - paragraph [ref=e32]: Or Sign In with Email
+        - generic [ref=e33]:
+          - generic [ref=e35]:
+            - generic [ref=e36]: Email
+            - textbox "Email" [ref=e38]:
+              - /placeholder: Enter your email
+            - paragraph
+          - generic [ref=e40]:
+            - generic [ref=e41]: Password
+            - generic [ref=e42]:
+              - textbox "Password" [ref=e43]:
+                - /placeholder: Enter your password
+              - generic [ref=e44] [cursor=pointer]: visibility
+            - paragraph
+            - link "Forgot Password?" [ref=e47] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - button "Sign In" [ref=e49] [cursor=pointer]
+          - paragraph [ref=e51]:
+            - text: By continuing, you agree to our
+            - link "Terms" [ref=e53] [cursor=pointer]:
+              - /url: https://bugasura.io/terms-of-service
+            - text: and
+            - link "Privacy Policy" [ref=e55] [cursor=pointer]:
+              - /url: https://bugasura.io/privacy
+          - paragraph [ref=e57]: New to Bugasura? Create an account
+    - text: done
+  - iframe [ref=e59]:
+    - generic:
+      - generic:
+        - text: 
+        - button "Open chat" [ref=f4e1] [cursor=pointer]

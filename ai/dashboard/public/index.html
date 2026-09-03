@@ -1,0 +1,3597 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Moolya AURA</title>
+<style>
+  /* ============================================================================
+     DESIGN SYSTEM
+     One place for spacing, type, colour and every component. Nothing below this
+     block styles itself ad hoc.
+
+     Light only, by request, and every colour is stated rather than inherited so
+     the page renders identically whatever the OS theme is.
+
+     Palette rules that matter:
+       - ONE accent (teal-blue) and it means "interactive", never "good".
+       - Semantic green/amber/red mean status only, and are never used for
+         branding, so a green thing on this page always means something passed.
+       - Automation status and execution status are drawn DIFFERENTLY on purpose
+         (outlined tag vs filled dot) because they are different questions and
+         must never be mistaken for one another.
+     ========================================================================= */
+  :root {
+    /* Surfaces */
+    --bg: #f1f4f8;
+    --panel: #ffffff;
+    --panel-alt: #f7f9fc;
+    --panel-sunk: #eef2f7;
+    --rail: #0f1b2a;
+    --rail-soft: #16263a;
+    --rail-ink: #e7eef6;
+    --rail-muted: #8fa3b8;
+
+    /* Ink */
+    --ink: #16202e;
+    --ink-soft: #3b4757;
+    --muted: #6a778a;
+    --faint: #93a0b2;
+
+    /* Lines */
+    --line: #d8e0ea;
+    --line-soft: #e9eef4;
+
+    /* Accent - interactive only */
+    --accent: #0f6d8c;
+    --accent-deep: #0a5470;
+    --accent-soft: #e6f2f7;
+    --accent-line: #b9d9e5;
+
+    /* Semantic - status only */
+    --pass: #12694a;
+    --pass-soft: #e6f5ed;
+    --pass-line: #b9e0cb;
+    --fail: #a32232;
+    --fail-soft: #fceced;
+    --fail-line: #f0c8ce;
+    --warn: #8a5a09;
+    --warn-soft: #fdf5e5;
+    --warn-line: #efdfba;
+    --info: #1f5c94;
+    --info-soft: #eaf2fa;
+    --info-line: #c3d9ee;
+
+    /* Space scale */
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px;
+
+    /* Radius + elevation */
+    --r-sm: 6px; --r: 9px; --r-lg: 13px;
+    --shadow: 0 1px 2px rgba(16,32,48,.05), 0 2px 10px rgba(16,32,48,.04);
+    --shadow-lift: 0 6px 24px rgba(16,32,48,.10), 0 1px 3px rgba(16,32,48,.07);
+
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.55 var(--sans);
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3 { margin: 0; letter-spacing: -0.014em; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+  .icon { width: 15px; height: 15px; flex: none; vertical-align: -3px; }
+  .icon-sm { width: 13px; height: 13px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .muted { color: var(--muted); }
+  .faint { color: var(--faint); }
+  .mono { font-family: var(--mono); }
+  .grow { flex: 1; }
+  .pass { color: var(--pass); font-weight: 600; }
+  .fail { color: var(--fail); font-weight: 600; }
+
+  /* ---------- App shell: fixed rail + scrolling content ---------- */
+  .app { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
+  @media (max-width: 1020px) { .app { grid-template-columns: 1fr; } }
+
+  .rail {
+    background: var(--rail); color: var(--rail-ink); padding: var(--s5) var(--s3);
+    display: flex; flex-direction: column; gap: var(--s5);
+    position: sticky; top: 0; height: 100vh; overflow: auto;
+  }
+  @media (max-width: 1020px) { .rail { position: static; height: auto; } }
+
+  .brand { display: flex; align-items: center; gap: 10px; padding: 0 var(--s2); }
+  .mark {
+    width: 30px; height: 30px; border-radius: 8px; flex: none;
+    background: linear-gradient(155deg, #1590b3, #0c5673);
+    display: grid; place-items: center; color: #fff;
+  }
+  .brand .name { font-size: 13px; font-weight: 650; line-height: 1.25; letter-spacing: -0.01em; }
+  .brand .org { font-size: 11px; color: var(--rail-muted); }
+
+  .nav { display: grid; gap: 2px; }
+  .nav-label { font-size: 10px; text-transform: uppercase; letter-spacing: .09em; color: var(--rail-muted); font-weight: 700; padding: 0 var(--s2) var(--s1); }
+  .nav button {
+    display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+    background: none; border: 1px solid transparent; color: var(--rail-ink);
+    font: inherit; font-size: 13px; font-weight: 500; padding: 7px var(--s2);
+    border-radius: var(--r-sm); cursor: pointer;
+  }
+  .nav button:hover { background: var(--rail-soft); }
+  .nav button[aria-selected="true"] { background: var(--rail-soft); font-weight: 600; box-shadow: inset 2px 0 0 #35b3d6; }
+  .nav button .icon { color: #7fc4dc; }
+  .nav .count {
+    margin-left: auto; font-size: 11px; font-variant-numeric: tabular-nums;
+    background: rgba(255,255,255,.09); border-radius: 999px; padding: 0 7px; color: var(--rail-ink);
+  }
+  .rail-foot { margin-top: auto; font-size: 11px; color: var(--rail-muted); padding: 0 var(--s2); display: grid; gap: 3px; }
+  .rail-foot .row { display: flex; justify-content: space-between; gap: var(--s2); }
+  .rail-foot b { color: var(--rail-ink); font-weight: 600; }
+
+  /* ---------- Top bar ---------- */
+  .top {
+    background: var(--panel); border-bottom: 1px solid var(--line);
+    padding: var(--s4) var(--s6); display: flex; align-items: flex-end; gap: var(--s5); flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .top h1 { font-size: 17px; font-weight: 650; }
+  .top .tagline { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .env { display: flex; gap: var(--s5); flex-wrap: wrap; align-items: flex-end; }
+  .env .item { display: grid; gap: 2px; min-width: 96px; }
+  .env .k { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--faint); font-weight: 700; }
+  .env .v { font-size: 12.5px; font-weight: 550; color: var(--ink-soft); }
+  .env .v.mono { font-size: 12px; }
+
+  main { padding: var(--s5) var(--s6) var(--s8); display: grid; gap: var(--s4); }
+  @media (max-width: 700px) { main, .top { padding-left: var(--s4); padding-right: var(--s4); } }
+  .view { display: grid; gap: var(--s4); }
+  .view[hidden] { display: none; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: var(--s4); align-items: start; }
+  @media (max-width: 1240px) { .cols { grid-template-columns: 1fr; } }
+  .cols-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: var(--s4); align-items: start; }
+
+  /* ---------- Card ---------- */
+  section.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow); overflow: hidden; }
+  .card > .head {
+    padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line-soft);
+    display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; background: var(--panel);
+  }
+  .card > .head h2 { font-size: 12.5px; font-weight: 650; letter-spacing: -0.005em; display: flex; align-items: center; gap: 7px; }
+  .card > .head h2 .icon { color: var(--faint); }
+  .card > .head .hint { font-size: 11.5px; color: var(--faint); }
+  .card > .body { padding: var(--s4); }
+  .card > .body.tight { padding: var(--s3) var(--s4); }
+  .card > .body.flush { padding: 0; }
+  .toolbar { padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line-soft); display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; background: var(--panel-alt); }
+
+  /* ---------- KPIs ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: var(--s3); }
+  .kpi {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+    padding: var(--s3) var(--s4); box-shadow: var(--shadow); display: grid; gap: 3px; align-content: start;
+  }
+  .kpi .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .kpi .v { font-size: 24px; font-weight: 650; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .kpi .v.small { font-size: 14.5px; font-weight: 600; padding-top: 5px; letter-spacing: -0.01em; }
+  .kpi .foot { font-size: 11.5px; color: var(--faint); }
+  .kpi .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .kpi.is-pass .v { color: var(--pass); } .kpi.is-fail .v { color: var(--fail); }
+  .kpi.is-warn .v { color: var(--warn); } .kpi.is-accent .v { color: var(--accent); }
+  .dot.pass { background: var(--pass); } .dot.fail { background: var(--fail); }
+  .dot.warn { background: var(--warn); } .dot.info { background: var(--info); }
+  .dot.idle { background: var(--faint); } .dot.accent { background: var(--accent); }
+
+  /* ---------- Bar: automation mix, drawn from real counts ---------- */
+  .mix { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--panel-sunk); }
+  .mix span { display: block; height: 100%; }
+  .mix .automated { background: var(--pass); }
+  .mix .generated { background: var(--info); }
+  .mix .review { background: var(--warn); }
+  .mix .none { background: #c6d0dc; }
+  .legend-row { display: flex; gap: var(--s4); flex-wrap: wrap; margin-top: var(--s3); }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-soft); }
+  .legend-item .sw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+  .legend-item .n { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  /* ---------- Forms ---------- */
+  label { font-size: 12px; color: var(--ink-soft); display: block; margin-bottom: 5px; font-weight: 550; }
+  label .opt { color: var(--faint); font-weight: 400; }
+  select, input[type=text], input[type=number], textarea {
+    font: inherit; font-size: 13px; padding: 7px 10px; border-radius: var(--r-sm); width: 100%;
+    border: 1px solid var(--line); background: #fff; color: var(--ink);
+  }
+  select { appearance: none; padding-right: 28px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%236a778a' stroke-width='1.6'%3E%3Cpath d='M4 6.5 8 10.5l4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center; background-size: 14px; }
+  textarea { resize: vertical; line-height: 1.5; }
+  select:hover, input:hover, textarea:hover { border-color: #bcc7d5; }
+  input::placeholder, textarea::placeholder { color: #a9b4c2; }
+  .toolbar select, .toolbar input { width: auto; }
+  label code, .note code { font-family: var(--mono); font-size: 11px; background: rgba(16,32,48,.06); padding: 1px 4px; border-radius: 4px; }
+  .field { display: grid; }
+  .search { position: relative; }
+  .search .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--faint); pointer-events: none; }
+  .search input { padding-left: 32px; }
+
+  .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--s3); }
+  .fieldset { margin-top: var(--s4); padding-top: var(--s4); border-top: 1px solid var(--line-soft); }
+  .legend { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: var(--s3); display: flex; align-items: center; gap: 6px; }
+  .legend .icon { color: var(--faint); }
+  .toggles { display: grid; gap: var(--s2); margin-top: var(--s3); }
+  .toggle { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; color: var(--ink); margin: 0; font-weight: 400; cursor: pointer; }
+  .toggle input { margin: 2px 0 0; width: auto; accent-color: var(--accent); flex: none; }
+  .toggle .sub { display: block; font-size: 11.5px; color: var(--faint); }
+  input[type=checkbox] { accent-color: var(--accent); }
+  input[type=file] { font-size: 12px; padding: 5px; width: auto; border: 1px dashed var(--line); border-radius: var(--r-sm); background: var(--panel-alt); }
+
+  /* ---------- Buttons ---------- */
+  button {
+    font: inherit; font-size: 13px; font-weight: 550; padding: 7px 13px; border-radius: var(--r-sm);
+    border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+  }
+  button:hover:not(:disabled) { border-color: #bcc7d5; background: var(--panel-alt); color: var(--ink); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover:not(:disabled) { background: var(--accent-deep); border-color: var(--accent-deep); color: #fff; }
+  button.danger { color: var(--fail); border-color: var(--fail-line); }
+  button.danger:hover:not(:disabled) { background: var(--fail-soft); border-color: var(--fail); color: var(--fail); }
+  button.ghost { border-color: transparent; background: none; }
+  button.ghost:hover:not(:disabled) { background: var(--panel-sunk); border-color: transparent; }
+  button.link { border: none; background: none; padding: 0; color: var(--accent); font-weight: 550; text-decoration: underline; }
+  button.sm { padding: 4px 9px; font-size: 12px; }
+  .btn-row { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
+
+  /* ---------- Badges: automation (outlined) vs execution (filled dot) ---------- */
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: var(--r-sm);
+    font-size: 11.5px; font-weight: 600; white-space: nowrap;
+    border: 1px solid var(--line); background: var(--panel-alt); color: var(--ink-soft);
+  }
+  .tag.automated { border-color: var(--pass-line); background: var(--pass-soft); color: var(--pass); }
+  .tag.generated { border-color: var(--info-line); background: var(--info-soft); color: var(--info); }
+  .tag.review    { border-color: var(--warn-line); background: var(--warn-soft); color: var(--warn); }
+  .tag.none      { border-color: var(--line); background: var(--panel-alt); color: var(--muted); }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 600; white-space: nowrap;
+    background: var(--panel-alt); color: var(--muted); border: 1px solid var(--line);
+  }
+  .pill .icon-sm { flex: none; }
+  .pill.pass { background: var(--pass-soft); color: var(--pass); border-color: var(--pass-line); }
+  .pill.fail { background: var(--fail-soft); color: var(--fail); border-color: var(--fail-line); }
+  .pill.skip { background: var(--panel-alt); color: var(--muted); border-color: var(--line); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); border-color: var(--warn-line); }
+  .pill.run  { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-line); }
+  .pill.idle { background: var(--panel-alt); color: var(--faint); border-color: var(--line); }
+
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 999px; background: var(--panel-alt); border: 1px solid var(--line); font-size: 11px; color: var(--muted); }
+  .chip.dd { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+  .chip.broken { background: var(--fail-soft); border-color: var(--fail-line); color: var(--fail); }
+  .prio { display: inline-block; font-size: 11.5px; font-weight: 650; font-variant-numeric: tabular-nums; padding: 1px 7px; border-radius: var(--r-sm); border: 1px solid var(--line); color: var(--muted); background: var(--panel-alt); }
+  .prio.p0 { color: var(--fail); border-color: var(--fail-line); background: var(--fail-soft); }
+  .prio.p1 { color: var(--warn); border-color: var(--warn-line); background: var(--warn-soft); }
+  .prio.p2 { color: var(--info); border-color: var(--info-line); background: var(--info-soft); }
+
+  /* Run state in the top bar */
+  .status { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; padding: 4px 12px; border-radius: 999px; background: var(--panel-alt); border: 1px solid var(--line); color: var(--muted); font-weight: 600; }
+  .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex: none; }
+  .status.running { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+  .status.running::before { background: var(--accent); animation: pulse 1.3s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .2; } }
+  .spin { animation: spin 1s linear infinite; transform-origin: 50% 50%; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .status.running::before, .spin { animation: none; } }
+
+  /* ---------- Tables ---------- */
+  .scroll { overflow: auto; }
+  .cases { max-height: 60vh; overflow: auto; }
+  .scroll-sm { max-height: 340px; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  th {
+    position: sticky; top: 0; background: var(--panel-alt); font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--muted); font-weight: 700; z-index: 1;
+    box-shadow: inset 0 -1px 0 var(--line); white-space: nowrap;
+  }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: var(--ink); }
+  th .arrow { opacity: 0; margin-left: 4px; }
+  th[aria-sort] .arrow { opacity: 1; color: var(--accent); }
+  tbody tr:hover { background: var(--panel-alt); }
+  tbody tr.row-click { cursor: pointer; }
+  td.id { font-family: var(--mono); font-size: 12px; white-space: nowrap; color: var(--ink); font-weight: 550; }
+  td.pick { width: 34px; }
+  .scenario { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+  .scenario .text { color: var(--ink); }
+  .sheet-row td { background: var(--panel-sunk); font-weight: 700; font-size: 10.5px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .06em; padding-top: 7px; padding-bottom: 7px; }
+  /* The sheet is the stronger level of the hierarchy, so it gets the weight and a
+     rule above it - not another card. Rows stay exactly as they were. */
+  .sheet-row td.sheet-label { cursor: pointer; user-select: none; }
+  .sheet-row td.sheet-label:hover { background: var(--panel-alt); color: var(--ink); }
+  .sheet-row td.sheet-label:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .sheet-row .chev { display: inline-block; width: 11px; color: var(--ink-soft); font-size: 9px; }
+  .sheet-row .sheet-name { color: var(--ink); letter-spacing: .04em; }
+  .sheet-row .sheet-counts { float: right; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--ink-soft); }
+  .sheet-row .sheet-counts b { color: var(--ink); font-weight: 700; }
+  .sheet-row.is-open td { border-bottom: 1px solid var(--line); }
+  tr.selected-run { background: var(--accent-soft) !important; box-shadow: inset 3px 0 0 var(--accent); }
+  .edit-link { font-size: 11.5px; cursor: pointer; background: none; border: none; padding: 0; color: var(--accent); text-decoration: underline; font-weight: 550; }
+  .row-actions { display: flex; gap: var(--s2); align-items: center; }
+  .ev { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; font-size: 12px; white-space: nowrap; }
+
+  /* Steps walkthrough, expanded under its case */
+  .steps-row td { background: var(--panel-alt); padding: 0 12px 12px; border-bottom: 1px solid var(--line); }
+  .steps-row:hover { background: var(--panel-alt); }
+  .steps-summary { cursor: pointer; font-size: 12px; color: var(--muted); padding: 8px 0; font-weight: 600; }
+  .steps-summary.bad { color: var(--fail); }
+  ol.steps { list-style: none; margin: 0 0 4px; padding: 0; display: grid; gap: var(--s2); }
+  .step { border: 1px solid var(--line); border-radius: var(--r-sm); background: #fff; padding: 9px 11px; }
+  .step-failed { border-color: var(--fail-line); background: var(--fail-soft); }
+  .step-head { display: flex; align-items: baseline; gap: 9px; }
+  .step-mark { font-weight: 700; color: var(--pass); flex: none; }
+  .step-failed .step-mark { color: var(--fail); }
+  .step-title { flex: 1; font-size: 13px; color: var(--ink); }
+  .step-time { font-size: 11px; font-variant-numeric: tabular-nums; flex: none; }
+  .step-error { margin-top: 6px; font-family: var(--mono); font-size: 11.5px; color: var(--fail); white-space: pre-wrap; word-break: break-word; }
+  .step-shot { display: block; margin-top: 8px; max-width: 320px; width: 100%; border: 1px solid var(--line); border-radius: var(--r-sm); }
+
+  /* ---------- Notes / inline messaging ---------- */
+  .note {
+    font-size: 12.5px; color: var(--warn); background: var(--warn-soft); border: 1px solid var(--warn-line);
+    border-left-width: 3px; border-radius: var(--r-sm); padding: 9px 11px; margin-top: var(--s3); display: none;
+  }
+  .note.show { display: block; }
+  .note.bad { color: var(--fail); background: var(--fail-soft); border-color: var(--fail-line); }
+  .note.ok { color: var(--pass); background: var(--pass-soft); border-color: var(--pass-line); }
+  .note.info { color: var(--ink-soft); background: var(--panel-alt); border-color: var(--line); }
+
+  /* ---------- Console ---------- */
+  pre.console {
+    margin: 0; padding: var(--s4); background: #101a26; color: #d7e2ef;
+    font-family: var(--mono); font-size: 12px; line-height: 1.55;
+    max-height: 340px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+  }
+  .empty { color: var(--muted); font-size: 13px; padding: var(--s6) var(--s4); text-align: center; }
+  .empty .icon { width: 22px; height: 22px; color: var(--faint); display: block; margin: 0 auto var(--s2); }
+  .empty .lead { color: var(--ink-soft); font-weight: 550; }
+  .skeleton { height: 11px; border-radius: 999px; background: linear-gradient(90deg, var(--panel-sunk), #e4eaf1, var(--panel-sunk)); background-size: 200% 100%; animation: sheen 1.3s linear infinite; }
+  @keyframes sheen { to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+  /* ---------- Generation progress ---------- */
+  .gen { display: grid; gap: var(--s4); }
+  .gen-top { display: flex; gap: var(--s5); flex-wrap: wrap; align-items: center; }
+  .gen-case { font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--ink); }
+  .stages { display: grid; gap: 1px; background: var(--line-soft); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+  .stage { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--panel); font-size: 12.5px; color: var(--faint); }
+  .stage .icon { color: var(--faint); }
+  .stage[data-state="done"] { color: var(--ink-soft); }
+  .stage[data-state="done"] .icon { color: var(--pass); }
+  .stage[data-state="active"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .stage[data-state="active"] .icon { color: var(--accent); }
+  .bar { height: 6px; border-radius: 999px; background: var(--panel-sunk); overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width .25s ease; }
+  @media (prefers-reduced-motion: reduce) { .bar > span { transition: none; } }
+
+  /* ---------- Detail drawer ---------- */
+  .scrim { position: fixed; inset: 0; background: rgba(16,32,48,.34); z-index: 40; }
+  .scrim[hidden] { display: none; }
+  .drawer {
+    position: fixed; top: 0; right: 0; height: 100vh; width: min(620px, 100vw);
+    background: var(--panel); border-left: 1px solid var(--line); box-shadow: var(--shadow-lift);
+    z-index: 41; display: flex; flex-direction: column;
+  }
+  .drawer[hidden] { display: none; }
+  .drawer-head { padding: var(--s4) var(--s5); border-bottom: 1px solid var(--line); display: flex; gap: var(--s3); align-items: flex-start; }
+  .drawer-head .id { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }
+  .drawer-head h2 { font-size: 16px; margin-top: 3px; }
+  .drawer-tabs { display: flex; gap: 2px; padding: 0 var(--s5); border-bottom: 1px solid var(--line); background: var(--panel); }
+  .drawer-tabs button {
+    border: none; background: none; border-radius: 0; padding: 10px 12px; color: var(--muted);
+    border-bottom: 2px solid transparent; font-size: 13px;
+  }
+  .drawer-tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 650; }
+  .drawer-body { padding: var(--s5); overflow: auto; flex: 1; display: grid; gap: var(--s5); align-content: start; }
+  .drawer-panel[hidden] { display: none; }
+  .kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 7px var(--s4); font-size: 13px; }
+  .kv dt { color: var(--muted); font-size: 12px; }
+  .kv dd { margin: 0; color: var(--ink); }
+  .block-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin-bottom: var(--s2); }
+  .block { background: var(--panel-alt); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: var(--s3); font-size: 13px; white-space: pre-wrap; word-break: break-word; }
+  .block.mono { font-family: var(--mono); font-size: 12px; }
+  ol.step-list { margin: 0; padding-left: 20px; display: grid; gap: 5px; font-size: 13px; }
+
+  /* ---------- Record Test ---------- */
+  .rec-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--fail); flex: none; animation: pulse 1.2s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .rec-dot { animation: none; } }
+  .rec-live { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--fail); }
+  .rec-stage { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }
+  .rec-counts { display: flex; gap: var(--s5); flex-wrap: wrap; }
+  .rec-counts .n { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .rec-counts .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+  td.step-no { width: 34px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .act { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: var(--r-sm); font-size: 11.5px;
+         font-weight: 650; background: var(--panel-alt); border: 1px solid var(--line); color: var(--ink-soft); text-transform: lowercase; }
+  .act.navigate { background: var(--info-soft); border-color: var(--info-line); color: var(--info); }
+  .act.fill { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+  .act.assert { background: var(--pass-soft); border-color: var(--pass-line); color: var(--pass); }
+  .redacted { font-family: var(--mono); font-size: 11.5px; color: var(--warn); background: var(--warn-soft);
+              border: 1px solid var(--line-soft); border-radius: 4px; padding: 0 5px; }
+  .mini { display: flex; gap: 3px; }
+  .mini button { padding: 2px 7px; font-size: 12px; line-height: 1.3; }
+  /* Origin, deliberately drawn unlike an automation tag or an execution pill:
+     where a case came from is a third, independent fact. */
+  .origin { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: var(--r-sm);
+            font-size: 11px; font-weight: 650; white-space: nowrap;
+            background: #f3ecfb; border: 1px solid #dcc8f0; color: #6b3fa0; }
+  .origin .icon-sm { width: 11px; height: 11px; }
+</style>
+</head>
+<body>
+
+<!-- Inline icon sprite. No dependency, no network request, and it means a status
+     never depends on colour alone. -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-grid" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></symbol>
+  <symbol id="i-list" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 2v3M8 11v3M2 8h3M11 8h3M4.2 4.2l2 2M9.8 9.8l2 2M11.8 4.2l-2 2M6.2 9.8l-2 2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.6c0-.5.5-.8 1-.5l6 3.9c.4.3.4.9 0 1.2l-6 3.9c-.5.3-1 0-1-.5V3.6Z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="4" width="8" height="8" rx="1.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 6.2 12 13 4.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h8"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 2.8 1.8 13.2h12.4L8 2.8Z"/><path d="M8 6.6v3M8 11.4h.01"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.4 1.6"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-4"/><path d="M13.6 2.6V6h-3.4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 3.5v9M3.5 8h9"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 1.8H4.4A1.4 1.4 0 0 0 3 3.2v9.6a1.4 1.4 0 0 0 1.4 1.4h7.2a1.4 1.4 0 0 0 1.4-1.4V5.8L9 1.8Z"/><path d="M9 2v4h4"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 3h4v4"/><path d="M13 3 7.5 8.5"/><path d="M11.5 9.5v3H3.5v-8h3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.2"/><path d="M10.2 10.2 14 14"/></symbol>
+  <symbol id="i-book" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.6 3.2v9.6c1.8-1 3.6-1 5.4 0 1.8-1 3.6-1 5.4 0V3.2c-1.8-1-3.6-1-5.4 0-1.8-1-3.6-1-5.4 0Z"/><path d="M8 3.2v9.6"/></symbol>
+  <symbol id="i-cog" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.6v1.8M8 12.6v1.8M2.1 8h1.8M12.1 8h1.8M3.8 3.8l1.3 1.3M10.9 10.9l1.3 1.3M12.2 3.8l-1.3 1.3M5.1 10.9l-1.3 1.3"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 5.6h2.2l1-1.6h5.6l1 1.6H14v7H2v-7Z"/><circle cx="8" cy="9" r="2.2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 1.8 3 3.4v4.2c0 3 2.1 5.6 5 6.6 2.9-1 5-3.6 5-6.6V3.4L8 1.8Z"/><path d="M5.8 8.1 7.4 9.7l3-3.2"/></symbol>
+  <symbol id="i-close" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9.5 4 3h8l2 6.5V13H2V9.5Z"/><path d="M2 9.5h3.2l.9 1.6h3.8l.9-1.6H14"/></symbol>
+  <symbol id="i-record" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2.6" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-up" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4-4 4 4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5 5 13h6l.5-8.5"/></symbol>
+</svg>
+
+<div class="app">
+  <!-- ---------------- Rail ---------------- -->
+  <nav class="rail" aria-label="Sections">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><svg class="icon"><use href="#i-spark"/></svg></div>
+      <div>
+        <div class="name">Moolya AURA</div>
+        <div class="org">Platform</div>
+      </div>
+    </div>
+
+    <div class="nav" role="tablist" aria-label="Dashboard sections">
+      <div class="nav-label" role="presentation">Workspace</div>
+      <button type="button" role="tab" id="tab-overview" aria-controls="view-overview" aria-selected="true" data-view="overview">
+        <svg class="icon"><use href="#i-grid"/></svg> Overview
+      </button>
+      <button type="button" role="tab" id="tab-cases" aria-controls="view-cases" aria-selected="false" data-view="cases">
+        <svg class="icon"><use href="#i-list"/></svg> Test Cases <span class="count" id="navCases">—</span>
+      </button>
+      <button type="button" role="tab" id="tab-generation" aria-controls="view-generation" aria-selected="false" data-view="generation">
+        <svg class="icon"><use href="#i-spark"/></svg> Generation <span class="count" id="navGen" hidden>live</span>
+      </button>
+      <button type="button" role="tab" id="tab-executions" aria-controls="view-executions" aria-selected="false" data-view="executions">
+        <svg class="icon"><use href="#i-play"/></svg> Executions <span class="count" id="navRuns">—</span>
+      </button>
+    </div>
+
+    <div class="rail-foot">
+      <div class="row"><span>Source of truth</span><b>Excel workbook</b></div>
+      <div class="row"><span>Engine</span><b>Playwright</b></div>
+      <div class="row"><span>API</span><b id="apiVersion">—</b></div>
+    </div>
+  </nav>
+
+  <!-- ---------------- Content ---------------- -->
+  <div>
+    <header class="top">
+      <div>
+        <h1>Moolya AURA</h1>
+        <div class="tagline">Intelligent Test Automation &amp; Quality Engineering</div>
+      </div>
+      <div class="grow"></div>
+      <div class="env">
+        <div class="item">
+          <label class="k" for="workbook">Workbook</label>
+          <select id="workbook" style="min-width:200px"></select>
+        </div>
+        <div class="item">
+          <span class="k">Browser</span>
+          <span class="v" id="envBrowser">—</span>
+        </div>
+        <div class="item">
+          <span class="k">Test cases</span>
+          <span class="v mono" id="envCases">—</span>
+        </div>
+        <div class="item">
+          <span class="k">Last updated</span>
+          <span class="v" id="envUpdated">—</span>
+        </div>
+        <div class="item">
+          <span class="k">Status</span>
+          <span id="runState" class="status" role="status" aria-live="polite">Idle</span>
+        </div>
+      </div>
+    </header>
+
+    <div id="uploadNote" class="note" style="margin:var(--s4) var(--s6) 0"></div>
+
+    <main>
+      <!-- ============ OVERVIEW ============ -->
+      <div class="view" id="view-overview" role="tabpanel" aria-labelledby="tab-overview">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="k">Total test cases</div>
+            <div class="v" id="statTotal">—</div>
+            <div class="foot" id="kpiSheets">from the workbook</div>
+          </div>
+          <div class="kpi is-pass">
+            <div class="k"><span class="dot pass"></span>Automated</div>
+            <div class="v" id="kpiAutomated">—</div>
+            <div class="foot">earned by a green run</div>
+          </div>
+          <div class="kpi">
+            <div class="k"><span class="dot info"></span>Generated</div>
+            <div class="v" id="kpiGenerated">—</div>
+            <div class="foot">passed the quality gate</div>
+          </div>
+          <div class="kpi">
+            <div class="k"><span class="dot idle"></span>Not automated</div>
+            <div class="v" id="kpiNotAutomated">—</div>
+            <div class="foot">no test behind them yet</div>
+          </div>
+          <div class="kpi is-warn">
+            <div class="k"><span class="dot warn"></span>Needs review</div>
+            <div class="v" id="kpiReview">—</div>
+            <div class="foot">flagged, not guessed</div>
+          </div>
+          <div class="kpi is-pass">
+            <div class="k"><span class="dot pass"></span>Passed</div>
+            <div class="v" id="kpiPassed">—</div>
+            <div class="foot">last execution</div>
+          </div>
+          <div class="kpi is-fail">
+            <div class="k"><span class="dot fail"></span>Failed</div>
+            <div class="v" id="kpiFailed">—</div>
+            <div class="foot">last execution</div>
+          </div>
+          <div class="kpi">
+            <div class="k">Runnable now</div>
+            <div class="v" id="statRunnable">—</div>
+            <div class="foot">spec or data-driven row</div>
+          </div>
+        </div>
+
+        <div class="cols">
+          <section class="card">
+            <div class="head">
+              <h2><svg class="icon"><use href="#i-shield"/></svg> Automation coverage</h2>
+              <div class="grow"></div>
+              <span class="hint" id="coverageHint"></span>
+            </div>
+            <div class="body">
+              <div class="mix" id="mixBar" role="img" aria-label="Automation status distribution">
+                <span class="automated" style="width:0"></span>
+                <span class="generated" style="width:0"></span>
+                <span class="review" style="width:0"></span>
+                <span class="none" style="width:0"></span>
+              </div>
+              <div class="legend-row" id="mixLegend"></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="head">
+              <h2><svg class="icon"><use href="#i-clock"/></svg> Last execution</h2>
+              <div class="grow"></div>
+              <button class="sm ghost" id="goExecutions" type="button">View all <svg class="icon-sm"><use href="#i-ext"/></svg></button>
+            </div>
+            <div class="body">
+              <div class="kpi" style="border:none; box-shadow:none; padding:0">
+                <div class="k">Result</div>
+                <div class="v small" id="statLast">none yet</div>
+                <div class="foot" id="lastRunMeta"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="card">
+          <div class="head">
+            <h2><svg class="icon"><use href="#i-play"/></svg> Recent executions</h2>
+            <div class="grow"></div>
+            <span class="hint">Newest first</span>
+          </div>
+          <div class="body flush scroll">
+            <table>
+              <thead><tr>
+                <th scope="col">Run</th><th scope="col">Started</th><th scope="col">Result</th>
+                <th scope="col" class="num">Duration</th><th scope="col">Report</th>
+              </tr></thead>
+              <tbody id="recentRows"><tr><td colspan="5" class="empty">No executions recorded yet.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- ============ TEST CASES ============ -->
+      <div class="view" id="view-cases" role="tabpanel" aria-labelledby="tab-cases" hidden>
+        <div class="cols">
+          <section class="card">
+            <div class="head">
+              <h2><svg class="icon"><use href="#i-list"/></svg> Test case workspace</h2>
+              <div class="grow"></div>
+              <span class="hint" id="casesShown"></span>
+            </div>
+
+            <div class="toolbar">
+              <div class="search" style="flex:1; min-width:210px">
+                <svg class="icon"><use href="#i-search"/></svg>
+                <input id="search" type="text" placeholder="Search ID, scenario, module or tag…" aria-label="Search test cases">
+              </div>
+              <select id="sheetFilter" aria-label="Filter by worksheet"><option value="">All sheets</option></select>
+              <select id="priorityFilter" aria-label="Filter by priority">
+                <option value="">Any priority</option>
+                <option>P0</option><option>P1</option><option>P2</option><option>P3</option>
+              </select>
+              <select id="runFilter" aria-label="Filter by the workbook's Run column" title="The workbook's Run column">
+                <option value="">Run: all</option>
+                <option value="yes">Run = Yes</option>
+                <option value="no">Run = No</option>
+                <option value="unset">Run: blank</option>
+              </select>
+              <select id="statusFilter" aria-label="Filter by automation status">
+                <option value="">Any status</option>
+                <option value="Automated">Automated</option>
+                <option value="Generated">Generated</option>
+                <option value="Not Automated">Not automated</option>
+                <option value="Needs Review">Needs review</option>
+              </select>
+              <button id="selNone" type="button" class="sm">Clear selection</button>
+            </div>
+
+            <div class="cases">
+              <table>
+                <thead><tr>
+                  <th scope="col" class="pick"><input type="checkbox" id="selMaster" aria-label="Select every runnable test case shown"></th>
+                  <th scope="col" class="sortable" data-sort="testCaseId">ID<span class="arrow" aria-hidden="true">↓</span></th>
+                  <th scope="col" class="sortable" data-sort="scenario">Scenario<span class="arrow" aria-hidden="true">↓</span></th>
+                  <th scope="col" class="sortable" data-sort="module">Module<span class="arrow" aria-hidden="true">↓</span></th>
+                  <th scope="col" class="sortable" data-sort="priority">Pri<span class="arrow" aria-hidden="true">↓</span></th>
+                  <th scope="col">Run</th>
+                  <th scope="col" class="sortable" data-sort="automationStatus">Automation<span class="arrow" aria-hidden="true">↓</span></th>
+                  <th scope="col">Execution</th>
+                  <th scope="col">Actions</th>
+                </tr></thead>
+                <tbody id="caseRows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <div style="display:grid; gap:var(--s4)">
+            <section class="card">
+              <div class="head">
+                <h2><svg class="icon"><use href="#i-play"/></svg> Run configuration</h2>
+                <div class="grow"></div>
+                <span class="hint" id="statSelectedHint">0 selected</span>
+              </div>
+              <div class="body">
+                <div class="legend"><svg class="icon-sm"><use href="#i-list"/></svg> What to run</div>
+                <div class="kpi" style="border:none; box-shadow:none; padding:0 0 var(--s3)">
+                  <div class="v" id="statSelected">0</div>
+                  <div class="foot">test case(s) selected in the table</div>
+                </div>
+
+                <div class="fieldset">
+                  <div class="legend"><svg class="icon-sm"><use href="#i-cog"/></svg> How to run</div>
+                  <div class="controls">
+                    <div class="field">
+                      <label for="browser">Browser</label>
+                      <select id="browser">
+                        <option value="chromium">Chromium</option>
+                        <option value="firefox">Firefox</option>
+                        <option value="webkit">WebKit</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="workers">Parallel workers</label>
+                      <input id="workers" type="number" min="1" max="8" value="1">
+                    </div>
+                  </div>
+                  <div id="workersNote" class="note">
+                    my.bugasura.io returns ERR_EMPTY_RESPONSE when several browsers navigate to it at once
+                    from one host. More than one worker is expected to produce spurious failures.
+                  </div>
+                  <div id="browserNote" class="note">
+                    Firefox and WebKit need installing once:
+                    <code>npx playwright install firefox webkit</code> — otherwise the run fails immediately.
+                  </div>
+                </div>
+
+                <div class="fieldset">
+                  <div class="legend"><svg class="icon-sm"><use href="#i-camera"/></svg> Evidence to capture</div>
+                  <div class="controls">
+                    <div class="field">
+                      <label for="screenshot">Screenshot</label>
+                      <select id="screenshot">
+                        <option value="only-on-failure" selected>On failure</option>
+                        <option value="on">Always</option>
+                        <option value="off">Never</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="video">Video</label>
+                      <select id="video">
+                        <option value="retain-on-failure" selected>On failure</option>
+                        <option value="on">Always</option>
+                        <option value="off">Never</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="trace">Trace</label>
+                      <select id="trace">
+                        <option value="retain-on-failure" selected>On failure</option>
+                        <option value="on">Always</option>
+                        <option value="off">Never</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div id="captureNote" class="note">
+                    Recording everything on every test is slow and large. Worth it while debugging a
+                    specific case; not worth it across a whole suite.
+                  </div>
+                </div>
+
+                <div class="toggles">
+                  <label class="toggle"><input type="checkbox" id="headed">
+                    <span>Headed<span class="sub">Watch the browser as it runs</span></span></label>
+                  <label class="toggle"><input type="checkbox" id="inPlace">
+                    <span>Write results into the workbook<span class="sub">After a timestamped backup</span></span></label>
+                </div>
+                <div id="inPlaceNote" class="note">
+                  Results will be written into the source workbook, after a timestamped backup.
+                  Close it in Excel first — an open file is locked.
+                </div>
+
+                <div class="btn-row" style="margin-top:var(--s4)">
+                  <button id="run" class="primary" type="button"><svg class="icon-sm"><use href="#i-play"/></svg> Run selected</button>
+                  <button id="stop" class="danger" type="button" disabled><svg class="icon-sm"><use href="#i-stop"/></svg> Stop</button>
+                </div>
+                <div id="error" class="note bad"></div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="head">
+                <h2><svg class="icon"><use href="#i-doc"/></svg> Workbook</h2>
+              </div>
+              <div class="body tight">
+                <label for="upload">Import another workbook <span class="opt">(optional)</span></label>
+                <input type="file" id="upload" accept=".xlsx">
+                <div class="hint" style="margin-top:var(--s2); color:var(--faint); font-size:11.5px">
+                  The workbook stays the source of truth. Nothing here writes test case content anywhere else.
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <!-- ============ RECORD TEST (optional second way in) ============ -->
+        <section class="card" id="recordPanel">
+          <div class="head">
+            <h2><svg class="icon"><use href="#i-record"/></svg> Record a test</h2>
+            <span class="chip" id="recordMode">not recording</span>
+            <div class="grow"></div>
+            <span class="hint">Optional — the workbook and the Add form work exactly as before</span>
+          </div>
+
+          <!-- Stage 1: set up -->
+          <div class="body" id="recSetup">
+            <div class="controls">
+              <div class="field">
+                <label for="recUrl">Start URL</label>
+                <input type="text" id="recUrl" placeholder="https://my.bugasura.io/" value="https://my.bugasura.io/">
+              </div>
+              <div class="field">
+                <label for="recBrowser">Browser</label>
+                <select id="recBrowser">
+                  <option value="chromium">Chromium</option>
+                  <option value="firefox">Firefox</option>
+                  <option value="webkit">WebKit</option>
+                </select>
+              </div>
+            </div>
+            <div class="note info show">
+              A browser opens. Do what the test should do. To record a state or content assertion,
+              click the <strong>Assert</strong> pill in the recorder overlay — bottom right of the page
+              itself — then select the element you mean. It reads what is true of that element right
+              now and offers only the assertions it can support. Close the browser or press Stop when
+              you are done. Nothing is saved until you review it. <strong>Passwords are never captured</strong> —
+              a sensitive field is stored as <code>[type=password]</code>.
+            </div>
+            <div class="btn-row" style="margin-top:var(--s4)">
+              <button id="recStart" class="primary" type="button"><svg class="icon-sm"><use href="#i-record"/></svg> Start recording</button>
+            </div>
+            <div id="recError" class="note bad"></div>
+          </div>
+
+          <!-- Stage 2: recording -->
+          <div class="body" id="recLive" hidden>
+            <div class="rec-stage">
+              <span class="rec-live"><span class="rec-dot"></span> Recording</span>
+              <span class="muted" id="recElapsed">0:00</span>
+              <div class="grow"></div>
+              <button id="recStop" class="danger" type="button"><svg class="icon-sm"><use href="#i-stop"/></svg> Stop recording</button>
+            </div>
+            <div class="note info show" id="recLiveNote">
+              The browser is open. Actions are counted when you stop — Playwright writes them as you go.
+            </div>
+          </div>
+
+          <!-- Stage 3: review -->
+          <div class="body" id="recReview" hidden>
+            <div class="rec-counts" style="margin-bottom:var(--s4)">
+              <div><div class="k">Actions captured</div><div class="n" id="recActionCount">0</div></div>
+              <div><div class="k">Assertions</div><div class="n" id="recAssertCount">0</div></div>
+              <div><div class="k">Redacted values</div><div class="n" id="recRedacted">0</div></div>
+              <div><div class="k">Duration</div><div class="n" id="recDuration">—</div></div>
+              <div><div class="k">AI calls</div><div class="n" id="recAiCalls">0</div></div>
+            </div>
+
+            <!-- Visibility is the `show` class, never the `hidden` property: `.note` sets
+                 `display` in this stylesheet, and an author `display` rule beats the user
+                 agent's `[hidden] { display: none }` however the property is set. This note
+                 and `recNeedsConfirm` were both stuck on screen because of it. -->
+            <div id="recAuthNote" class="note info">
+              <strong>Authentication detected</strong> — <span id="recAuthEvidence"></span>.
+              <div style="margin-top:6px">
+                Email <span class="faint">→</span> <strong>environment credential</strong><br>
+                Password <span class="faint">→</span> <strong>environment credential</strong>,
+                written to Test Data as <code>&lt;valid-password&gt;</code>
+              </div>
+              <div style="margin-top:6px">
+                The password was <strong>never captured</strong>; the step below shows
+                <code>[type=password]</code> to say so. The generated test signs in through this
+                project's existing fixtures, which read <code>.env</code> at run time — nobody will
+                be asked for a password again.
+              </div>
+            </div>
+            <div id="recLocators" class="hint" style="margin-bottom:var(--s4)"></div>
+
+            <div class="legend"><svg class="icon-sm"><use href="#i-doc"/></svg> Test case information</div>
+            <div class="controls">
+              <div class="field">
+                <label for="recSheet">Worksheet</label>
+                <select id="recSheet"></select>
+              </div>
+              <div class="field">
+                <label for="recId">Test Case ID <span class="opt" id="recIdBasis"></span></label>
+                <input type="text" id="recId" placeholder="auto">
+              </div>
+              <div class="field">
+                <label for="recModule">Module</label>
+                <input type="text" id="recModule" placeholder="Login" list="moduleList">
+              </div>
+              <div class="field">
+                <label for="recFeature">Feature</label>
+                <input type="text" id="recFeature" placeholder="Authentication">
+              </div>
+              <div class="field">
+                <label for="recPriority">Priority</label>
+                <select id="recPriority"><option value=""></option><option>P0</option><option>P1</option><option>P2</option><option>P3</option></select>
+              </div>
+              <div class="field">
+                <label for="recTags">Tags</label>
+                <input type="text" id="recTags" placeholder="recorded">
+              </div>
+            </div>
+            <div class="field" style="margin-top:var(--s3)">
+              <label for="recScenario">Scenario <span class="opt">— derived from the recording, edit freely</span></label>
+              <input type="text" id="recScenario">
+            </div>
+
+            <div class="fieldset">
+              <div class="legend"><svg class="icon-sm"><use href="#i-list"/></svg> Recorded steps</div>
+              <div class="scroll-sm" style="border:1px solid var(--line); border-radius:var(--r-sm)">
+                <table>
+                  <thead><tr>
+                    <th scope="col" class="step-no">#</th><th scope="col">Action</th>
+                    <th scope="col">Target</th><th scope="col">Value</th><th scope="col">Reorder</th>
+                  </tr></thead>
+                  <tbody id="recSteps"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="fieldset">
+              <div class="legend"><svg class="icon-sm"><use href="#i-shield"/></svg> Assertions</div>
+              <div class="scroll-sm" style="border:1px solid var(--line); border-radius:var(--r-sm)">
+                <table>
+                  <thead><tr>
+                    <th scope="col">Type</th><th scope="col">Target</th><th scope="col">Expected</th><th scope="col"></th>
+                  </tr></thead>
+                  <tbody id="recAsserts"></tbody>
+                </table>
+              </div>
+              <div class="controls" style="margin-top:var(--s3)">
+                <div class="field">
+                  <label for="recNewAssertType">Add assertion</label>
+                  <select id="recNewAssertType">
+                    <option value="visible">is visible</option>
+                    <option value="hidden">is not visible</option>
+                    <option value="text">reads exactly</option>
+                    <option value="contains">contains</option>
+                    <option value="value">holds the value</option>
+                    <option value="checked">is ticked</option>
+                    <option value="url">the URL is</option>
+                    <option value="title">the page title is</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="recNewAssertTarget">Target</label>
+                  <input type="text" id="recNewAssertTarget" placeholder="All Projects">
+                </div>
+                <div class="field">
+                  <label for="recNewAssertValue">Expected value <span class="opt">— if the type needs one</span></label>
+                  <input type="text" id="recNewAssertValue" placeholder="">
+                </div>
+                <div class="field" style="align-self:end">
+                  <button id="recAddAssert" type="button"><svg class="icon-sm"><use href="#i-plus"/></svg> Add</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="fieldset">
+              <div class="legend"><svg class="icon-sm"><use href="#i-check"/></svg> Expected result</div>
+              <textarea id="recExpected" rows="2"></textarea>
+              <!-- No `show`, no `hidden`: `syncExpected` toggles the class. See recAuthNote. -->
+              <div id="recNeedsConfirm" class="note">
+                Nothing was asserted during this recording, so the expected result is
+                <strong>“Needs confirmation”</strong>. Nothing has been invented from the actions.
+                Write what should be true, or record again and use the <strong>Assert</strong> pill in
+                the recorder overlay to say it as you go — the case saves either way and stays
+                <strong>Not Automated</strong> until it is generated and passes.
+              </div>
+            </div>
+
+            <div id="recSaveError" class="note bad"></div>
+            <div id="recSaveOk" class="note ok" style="display:none"></div>
+
+            <div class="btn-row" style="margin-top:var(--s4)">
+              <button id="recSave" class="primary" type="button">Save test case</button>
+              <button id="recSaveRun" type="button" title="Save, let the existing generator write a spec, and run it only if the quality gate accepts">Save, generate &amp; run</button>
+              <button id="recCancel" type="button">Discard recording</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Add / edit -->
+        <section class="card" id="authorPanel">
+          <div class="head">
+            <h2><svg class="icon"><use href="#i-plus"/></svg> Add or edit a test case</h2>
+            <span class="chip" id="authorMode">new case</span>
+            <div class="grow"></div>
+            <span class="hint">Written straight into the workbook, after a backup</span>
+          </div>
+          <div class="body">
+            <div class="legend"><svg class="icon-sm"><use href="#i-doc"/></svg> Test information</div>
+            <div class="controls">
+              <div class="field">
+                <label for="fSheet">Worksheet</label>
+                <select id="fSheet"></select>
+                <input type="text" id="fNewSheet" placeholder="New sheet name" aria-label="New worksheet name" style="display:none; margin-top:6px">
+              </div>
+              <div class="field">
+                <label for="fId">Test Case ID <span class="opt" id="fIdBasis"></span></label>
+                <input type="text" id="fId" placeholder="auto">
+              </div>
+              <div class="field">
+                <label for="fModule">Module</label>
+                <input type="text" id="fModule" placeholder="Login" list="moduleList">
+                <datalist id="moduleList"></datalist>
+              </div>
+              <div class="field">
+                <label for="fFeature">Feature</label>
+                <input type="text" id="fFeature" placeholder="Validation">
+              </div>
+              <div class="field">
+                <label for="fPriority">Priority</label>
+                <select id="fPriority"><option value=""></option><option>P0</option><option>P1</option><option>P2</option><option>P3</option></select>
+              </div>
+              <div class="field">
+                <label for="fType">Test Type</label>
+                <select id="fType">
+                  <option value=""></option>
+                  <option>Functional</option>
+                  <option>Regression</option>
+                  <option>Smoke</option>
+                  <option>Sanity</option>
+                  <option>Negative</option>
+                  <option>Integration</option>
+                  <option>End-to-End</option>
+                  <option>Accessibility</option>
+                  <option>Visual</option>
+                  <option>Security</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="fRisk">Business Risk <span class="opt">— what it costs, not when it runs</span></label>
+                <select id="fRisk">
+                  <option value=""></option>
+                  <option>Critical</option>
+                  <option>High</option>
+                  <option>Medium</option>
+                  <option>Low</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="fRequirement">Requirement ID <span class="opt">— optional</span></label>
+                <input type="text" id="fRequirement" placeholder="PROJ-1234">
+              </div>
+              <div class="field">
+                <label for="fOwner">Test Owner <span class="opt">— optional</span></label>
+                <input type="text" id="fOwner" placeholder="QA">
+              </div>
+              <div class="field">
+                <label for="fTags">Tags</label>
+                <input type="text" id="fTags" placeholder="negative, validation">
+              </div>
+            </div>
+
+            <div class="fieldset">
+              <div class="legend"><svg class="icon-sm"><use href="#i-shield"/></svg> Execution context</div>
+              <div class="controls">
+                <div class="field">
+                  <label for="fEnvironment">Environment <span class="opt">— a profile name, not a URL</span></label>
+                  <input type="text" id="fEnvironment" placeholder="QA" list="environmentList">
+                  <datalist id="environmentList">
+                    <option>QA</option><option>TEST3</option><option>PROD</option>
+                  </datalist>
+                </div>
+                <div class="field">
+                  <label for="fRole">User Role <span class="opt">— who the test acts as</span></label>
+                  <input type="text" id="fRole" placeholder="Project User" list="roleList">
+                  <datalist id="roleList">
+                    <option>Project Admin</option><option>Project User</option>
+                    <option>Read Only User</option><option>QA Analyst</option>
+                  </datalist>
+                </div>
+                <div class="field">
+                  <label for="fAuthProfile">Authentication Profile <span class="opt">— a NAME, never an account</span></label>
+                  <input type="text" id="fAuthProfile" placeholder="BUGASURA_QA_USER" list="authProfileList">
+                  <datalist id="authProfileList">
+                    <option>BUGASURA_QA_USER</option><option>BUGASURA_ADMIN</option>
+                    <option>BUGASURA_READ_ONLY</option>
+                  </datalist>
+                </div>
+              </div>
+              <div class="note info show">
+                The profile names an account; its address and password stay in the environment and
+                never reach this workbook, the test, the report or the generator's prompt.
+              </div>
+            </div>
+
+            <div class="fieldset">
+              <div class="legend"><svg class="icon-sm"><use href="#i-list"/></svg> Preconditions</div>
+              <div class="field">
+                <label for="fPreconditions">Preconditions <span class="opt">— one per line, what must already be true</span></label>
+                <textarea id="fPreconditions" rows="3" placeholder="User has access to Faclon Labs&#10;At least one issue exists"></textarea>
+              </div>
+            </div>
+
+            <div class="fieldset">
+              <div class="legend"><svg class="icon-sm"><use href="#i-list"/></svg> Test steps</div>
+              <div class="field">
+                <label for="fScenario">Title / Scenario <span class="opt">— becomes the test title after the ID</span></label>
+                <input type="text" id="fScenario" placeholder="Verify user can filter project issues by status">
+              </div>
+              <div class="field" style="margin-top:var(--s3)">
+                <label for="fDescription">Description <span class="opt">— the business intent, optional</span></label>
+                <textarea id="fDescription" rows="2" placeholder="Verify project users can search issues and filter them by status."></textarea>
+              </div>
+              <div class="controls" style="margin-top:var(--s3)">
+                <div class="field">
+                  <label for="fSteps">Steps <span class="opt">— for people to read</span></label>
+                  <textarea id="fSteps" rows="5" placeholder="Open the Bugasura login page&#10;Enter the email address for this case&#10;Enter the password for this case&#10;Click Sign In"></textarea>
+                </div>
+                <div class="field">
+                  <label for="fData">Test Data <span class="opt">— one <code>name = value</code> per line</span></label>
+                  <textarea id="fData" rows="5" placeholder="email = &lt;blank&gt;&#10;password = &lt;invalid-password&gt;"></textarea>
+                </div>
+                <div class="field">
+                  <label for="fExpected">Expected Result <span class="opt">— the sentence a human checks</span></label>
+                  <textarea id="fExpected" rows="5" placeholder="The form refuses the submission and the user stays on the sign-in page"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="fieldset">
+              <div class="legend"><svg class="icon-sm"><use href="#i-shield"/></svg> What the runner asserts</div>
+              <div class="controls">
+                <div class="field">
+                  <label for="fOutcome">Assert Outcome</label>
+                  <select id="fOutcome">
+                    <option value="">None — the assertion goes in a spec (one gets written)</option>
+                    <option value="Blocked">Blocked — refused client-side, no message</option>
+                    <option value="Error">Error — the app rejected it and said so</option>
+                    <option value="Signed In">Signed In — it succeeded</option>
+                    <option value="Visible">Visible — it succeeded AND the expected items are there</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="fMessage">Assert Message <span class="opt">— only with Error</span></label>
+                  <input type="text" id="fMessage" placeholder="/does not exist/i">
+                </div>
+                <div class="field">
+                  <label for="fRun">Run column</label>
+                  <select id="fRun"><option value="yes">Yes</option><option value="no">No</option></select>
+                </div>
+              </div>
+              <div class="note info show" id="sysInfoBox" style="display:none">
+                <strong>System information</strong> — maintained by the framework, never typed here.
+                <div id="sysInfo" style="margin-top:6px"></div>
+              </div>
+              <div class="note info show">
+                Values are named, never typed in: <code>&lt;blank&gt;</code>
+                <code>&lt;registered-email&gt;</code> <code>&lt;valid-password&gt;</code>
+                <code>&lt;invalid-password&gt;</code> <code>&lt;email:250&gt;</code> <code>&lt;chars:300&gt;</code>
+                — resolved from <code>.env</code> when the test runs, so no password ever reaches the spreadsheet.
+                <br><br>
+                <code>url</code> <code>scope</code> <code>submit</code> configure the run rather than
+                filling a field; <code>expect = A, B, C</code> lists what must be on the page when
+                Assert Outcome is <strong>Visible</strong>.
+              </div>
+            </div>
+
+            <div id="authorError" class="note bad"></div>
+            <div id="authorOk" class="note ok show" style="display:none"></div>
+
+            <div class="btn-row" style="margin-top:var(--s4)">
+              <button id="authorSave" class="primary" type="button">Save to workbook</button>
+              <button id="authorReset" type="button">Clear form</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ============ GENERATION ============ -->
+      <div class="view" id="view-generation" role="tabpanel" aria-labelledby="tab-generation" hidden>
+        <section class="card" id="autocodePanel">
+          <div class="head">
+            <h2><svg class="icon"><use href="#i-spark"/></svg> AI test generation</h2>
+            <div class="grow"></div>
+            <span id="autocodeState" class="hint"></span>
+            <button id="autocodeStop" type="button"><svg class="icon-sm"><use href="#i-stop"/></svg> Stop</button>
+          </div>
+
+          <div class="body gen" id="genLive" hidden>
+            <div class="gen-top">
+              <div>
+                <div class="block-label">Current test case</div>
+                <div class="gen-case" id="genCase">—</div>
+              </div>
+              <div>
+                <div class="block-label">Elapsed</div>
+                <div class="gen-case" id="genElapsed">0:00</div>
+              </div>
+              <div class="grow" style="min-width:180px">
+                <div class="block-label" id="genProgressLabel">Progress</div>
+                <div class="bar"><span id="genBar" style="width:0"></span></div>
+              </div>
+            </div>
+            <div class="stages" id="genStages"></div>
+          </div>
+
+          <div class="body" id="genIdle">
+            <div class="empty">
+              <svg class="icon"><use href="#i-spark"/></svg>
+              <div class="lead">No generation running</div>
+              Saving a test case that needs code starts the generator automatically.
+            </div>
+          </div>
+
+          <div class="body tight">
+            <div class="note info show">
+              A case that cannot run as a data-driven row gets a spec written for it. Every generated spec
+              is run twice — once as written, and once with its assertions deliberately broken — and is
+              kept only if it passes the first and <strong>fails</strong> the second. One that passes both
+              ways is checking nothing, and goes to <code>ai/autocode/quarantine/</code> instead of your
+              suite. Nothing is committed and nothing is marked Automated.
+            </div>
+          </div>
+          <pre id="autocodeConsole" class="console"></pre>
+        </section>
+
+        <!-- Generation history. Five rows, and only ever five: a sixth generation
+             evicts the oldest on the server, on the write path. This lives inside the
+             Generation panel rather than behind a fifth top-level tab - setView() is
+             not validated, so an unknown view name blanks the page. -->
+        <section class="card">
+          <div class="head">
+            <h2><svg class="icon"><use href="#i-clock"/></svg> Generation history</h2>
+            <span id="genHistoryLimit" class="chip">latest 5</span>
+            <div class="grow"></div>
+            <button id="refreshGenerations" type="button" class="sm"><svg class="icon-sm"><use href="#i-refresh"/></svg> Refresh</button>
+          </div>
+          <div class="body flush scroll-sm">
+            <table>
+              <thead><tr>
+                <th scope="col">When</th><th scope="col">Test cases</th><th scope="col">Scenario</th>
+                <th scope="col">Status</th><th scope="col" class="num">Elements</th><th scope="col">Actions</th>
+              </tr></thead>
+              <tbody id="genRows"><tr><td colspan="6" class="empty">No generations recorded yet.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card" id="genDetailCard" hidden>
+          <div class="head">
+            <h2><svg class="icon"><use href="#i-doc"/></svg> Generation detail</h2>
+            <span id="genDetailId" class="chip"></span>
+            <div class="grow"></div>
+            <button id="genDetailClose" type="button" class="sm">Close</button>
+          </div>
+          <div class="body" id="genDetailMeta"></div>
+          <div class="body tight">
+            <div class="block-label">Test cases</div>
+          </div>
+          <div class="body flush scroll-sm">
+            <table>
+              <thead><tr>
+                <th scope="col">Test case</th><th scope="col">Scenario</th>
+                <th scope="col">Status</th><th scope="col">Why</th>
+              </tr></thead>
+              <tbody id="genCaseRows"><tr><td colspan="4" class="empty">This generation reported on no test case.</td></tr></tbody>
+            </table>
+          </div>
+          <div class="body tight">
+            <div class="block-label">Page Object decisions</div>
+            <div class="note info show">
+              One row per element that needed a Page Object, read from
+              <code>ai/reports/page-object-lifecycle.jsonl</code> when the run finished and kept with
+              this record. <strong>Nobody looked</strong> is not one of the values a decision can take:
+              an element that was refused says which refusal codes refused it and what would change the
+              answer.
+            </div>
+          </div>
+          <div class="body flush scroll-sm">
+            <table>
+              <thead><tr>
+                <th scope="col">Test case</th><th scope="col">Element</th><th scope="col">Decision</th>
+                <th scope="col">Page Object</th><th scope="col">Evidence</th><th scope="col">Why</th>
+              </tr></thead>
+              <tbody id="genLifecycleRows"><tr><td colspan="6" class="empty">No Page Object decisions recorded for this generation.</td></tr></tbody>
+            </table>
+          </div>
+          <pre id="genDetailLog" class="console"></pre>
+        </section>
+      </div>
+
+      <!-- ============ EXECUTIONS ============ -->
+      <div class="view" id="view-executions" role="tabpanel" aria-labelledby="tab-executions" hidden>
+        <section class="card">
+          <div class="head">
+            <h2><svg class="icon"><use href="#i-check"/></svg> Execution results</h2>
+            <span id="resultsFor" class="chip"></span>
+            <div class="grow"></div>
+            <a id="reportLink" href="#" target="_blank" rel="noopener" style="display:none">
+              Playwright report <svg class="icon-sm"><use href="#i-ext"/></svg></a>
+          </div>
+          <div class="body flush scroll-sm">
+            <table>
+              <thead><tr>
+                <th scope="col">Test case</th><th scope="col">Status</th>
+                <th scope="col" class="num">Duration</th><th scope="col">Evidence</th><th scope="col">Why it failed</th>
+              </tr></thead>
+              <tbody id="resultRows"><tr><td colspan="5" class="empty">No results yet.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="head">
+            <h2><svg class="icon"><use href="#i-clock"/></svg> Execution history</h2>
+            <div class="grow"></div>
+            <button id="refreshRuns" type="button" class="sm"><svg class="icon-sm"><use href="#i-refresh"/></svg> Refresh</button>
+          </div>
+          <div class="body flush scroll">
+            <table>
+              <thead><tr>
+                <th scope="col">Run</th><th scope="col">Started</th><th scope="col">Configuration</th>
+                <th scope="col" class="num">Total</th><th scope="col" class="num">Passed</th>
+                <th scope="col" class="num">Failed</th><th scope="col" class="num">Skipped</th>
+                <th scope="col" class="num">Duration</th><th scope="col">Actions</th>
+              </tr></thead>
+              <tbody id="runRows"><tr><td colspan="9" class="empty">No past executions yet.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="head">
+            <h2><svg class="icon"><use href="#i-doc"/></svg> Output</h2>
+            <div class="grow"></div>
+            <span id="runSummary" class="hint"></span>
+          </div>
+          <pre id="console" class="console">Nothing has run yet.</pre>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ---------------- Test case detail drawer ---------------- -->
+<div class="scrim" id="drawerScrim" hidden></div>
+<aside class="drawer" id="drawer" hidden role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+  <div class="drawer-head">
+    <div class="grow">
+      <div class="id" id="drawerId">—</div>
+      <h2 id="drawerTitle">Test case</h2>
+    </div>
+    <button class="ghost" id="drawerClose" type="button" aria-label="Close details"><svg class="icon"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="drawer-tabs" role="tablist" aria-label="Test case detail">
+    <button type="button" role="tab" aria-selected="true" data-panel="d-info">Information</button>
+    <button type="button" role="tab" aria-selected="false" data-panel="d-def">Definition</button>
+    <button type="button" role="tab" aria-selected="false" data-panel="d-auto">Automation</button>
+    <button type="button" role="tab" aria-selected="false" data-panel="d-exec">Execution</button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-panel" id="d-info"></div>
+    <div class="drawer-panel" id="d-def" hidden></div>
+    <div class="drawer-panel" id="d-auto" hidden></div>
+    <div class="drawer-panel" id="d-exec" hidden></div>
+  </div>
+</aside>
+
+<script>
+const $ = id => document.getElementById(id);
+let cases = [];
+let selected = new Set();
+let stream = null;
+/** Execution status seen in THIS session, keyed by test case ID. Never invented. */
+let execByCase = new Map();
+let lastRuns = [];
+let sortKey = null;
+let sortDir = 1;
+
+const svg = name => `<svg class="icon-sm" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+
+/** Workbook text is untrusted spreadsheet content: textContent, never innerHTML. */
+function cell(row, text, className) {
+  const td = document.createElement('td');
+  td.textContent = text ?? '';
+  if (className) td.className = className;
+  row.appendChild(td);
+  return td;
+}
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+/** An icon inside a badge, so status never depends on colour alone. */
+function withIcon(node, icon) {
+  const holder = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  holder.setAttribute('class', 'icon-sm');
+  holder.setAttribute('aria-hidden', 'true');
+  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+  use.setAttribute('href', '#i-' + icon);
+  holder.appendChild(use);
+  node.prepend(holder);
+  return node;
+}
+
+const EXEC_LOOK = {
+  Passed:  { kind: 'pass', icon: 'check' },
+  Failed:  { kind: 'fail', icon: 'x' },
+  Skipped: { kind: 'skip', icon: 'minus' },
+  Blocked: { kind: 'warn', icon: 'alert' },
+  Running: { kind: 'run',  icon: 'clock' },
+  'Not Run': { kind: 'idle', icon: 'minus' },
+};
+
+function execPill(status, extra) {
+  const look = EXEC_LOOK[status] || EXEC_LOOK['Not Run'];
+  const span = el('span', 'pill ' + look.kind, status + (extra || ''));
+  return withIcon(span, look.icon);
+}
+
+const AUTO_CLASS = {
+  'Automated': 'automated', 'Generated': 'generated',
+  'Needs Review': 'review', 'Not Automated': 'none',
+};
+
+/**
+ * Where a case came from, read from the tag the recorder writes.
+ *
+ * ORIGIN is a separate fact from automation status and from execution status, and
+ * the three are never merged: a recorded case can be Not Automated and Not Run, and
+ * later Automated and Passed, while still having been recorded. A case with no tag
+ * is an ordinary case and gets no badge at all.
+ */
+function isRecorded(c) {
+  return (c.tags || []).some(tag => String(tag).trim().toLowerCase() === 'recorded');
+}
+
+function originBadge() {
+  const span = el('span', 'origin', 'Recorded');
+  span.title = 'Created with Record Test, not typed in';
+  return withIcon(span, 'record');
+}
+
+function autoTag(status) {
+  const label = status || 'Not Automated';
+  return el('span', 'tag ' + (AUTO_CLASS[label] || 'none'), label);
+}
+
+function pill(row, text, kind) {
+  const td = document.createElement('td');
+  const span = el('span', 'pill ' + kind, text);
+  td.appendChild(span);
+  row.appendChild(td);
+  return td;
+}
+
+/* ---------------- Views ---------------- */
+function setView(name) {
+  for (const button of document.querySelectorAll('.nav button[data-view]'))
+    button.setAttribute('aria-selected', String(button.dataset.view === name));
+  for (const view of document.querySelectorAll('.view'))
+    view.hidden = view.id !== 'view-' + name;
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
+for (const button of document.querySelectorAll('.nav button[data-view]'))
+  button.addEventListener('click', () => setView(button.dataset.view));
+$('goExecutions').addEventListener('click', () => setView('executions'));
+
+/* ---------------- Test case table ---------------- */
+function visibleCases() {
+  const q = $('search').value.trim().toLowerCase();
+  const sheet = $('sheetFilter').value;
+  const priority = $('priorityFilter').value;
+  const run = $('runFilter').value;
+  const status = $('statusFilter').value;
+  const rows = cases.filter(c => {
+    if (sheet && c.worksheet !== sheet) return false;
+    if (priority && c.priority !== priority) return false;
+    // execute is true / false / null, and null is "no opinion", never "no" -
+    // the same rule the CLI applies to the Run column.
+    if (run === 'yes' && c.execute !== true) return false;
+    if (run === 'no' && c.execute !== false) return false;
+    if (run === 'unset' && c.execute !== null) return false;
+    if (status && statusOf(c) !== status) return false;
+    if (!q) return true;
+    return [c.testCaseId, c.scenario, c.module, c.feature, (c.tags || []).join(' ')]
+      .join(' ').toLowerCase().includes(q);
+  });
+
+  if (sortKey) {
+    rows.sort((a, b) => {
+      const left = String(a[sortKey] ?? '').toLowerCase();
+      const right = String(b[sortKey] ?? '').toLowerCase();
+      return left < right ? -sortDir : left > right ? sortDir : 0;
+    });
+  }
+  return rows;
+}
+
+/**
+ * Which sheets are open. Session state, deliberately: it belongs to this tab, not
+ * to the workbook, and mapping.json/state.json are records of what the suite IS -
+ * putting a chevron's position in either would make them lie about that.
+ */
+const sheetOpen = new Map();
+/** The expansion the person chose, kept while a search overrides it. */
+let sheetOpenBeforeSearch = null;
+
+/** Open by default only when there is one sheet to look at. */
+function isSheetOpen(sheet, sheetCount) {
+  if (sheetOpen.has(sheet)) return sheetOpen.get(sheet);
+  return sheetCount === 1;
+}
+
+function renderCases() {
+  const tbody = $('caseRows');
+  tbody.textContent = '';
+  const rows = visibleCases();
+  $('casesShown').textContent = `${rows.length} of ${cases.length} shown`;
+
+  if (!rows.length) {
+    const tr = document.createElement('tr');
+    const td = cell(tr, '', 'empty');
+    td.colSpan = 9;
+    td.appendChild(el('div', 'lead', 'No test case matches these filters'));
+    td.appendChild(document.createTextNode('Clear the search or change the filters above.'));
+    tbody.appendChild(tr);
+    return updateCount();
+  }
+
+  // Group by sheet only when the table is in workbook order. A sort that
+  // reorders rows would otherwise produce group headers that lie about what
+  // follows them.
+  const grouped = !sortKey;
+  const bySheet = new Map();
+  for (const c of rows) {
+    if (!bySheet.has(c.worksheet)) bySheet.set(c.worksheet, []);
+    bySheet.get(c.worksheet).push(c);
+  }
+
+  // A search or a filter overrides the chevrons: a case you searched for must not
+  // stay hidden because its sheet happened to be shut. The choice you made is put
+  // back the moment the search is cleared.
+  const query = $('search').value.trim();
+  const narrowing = Boolean(query) || Boolean($('priorityFilter').value)
+    || Boolean($('runFilter').value) || Boolean($('statusFilter').value);
+  if (narrowing) {
+    if (sheetOpenBeforeSearch === null) sheetOpenBeforeSearch = new Map(sheetOpen);
+    for (const sheet of bySheet.keys()) sheetOpen.set(sheet, true);
+  } else if (sheetOpenBeforeSearch !== null) {
+    sheetOpen.clear();
+    for (const [sheet, open] of sheetOpenBeforeSearch) sheetOpen.set(sheet, open);
+    sheetOpenBeforeSearch = null;
+  }
+
+  let currentSheet = null;
+  for (const c of rows) {
+    if (grouped && c.worksheet !== currentSheet) {
+      currentSheet = c.worksheet;
+      const sheetCases = bySheet.get(currentSheet).filter(x => x.runnable);
+      const open = isSheetOpen(currentSheet, bySheet.size);
+      const header = document.createElement('tr');
+      header.className = 'sheet-row' + (open ? ' is-open' : '');
+
+      const tickCell = el('td', 'pick');
+      const tick = document.createElement('input');
+      tick.type = 'checkbox';
+      tick.disabled = sheetCases.length === 0;
+      tick.title = `Select every runnable case in ${currentSheet}`;
+      tick.setAttribute('aria-label', tick.title);
+      tick.checked = sheetCases.length > 0 && sheetCases.every(x => selected.has(x.testCaseId));
+      // Partly selected reads as neither on nor off, which is the honest state.
+      tick.indeterminate = !tick.checked && sheetCases.some(x => selected.has(x.testCaseId));
+      tick.addEventListener('change', () => {
+        for (const x of sheetCases)
+          tick.checked ? selected.add(x.testCaseId) : selected.delete(x.testCaseId);
+        renderCases();
+      });
+      tickCell.appendChild(tick);
+      header.appendChild(tickCell);
+
+      // The whole label cell is the target, not a tiny chevron: a header that only
+      // responds to a 11px glyph is a header people stop using.
+      const label = el('td', 'sheet-label');
+      label.colSpan = 8;
+      label.tabIndex = 0;
+      label.setAttribute('role', 'button');
+      label.setAttribute('aria-expanded', String(open));
+      label.title = open ? `Collapse ${currentSheet}` : `Expand ${currentSheet}`;
+
+      const chev = el('span', 'chev', open ? '\u25bc' : '\u25b6');
+      chev.setAttribute('aria-hidden', 'true');
+      label.appendChild(chev);
+      label.appendChild(el('span', 'sheet-name', currentSheet));
+
+      const all = bySheet.get(currentSheet);
+      const counts = el('span', 'sheet-counts');
+      const automated = all.filter(x => statusOf(x) === 'Automated').length;
+      const review = all.filter(x => statusOf(x) === 'Needs Review').length;
+      const parts = [`<b>${all.length}</b> ${narrowing ? 'matching' : 'case' + (all.length === 1 ? '' : 's')}`,
+        `<b>${sheetCases.length}</b> runnable`];
+      if (automated) parts.push(`<b>${automated}</b> automated`);
+      if (review) parts.push(`<b>${review}</b> to review`);
+      counts.innerHTML = parts.join(' · ');
+      label.appendChild(counts);
+
+      // `currentSheet` is reassigned on every group, so a closure over it would
+      // toggle whichever sheet happened to be last. Capture the name.
+      const sheetName = currentSheet;
+      const toggle = () => {
+        sheetOpen.set(sheetName, !isSheetOpen(sheetName, bySheet.size));
+        // A manual choice during a search is the choice to restore afterwards.
+        if (sheetOpenBeforeSearch !== null)
+          sheetOpenBeforeSearch.set(sheetName, sheetOpen.get(sheetName));
+        renderCases();
+      };
+      label.addEventListener('click', toggle);
+      label.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        toggle();
+      });
+
+      header.appendChild(label);
+      tbody.appendChild(header);
+    }
+    // A collapsed sheet puts NO rows in the document. That is the whole point of
+    // the accordion: with a workbook of a few hundred cases, rendering every row
+    // behind a closed chevron would cost exactly what it saves.
+    if (grouped && !isSheetOpen(c.worksheet, bySheet.size)) continue;
+
+    const tr = document.createElement('tr');
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.checked = selected.has(c.testCaseId);
+    box.disabled = !c.runnable;
+    box.title = c.runnable ? `Select ${c.testCaseId}` : 'No automation for this case yet';
+    box.setAttribute('aria-label', box.title);
+    box.addEventListener('change', () => {
+      box.checked ? selected.add(c.testCaseId) : selected.delete(c.testCaseId);
+      updateCount();
+    });
+    const boxCell = el('td', 'pick');
+    boxCell.appendChild(box);
+    tr.appendChild(boxCell);
+
+    cell(tr, c.testCaseId, 'id');
+
+    const scenario = document.createElement('td');
+    const wrap = el('div', 'scenario');
+    wrap.appendChild(el('span', 'text', c.scenario || '(no scenario)'));
+    if (isRecorded(c)) wrap.appendChild(originBadge());
+    if (c.dataDriven) {
+      const chip = el('span', 'chip ' + (c.dataDriven === 'broken' ? 'broken' : c.dataDriven === 'no-runner' ? '' : 'dd'));
+      chip.textContent = c.dataDriven === 'broken' ? 'contract unreadable'
+        : c.dataDriven === 'no-runner' ? `needs a ${c.module || 'module'} runner`
+        : 'data-driven';
+      if (c.dataDriven === 'no-runner') {
+        chip.title = `The contract is valid, but no spec knows how to perform ${c.module || 'this module'}'s ` +
+          'actions yet. Add a runner marked "@data-driven-module: ' + (c.module || '…') +
+          '" and every row in this family becomes runnable.';
+      }
+      wrap.appendChild(chip);
+    }
+    for (const problem of c.blockedReason || []) {
+      const chip = el('span', 'chip broken', problem);
+      chip.title = problem;
+      wrap.appendChild(chip);
+    }
+    scenario.appendChild(wrap);
+    tr.appendChild(scenario);
+
+    cell(tr, c.module || '—', c.module ? '' : 'faint');
+
+    const prio = document.createElement('td');
+    if (c.priority)
+      prio.appendChild(el('span', 'prio ' + c.priority.toLowerCase(), c.priority));
+    else
+      prio.appendChild(el('span', 'faint', '—'));
+    tr.appendChild(prio);
+
+    cell(tr, c.execute === true ? 'Yes' : c.execute === false ? 'No' : '—',
+        c.execute === null ? 'faint' : 'muted');
+
+    const auto = document.createElement('td');
+    // The same classifier the KPI uses, so the table can never contradict it.
+    auto.appendChild(autoTag(statusOf(c)));
+    tr.appendChild(auto);
+
+    // Execution status is only ever what this session actually saw. A case with
+    // no result yet shows an em dash, never a guess.
+    const exec = document.createElement('td');
+    const seen = execByCase.get(c.testCaseId);
+    if (seen) exec.appendChild(execPill(seen.status, seen.flaky ? ' · flaky' : ''));
+    else exec.appendChild(el('span', 'faint', '—'));
+    tr.appendChild(exec);
+
+    // Every row is editable. This used to be data-driven rows only, because
+    // editing the wording of a spec-backed case could not change what the spec
+    // asserted. That is no longer true for a generated spec: editing the row
+    // marks it out of date and it is rewritten. A hand-written spec is still
+    // nobody's business but its author's, so say so rather than implying the
+    // edit will change what runs.
+    const handWritten = c.testFile && !c.dataDriven;
+    const actions = document.createElement('td');
+    const group = el('div', 'row-actions');
+    const details = el('button', 'edit-link', 'Details');
+    details.title = `Everything recorded about ${c.testCaseId}`;
+    details.addEventListener('click', () => openCase(c.testCaseId));
+    group.appendChild(details);
+    const edit = el('button', 'edit-link', 'Edit');
+    edit.title = handWritten
+      ? `Loads the row into the form. ${c.testFile} is hand-written, so changing the wording ` +
+        'updates the workbook but not what the test asserts.'
+      : 'Load this case into the form below';
+    edit.addEventListener('click', () => loadCaseIntoForm(c.testCaseId));
+    group.appendChild(edit);
+    actions.appendChild(group);
+    tr.appendChild(actions);
+
+    tbody.appendChild(tr);
+  }
+  updateCount();
+}
+
+function updateCount() {
+  $('statSelected').textContent = String(selected.size);
+  $('statSelectedHint').textContent = `${selected.size} selected`;
+  $('run').disabled = selected.size === 0 || !$('stop').disabled;
+
+  // The master tick reflects only what is visible, because that is all it acts
+  // on - claiming "all selected" while a filter hides unselected cases would be
+  // a lie the moment the filter is cleared.
+  const runnable = visibleCases().filter(c => c.runnable);
+  const master = $('selMaster');
+  master.disabled = runnable.length === 0;
+  master.checked = runnable.length > 0 && runnable.every(c => selected.has(c.testCaseId));
+  master.indeterminate = !master.checked && runnable.some(c => selected.has(c.testCaseId));
+}
+
+/* ---------------- KPIs, all computed from loaded data ---------------- */
+
+/**
+ * The ONE place a case's automation status is decided, used by the KPI, the table
+ * and the status filter so the three can never disagree.
+ *
+ * `Needs Review` is checked first, and that is the fix: the rule used to be
+ * "not runnable means Not Automated", which quietly swallowed the flag. Two cases
+ * flagged in `mapping.json` (TC_LOGIN_005, TC_LOGIN_006) have no test file, so they
+ * are not runnable, so the KPI read `Needs Review: 0` while the mapping held two -
+ * and the table said "Not Automated" about rows somebody had deliberately marked as
+ * needing a decision.
+ *
+ * A flag is a statement about the CASE, not about whether something can execute it,
+ * and it is the one status you least want hidden: it exists precisely to stop a row
+ * being automated on a guess.
+ *
+ * The meaning of `Not Automated` is unchanged - a case with nothing behind it and no
+ * flag. It simply no longer absorbs the flagged ones.
+ */
+function statusOf(c) {
+  if (c.automationStatus === 'Needs Review') return 'Needs Review';
+  return c.runnable ? (c.automationStatus || 'Not Automated') : 'Not Automated';
+}
+
+function renderKpis() {
+  const count = status => cases.filter(c => statusOf(c) === status).length;
+  const automated = count('Automated');
+  const generated = count('Generated');
+  const review = count('Needs Review');
+  const notAutomated = count('Not Automated');
+  const total = cases.length;
+
+  $('statTotal').textContent = String(total);
+  $('kpiAutomated').textContent = String(automated);
+  $('kpiGenerated').textContent = String(generated);
+  $('kpiReview').textContent = String(review);
+  $('kpiNotAutomated').textContent = String(notAutomated);
+  $('statRunnable').textContent = String(cases.filter(c => c.runnable).length);
+  $('navCases').textContent = String(total);
+  $('envCases').textContent = String(total);
+
+  const sheets = new Set(cases.map(c => c.worksheet));
+  $('kpiSheets').textContent = total
+    ? `across ${sheets.size} worksheet${sheets.size === 1 ? '' : 's'}`
+    : 'workbook has no readable rows';
+
+  const bar = $('mixBar');
+  const parts = [['automated', automated], ['generated', generated], ['review', review], ['none', notAutomated]];
+  for (const [name, value] of parts) {
+    const span = bar.querySelector('.' + name);
+    span.style.width = total ? `${(value / total) * 100}%` : '0';
+  }
+  const covered = automated + generated;
+  $('coverageHint').textContent = total
+    ? `${Math.round((covered / total) * 100)}% has automation behind it`
+    : '';
+
+  const legend = $('mixLegend');
+  legend.textContent = '';
+  const LABEL = { automated: 'Automated', generated: 'Generated', review: 'Needs review', none: 'Not automated' };
+  const COLOUR = { automated: 'var(--pass)', generated: 'var(--info)', review: 'var(--warn)', none: '#c6d0dc' };
+  for (const [name, value] of parts) {
+    const item = el('div', 'legend-item');
+    const swatch = el('span', 'sw');
+    swatch.style.background = COLOUR[name];
+    item.appendChild(swatch);
+    item.appendChild(el('span', 'n', String(value)));
+    item.appendChild(el('span', 'muted', LABEL[name]));
+    legend.appendChild(item);
+  }
+}
+
+/**
+ * Passed / failed come from the most recent execution, and say so.
+ *
+ * This also fills in the "Last execution · Result" line, which `showSummary` only
+ * ever set for a run that finished (or was opened) in this session - so on a fresh
+ * page load the card read "none yet" directly above a real date, browser and
+ * duration for the same run. Found by looking at the rendered page, not the code.
+ */
+function renderLastRunKpis(run) {
+  const stat = $('statLast');
+  if (!run || run.note) {
+    $('kpiPassed').textContent = run ? '0' : '—';
+    $('kpiFailed').textContent = run ? '0' : '—';
+    $('lastRunMeta').textContent = run ? (run.note || '') : 'No execution recorded yet.';
+    stat.textContent = run ? (run.note || 'no results') : 'none yet';
+    stat.className = 'v small muted';
+    return;
+  }
+  $('kpiPassed').textContent = String(run.summary.passed);
+  $('kpiFailed').textContent = String(run.summary.failed);
+  stat.textContent = `${run.summary.passed} passed · ${run.summary.failed} failed`
+    + (run.summary.skipped ? ` · ${run.summary.skipped} skipped` : '');
+  stat.className = 'v small ' + (run.summary.failed ? 'fail' : 'pass');
+  const bits = [new Date(run.startedAt).toLocaleString()];
+  if (run.browser) bits.push(run.browser + (run.workers > 1 ? ` ×${run.workers}` : ''));
+  const ms = duration(run);
+  if (ms !== null) bits.push(formatMs(ms));
+  $('lastRunMeta').textContent = bits.join(' · ');
+}
+
+function duration(run) {
+  if (!run.startedAt || !run.finishedAt) return null;
+  const ms = Date.parse(run.finishedAt) - Date.parse(run.startedAt);
+  return Number.isFinite(ms) && ms >= 0 ? ms : null;
+}
+
+function formatMs(ms) {
+  const seconds = Math.round(ms / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`;
+}
+
+/** Runs are keyed by an ISO-ish timestamp; show a short, stable handle. */
+function runHandle(id) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})/.exec(id);
+  return match ? `${match[3]}/${match[2]} ${match[4]}:${match[5]}:${match[6]}` : id.slice(0, 19);
+}
+
+/* ---------------- Workbook ---------------- */
+async function loadWorkbook() {
+  const res = await fetch(`/api/workbook?workbook=${encodeURIComponent($('workbook').value)}`);
+  const data = await res.json();
+  if (data.error) return showError(data.error);
+  cases = data.cases;
+  selected = new Set();
+
+  const filter = $('sheetFilter');
+  filter.textContent = '';
+  const all = el('option', '', 'All sheets');
+  all.value = '';
+  filter.appendChild(all);
+  const formSheets = $('fSheet');
+  formSheets.textContent = '';
+  for (const sheet of data.worksheets) {
+    const option = el('option', '', sheet);
+    option.value = sheet;
+    filter.appendChild(option);
+    const formOption = el('option', '', sheet);
+    formOption.value = sheet;
+    formSheets.appendChild(formOption);
+  }
+  const newSheet = el('option', '', '+ New sheet…');
+  newSheet.value = '__new__';
+  formSheets.appendChild(newSheet);
+
+  // Existing module names, so a new case joins a module instead of inventing a
+  // near-duplicate spelling of one that already exists.
+  const modules = [...new Set(cases.map(c => c.module).filter(Boolean))].sort();
+  const list = $('moduleList');
+  list.textContent = '';
+  for (const module of modules) {
+    const option = document.createElement('option');
+    option.value = module;
+    list.appendChild(option);
+  }
+
+  $('envUpdated').textContent = new Date().toLocaleTimeString();
+  renderKpis();
+  renderCases();
+  void refreshSuggestedId();
+}
+
+function showError(message) {
+  const box = $('error');
+  box.textContent = message || '';
+  box.classList.toggle('show', Boolean(message));
+}
+
+const EVIDENCE_LABEL = { screenshot: 'Screenshot', video: 'Video', trace: 'Trace' };
+const EVIDENCE_ICON = { screenshot: 'camera', video: 'play', trace: 'doc' };
+
+/** Point the header link at one run's own copy, or hide it when none was kept. */
+function setReportLink(runId, hasReport) {
+  const link = $('reportLink');
+  if (runId && hasReport) {
+    link.href = `/api/runs/${encodeURIComponent(runId)}/report/`;
+    link.style.display = '';
+  } else {
+    link.style.display = 'none';
+  }
+}
+
+/**
+ * The step list for one test case, as a row that expands under it.
+ *
+ * The failing step is the point of the whole feature, so it is open by default
+ * and marked; the passing ones above it are the context that says how far the
+ * test got before it broke.
+ */
+function stepsRow(steps, testCaseId, failed) {
+  const tr = el('tr', 'steps-row');
+  const td = document.createElement('td');
+  td.colSpan = 5;
+
+  const details = document.createElement('details');
+  details.open = failed;                 // a red case opens on the evidence
+  const summary = document.createElement('summary');
+  const failing = steps.find(s => s.status === 'failed');
+  summary.textContent = failing
+    ? `${steps.length} steps — failed at step ${failing.index}: ${failing.title}`
+    : `${steps.length} steps — all passed`;
+  summary.className = failing ? 'steps-summary bad' : 'steps-summary';
+  details.appendChild(summary);
+
+  const list = el('ol', 'steps');
+  for (const step of steps) {
+    const li = el('li', step.status === 'failed' ? 'step step-failed' : 'step');
+
+    const head = el('div', 'step-head');
+    head.appendChild(el('span', 'step-mark', step.status === 'failed' ? '✕' : '✓'));
+    head.appendChild(el('span', 'step-title', step.title));
+    head.appendChild(el('span', 'step-time muted', (step.durationMs / 1000).toFixed(1) + 's'));
+    li.appendChild(head);
+
+    if (step.error)
+      li.appendChild(el('div', 'step-error', step.error));
+
+    if (step.screenshotUrl) {
+      const link = document.createElement('a');
+      link.href = step.screenshotUrl;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.title = 'Open the full-size screenshot';
+      const img = document.createElement('img');
+      img.className = 'step-shot';
+      img.loading = 'lazy';
+      img.src = step.screenshotUrl;
+      img.alt = `Screen at step ${step.index}: ${step.title}`;
+      link.appendChild(img);
+      li.appendChild(link);
+    }
+    list.appendChild(li);
+  }
+  details.appendChild(list);
+  td.appendChild(details);
+  tr.appendChild(td);
+  return tr;
+}
+
+function renderResults(results, evidence, caption, steps) {
+  const label = $('resultsFor');
+  label.textContent = caption || '';
+  label.style.display = caption ? '' : 'none';
+  const tbody = $('resultRows');
+  tbody.textContent = '';
+  if (!results || !results.length) {
+    const tr = document.createElement('tr');
+    const td = cell(tr, '', 'empty');
+    td.colSpan = 5;
+    td.appendChild(el('div', 'lead', 'No results to show'));
+    td.appendChild(document.createTextNode('Select test cases and run them, or open a past execution.'));
+    tbody.appendChild(tr);
+    return;
+  }
+
+  const byCase = new Map();
+  for (const item of evidence || []) {
+    if (!byCase.has(item.testCaseId)) byCase.set(item.testCaseId, []);
+    byCase.get(item.testCaseId).push(item);
+  }
+
+  for (const r of results) {
+    // Remember it for the case table's Execution column.
+    if (r.testCaseId)
+      execByCase.set(r.testCaseId, { status: r.executionStatus, flaky: Boolean(r.flaky) });
+
+    const tr = document.createElement('tr');
+    cell(tr, r.testCaseId || r.testName, 'id');
+
+    const status = document.createElement('td');
+    status.appendChild(execPill(r.executionStatus, r.flaky ? ' · flaky' : ''));
+    tr.appendChild(status);
+
+    cell(tr, (r.durationMs / 1000).toFixed(1) + 's', 'num');
+
+    const files = document.createElement('td');
+    const items = byCase.get(r.testCaseId) || [];
+    if (!items.length) {
+      files.textContent = '—';
+      files.className = 'faint';
+    } else {
+      // Deduplicated: a retried test attaches the same kind more than once.
+      const shown = new Set();
+      for (const item of items) {
+        if (shown.has(item.name)) continue;
+        shown.add(item.name);
+        const link = document.createElement('a');
+        link.className = 'ev';
+        link.href = item.url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = EVIDENCE_LABEL[item.name] || item.name;
+        withIcon(link, EVIDENCE_ICON[item.name] || 'doc');
+        if (item.name === 'trace') link.title = 'Download, then: npx playwright show-trace <file>';
+        files.appendChild(link);
+      }
+    }
+    tr.appendChild(files);
+
+    cell(tr, r.executionStatus === 'Failed' ? (r.rootCause || r.failureReason || '') : '', 'muted');
+    tbody.appendChild(tr);
+
+    const walked = (steps || {})[r.testCaseId];
+    if (walked && walked.length)
+      tbody.appendChild(stepsRow(walked, r.testCaseId, r.executionStatus === 'Failed'));
+  }
+  renderCases();
+}
+
+function setRunning(running) {
+  $('stop').disabled = !running;
+  $('run').disabled = running || selected.size === 0;
+  $('runState').textContent = running ? 'Running' : 'Idle';
+  $('runState').className = 'status' + (running ? ' running' : '');
+}
+
+function showSummary(record) {
+  const s = record.summary;
+  const text = record.note
+    ? 'no results'
+    : `${s.passed} passed · ${s.failed} failed` + (s.skipped ? ` · ${s.skipped} skipped` : '');
+  $('runSummary').textContent = record.note
+    ? record.note
+    : `${text} · exit ${record.exitCode}`;
+  const stat = $('statLast');
+  stat.textContent = text;
+  stat.className = 'v small ' + (record.note ? 'muted' : s.failed ? 'fail' : 'pass');
+  renderLastRunKpis(record);
+}
+
+function connectStream() {
+  stream?.close();
+  stream = new EventSource('/api/stream');
+  stream.addEventListener('log', e => {
+    const pre = $('console');
+    if (pre.textContent === 'Nothing has run yet.') pre.textContent = '';
+    const atBottom = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 30;
+    pre.textContent += JSON.parse(e.data).text;
+    if (atBottom) pre.scrollTop = pre.scrollHeight;
+  });
+  stream.addEventListener('done', e => {
+    const record = JSON.parse(e.data);
+    renderResults(record.results, record.evidence, 'this execution', record.steps);
+    setReportLink(record.id, record.hasReport);
+    showSummary(record);
+    setRunning(false);
+    stream.close();
+    loadRuns();
+  });
+  stream.addEventListener('idle', () => { stream.close(); setRunning(false); });
+  stream.onerror = () => { stream.close(); setRunning(false); };
+}
+
+async function showRun(id, row) {
+  const detail = await (await fetch(`/api/runs/${encodeURIComponent(id)}`)).json();
+  renderResults(detail.results, detail.evidence, runHandle(id), detail.steps);
+  setReportLink(id, detail.hasReport);
+  $('console').textContent = (detail.log || []).join('') || '(no output recorded)';
+  showSummary(detail);
+  for (const other of document.querySelectorAll('tr.selected-run')) other.classList.remove('selected-run');
+  row?.classList.add('selected-run');
+  setView('executions');
+}
+
+function runResultPill(run) {
+  if (run.note) return el('span', 'pill skip', 'no results');
+  const failed = run.summary.failed;
+  const span = el('span', 'pill ' + (failed ? 'fail' : 'pass'),
+      failed ? `${failed} of ${run.count} failed` : `${run.summary.passed} passed`);
+  return withIcon(span, failed ? 'x' : 'check');
+}
+
+function reportCellFor(run) {
+  const td = document.createElement('td');
+  const group = el('div', 'row-actions');
+  if (run.hasReport) {
+    const link = document.createElement('a');
+    link.href = `/api/runs/${encodeURIComponent(run.id)}/report/`;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = 'Report';
+    withIcon(link, 'ext');
+    link.style.fontSize = '12px';
+    // Without this the row's own click handler also fires and swaps the
+    // results panel underneath a tab the user is already navigating away to.
+    link.addEventListener('click', e => e.stopPropagation());
+    group.appendChild(link);
+  }
+  const open = el('button', 'edit-link', run.evidenceCount ? `Evidence (${run.evidenceCount})` : 'Details');
+  open.title = 'Show this execution’s output, results and evidence';
+  open.addEventListener('click', e => { e.stopPropagation(); showRun(run.id); });
+  group.appendChild(open);
+  td.appendChild(group);
+  return td;
+}
+
+async function loadRuns() {
+  const { runs } = await (await fetch('/api/runs')).json();
+  lastRuns = runs;
+  $('navRuns').textContent = String(runs.length);
+  renderLastRunKpis(runs[0]);
+
+  const tbody = $('runRows');
+  tbody.textContent = '';
+  const recent = $('recentRows');
+  recent.textContent = '';
+
+  if (!runs.length) {
+    const tr = document.createElement('tr');
+    const td = cell(tr, '', 'empty');
+    td.colSpan = 9;
+    td.appendChild(el('div', 'lead', 'No executions yet'));
+    td.appendChild(document.createTextNode('Select test cases in the workspace and run them.'));
+    tbody.appendChild(tr);
+
+    const tr2 = document.createElement('tr');
+    cell(tr2, 'No executions recorded yet.', 'empty').colSpan = 5;
+    recent.appendChild(tr2);
+    return;
+  }
+
+  for (const run of runs) {
+    const tr = el('tr', 'row-click');
+    tr.title = 'Show this execution’s output, results and evidence';
+    cell(tr, runHandle(run.id), 'id');
+    cell(tr, new Date(run.startedAt).toLocaleString(), 'muted');
+    cell(tr, `${run.browser}${run.workers > 1 ? ` ×${run.workers}` : ''}${run.headed ? ' · headed' : ''}`, 'muted');
+    cell(tr, String(run.count), 'num');
+    cell(tr, run.note ? '—' : String(run.summary.passed), 'num' + (run.summary.passed ? ' pass' : ''));
+    cell(tr, run.note ? '—' : String(run.summary.failed), 'num' + (run.summary.failed ? ' fail' : ''));
+    cell(tr, run.note ? '—' : String(run.summary.skipped), 'num muted');
+    const ms = duration(run);
+    cell(tr, ms === null ? '—' : formatMs(ms), 'num muted');
+    tr.appendChild(reportCellFor(run));
+    tr.addEventListener('click', () => showRun(run.id, tr));
+    tbody.appendChild(tr);
+  }
+
+  for (const run of runs.slice(0, 6)) {
+    const tr = el('tr', 'row-click');
+    cell(tr, runHandle(run.id), 'id');
+    cell(tr, new Date(run.startedAt).toLocaleString(), 'muted');
+    const result = document.createElement('td');
+    result.appendChild(runResultPill(run));
+    tr.appendChild(result);
+    const ms = duration(run);
+    cell(tr, ms === null ? '—' : formatMs(ms), 'num muted');
+    tr.appendChild(reportCellFor(run));
+    tr.addEventListener('click', () => showRun(run.id));
+    recent.appendChild(tr);
+  }
+}
+
+/* ---------------- Detail drawer ---------------- */
+function closeDrawer() {
+  $('drawer').hidden = true;
+  $('drawerScrim').hidden = true;
+}
+$('drawerClose').addEventListener('click', closeDrawer);
+$('drawerScrim').addEventListener('click', closeDrawer);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+for (const button of document.querySelectorAll('.drawer-tabs button')) {
+  button.addEventListener('click', () => {
+    for (const other of document.querySelectorAll('.drawer-tabs button'))
+      other.setAttribute('aria-selected', String(other === button));
+    for (const panel of document.querySelectorAll('.drawer-panel'))
+      panel.hidden = panel.id !== button.dataset.panel;
+  });
+}
+
+function kv(pairs) {
+  const dl = el('dl', 'kv');
+  for (const [key, value] of pairs) {
+    dl.appendChild(el('dt', '', key));
+    const dd = el('dd');
+    if (value instanceof Node) dd.appendChild(value);
+    else dd.textContent = value === '' || value === null || value === undefined ? '—' : String(value);
+    dl.appendChild(dd);
+  }
+  return dl;
+}
+
+function block(label, text, mono) {
+  const holder = el('div');
+  holder.appendChild(el('div', 'block-label', label));
+  if (!text) {
+    const empty = el('div', 'block faint', 'Not recorded in the workbook.');
+    holder.appendChild(empty);
+    return holder;
+  }
+  holder.appendChild(el('div', 'block' + (mono ? ' mono' : ''), text));
+  return holder;
+}
+
+async function openCase(id) {
+  const row = cases.find(c => c.testCaseId === id);
+  $('drawerId').textContent = id;
+  $('drawerTitle').textContent = row?.scenario || 'Test case';
+  $('drawer').hidden = false;
+  $('drawerScrim').hidden = false;
+  for (const panel of document.querySelectorAll('.drawer-panel'))
+    panel.hidden = panel.id !== 'd-info';
+  for (const button of document.querySelectorAll('.drawer-tabs button'))
+    button.setAttribute('aria-selected', String(button.dataset.panel === 'd-info'));
+
+  const info = $('d-info');
+  info.textContent = '';
+  info.appendChild(el('div', 'skeleton', ''));
+
+  const res = await fetch(`/api/case?workbook=${encodeURIComponent($('workbook').value)}&id=${encodeURIComponent(id)}`);
+  const draft = await res.json();
+
+  info.textContent = '';
+  if (!res.ok) {
+    info.appendChild(el('div', 'note bad show', draft.error || 'This case could not be read.'));
+    return;
+  }
+
+  info.appendChild(kv([
+    ['Test Case ID', draft.testCaseId],
+    ['Worksheet', draft.worksheet],
+    ['Row', row ? String(row.row) : ''],
+    ['Module', draft.module],
+    ['Feature', draft.feature],
+    ['Priority', row?.priority || draft.priority],
+    ['Tags', draft.tags],
+    ['Run column', draft.run ? 'Yes' : 'No'],
+  ]));
+
+  const def = $('d-def');
+  def.textContent = '';
+  def.appendChild(block('Scenario', draft.scenario));
+  const steps = (draft.steps || '').split('\n').map(s => s.trim()).filter(Boolean);
+  const stepHolder = el('div');
+  stepHolder.appendChild(el('div', 'block-label', 'Test steps'));
+  if (steps.length) {
+    const list = el('ol', 'step-list');
+    for (const step of steps) list.appendChild(el('li', '', step));
+    stepHolder.appendChild(list);
+  } else {
+    stepHolder.appendChild(el('div', 'block faint', 'No steps recorded.'));
+  }
+  def.appendChild(stepHolder);
+  def.appendChild(block('Test data', draft.testData, true));
+  def.appendChild(block('Expected result', draft.expectedResult));
+
+  const auto = $('d-auto');
+  auto.textContent = '';
+  const status = row ? (row.runnable ? row.automationStatus : 'Not Automated') : draft.automationStatus;
+  auto.appendChild(kv([
+    ['Automation status', autoTag(status)],
+    ['Test file', row?.testFile ? el('span', 'mono', row.testFile) : ''],
+    ['Runs as', row?.dataDriven === 'ready' ? 'Data-driven row (no spec needed)'
+      : row?.dataDriven === 'broken' ? 'Data-driven contract that cannot be read'
+      : row?.dataDriven === 'no-runner' ? 'Data-driven, but no runner covers this module'
+      : row?.testFile ? 'A written spec' : 'Nothing yet'],
+    ['Assert outcome', draft.assertOutcome || 'None — the assertion lives in a spec'],
+    ['Assert message', draft.assertMessage],
+    ['Selectable to run', row?.runnable ? 'Yes' : 'No'],
+  ]));
+  if (row?.blockedReason?.length) {
+    const problems = el('div', 'note bad show');
+    problems.style.whiteSpace = 'pre-line';
+    problems.textContent = row.blockedReason.join('\n');
+    auto.appendChild(problems);
+  }
+  const genNote = el('div', 'note info show');
+  genNote.textContent = 'Generation history per case is recorded by the engine in '
+    + 'ai/autocode/state.json and ai/reports/generation-metrics.jsonl. The dashboard does not '
+    + 'read those, so it is not shown here rather than being guessed at.';
+  auto.appendChild(genNote);
+
+  const exec = $('d-exec');
+  exec.textContent = '';
+  const seen = execByCase.get(id);
+  if (seen) {
+    exec.appendChild(kv([['Last result seen', execPill(seen.status, seen.flaky ? ' · flaky' : '')]]));
+    exec.appendChild(el('div', 'faint', 'From the execution currently shown in the Executions view.'));
+  } else {
+    const empty = el('div', 'empty');
+    empty.appendChild(el('div', 'lead', 'No execution seen in this session'));
+    empty.appendChild(document.createTextNode('Run this case, or open a past execution that included it.'));
+    exec.appendChild(empty);
+  }
+}
+
+/* ---------------- Run ---------------- */
+$('run').addEventListener('click', async () => {
+  showError('');
+  setRunning(true);
+  $('console').textContent = '';
+  renderResults([], [], '', {});
+  setReportLink(null, false);
+  setView('executions');
+  const res = await fetch('/api/run', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      workbook: $('workbook').value,
+      testCaseIds: [...selected],
+      browser: $('browser').value,
+      workers: Number($('workers').value),
+      headed: $('headed').checked,
+      inPlace: $('inPlace').checked,
+      screenshot: $('screenshot').value,
+      video: $('video').value,
+      trace: $('trace').value,
+    }),
+  });
+  const body = await res.json();
+  if (!res.ok) { showError(body.error); setRunning(false); setView('cases'); return; }
+  connectStream();
+});
+
+$('stop').addEventListener('click', () => fetch('/api/stop', { method: 'POST' }));
+$('selNone').addEventListener('click', () => { selected = new Set(); renderCases(); });
+$('selMaster').addEventListener('change', e => {
+  for (const c of visibleCases()) {
+    if (!c.runnable) continue;
+    e.target.checked ? selected.add(c.testCaseId) : selected.delete(c.testCaseId);
+  }
+  renderCases();
+});
+$('search').addEventListener('input', renderCases);
+$('sheetFilter').addEventListener('change', renderCases);
+$('priorityFilter').addEventListener('change', renderCases);
+$('runFilter').addEventListener('change', renderCases);
+$('statusFilter').addEventListener('change', renderCases);
+$('workbook').addEventListener('change', loadWorkbook);
+$('refreshRuns').addEventListener('click', loadRuns);
+$('workers').addEventListener('input', () =>
+  $('workersNote').classList.toggle('show', Number($('workers').value) > 1));
+$('browser').addEventListener('change', () => {
+  $('browserNote').classList.toggle('show', $('browser').value !== 'chromium');
+  $('envBrowser').textContent = $('browser').selectedOptions[0].textContent;
+});
+$('inPlace').addEventListener('change', () =>
+  $('inPlaceNote').classList.toggle('show', $('inPlace').checked));
+for (const id of ['screenshot', 'video', 'trace']) {
+  $(id).addEventListener('change', () => {
+    const always = ['screenshot', 'video', 'trace'].some(k => $(k).value === 'on');
+    $('captureNote').classList.toggle('show', always);
+  });
+}
+
+for (const th of document.querySelectorAll('th.sortable')) {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if (sortKey === key) sortDir = -sortDir;
+    else { sortKey = key; sortDir = 1; }
+    for (const other of document.querySelectorAll('th.sortable')) other.removeAttribute('aria-sort');
+    th.setAttribute('aria-sort', sortDir === 1 ? 'ascending' : 'descending');
+    th.querySelector('.arrow').textContent = sortDir === 1 ? '↓' : '↑';
+    renderCases();
+  });
+}
+
+/* ---------- Authoring: add or edit a test case ---------- */
+
+let editingId = null;
+
+/** The sheet the form will write to: an existing one, or a name being typed. */
+function targetSheet() {
+  return $('fSheet').value === '__new__' ? $('fNewSheet').value.trim() : $('fSheet').value;
+}
+
+/**
+ * Ask the server what ID this sheet/module would get next.
+ *
+ * Only a preview - the ID that actually gets written is generated server-side
+ * at save time, after the final re-parse, so two tabs cannot collide.
+ */
+let idPreviewToken = 0;
+async function refreshSuggestedId() {
+  if (editingId) return;                       // never renumber an existing case
+  if ($('fId').dataset.touched === 'yes') return;  // the user typed their own
+  const token = ++idPreviewToken;
+  const params = new URLSearchParams({
+    workbook: $('workbook').value,
+    worksheet: targetSheet(),
+    module: $('fModule').value,
+  });
+  const res = await fetch(`/api/next-id?${params}`);
+  if (!res.ok || token !== idPreviewToken) return;
+  const suggestion = await res.json();
+  if (token !== idPreviewToken) return;        // a later keystroke already won
+  $('fId').value = suggestion.testCaseId;
+  $('fIdBasis').textContent = suggestion.basis ? `· ${suggestion.basis}` : '';
+}
+
+function authorFields() {
+  return {
+    worksheet: targetSheet(),
+    testCaseId: $('fId').value,
+    module: $('fModule').value,
+    feature: $('fFeature').value,
+    scenario: $('fScenario').value,
+    description: $('fDescription').value,
+    preconditions: $('fPreconditions').value,
+    requirementId: $('fRequirement').value,
+    testType: $('fType').value,
+    businessRisk: $('fRisk').value,
+    environment: $('fEnvironment').value,
+    userRole: $('fRole').value,
+    authenticationProfile: $('fAuthProfile').value,
+    testOwner: $('fOwner').value,
+    steps: $('fSteps').value,
+    testData: $('fData').value,
+    expectedResult: $('fExpected').value,
+    assertOutcome: $('fOutcome').value,
+    assertMessage: $('fMessage').value,
+    priority: $('fPriority').value,
+    tags: $('fTags').value,
+    run: $('fRun').value === 'yes',
+  };
+}
+
+function setAuthorMode(id) {
+  editingId = id;
+  $('authorMode').textContent = id ? `editing ${id}` : 'new case';
+  $('fId').readOnly = Boolean(id);
+  $('authorSave').textContent = id ? 'Save changes' : 'Add to workbook';
+}
+
+function resetAuthorForm() {
+  for (const id of ['fId', 'fModule', 'fFeature', 'fScenario', 'fSteps', 'fData', 'fExpected',
+    'fMessage', 'fTags', 'fDescription', 'fPreconditions', 'fRequirement', 'fEnvironment',
+    'fRole', 'fAuthProfile', 'fOwner'])
+    $(id).value = '';
+  $('fOutcome').value = '';
+  $('fPriority').value = '';
+  $('fType').value = '';
+  $('fRisk').value = '';
+  renderSystemInfo(null);
+  $('fRun').value = 'yes';
+  $('fId').dataset.touched = '';
+  $('fIdBasis').textContent = '';
+  $('fSheet').value = $('fSheet').options[0]?.value ?? '';
+  $('fNewSheet').style.display = 'none';
+  $('fNewSheet').value = '';
+  $('authorError').classList.remove('show');
+  $('authorOk').style.display = 'none';
+  // Leave edit mode BEFORE asking for a suggested ID. refreshSuggestedId()
+  // deliberately refuses to renumber a case that is being edited, so clearing the
+  // form while editing used to leave the ID box empty - the one field a new case
+  // cannot be saved without. Found by the UI test, not by looking at it.
+  setAuthorMode(null);
+  void refreshSuggestedId();
+}
+
+async function loadCaseIntoForm(id) {
+  const res = await fetch(`/api/case?workbook=${encodeURIComponent($('workbook').value)}&id=${encodeURIComponent(id)}`);
+  const draft = await res.json();
+  if (!res.ok) return authorProblem(draft.error);
+  closeDrawer();
+  setView('cases');
+  $('fSheet').value = draft.worksheet;
+  $('fId').value = draft.testCaseId;
+  $('fModule').value = draft.module;
+  $('fFeature').value = draft.feature;
+  $('fScenario').value = draft.scenario;
+  $('fDescription').value = draft.description || '';
+  $('fPreconditions').value = draft.preconditions || '';
+  $('fRequirement').value = draft.requirementId || '';
+  $('fType').value = draft.testType || '';
+  $('fRisk').value = draft.businessRisk || '';
+  $('fEnvironment').value = draft.environment || '';
+  $('fRole').value = draft.userRole || '';
+  $('fAuthProfile').value = draft.authenticationProfile || '';
+  $('fOwner').value = draft.testOwner || '';
+  $('fSteps').value = draft.steps;
+  $('fData').value = draft.testData;
+  $('fExpected').value = draft.expectedResult;
+  // Never default a loaded row to Blocked: a case whose assertion lives in a
+  // spec has no outcome, and quietly giving it one on load would rewrite it
+  // into a data-driven row the next time anyone pressed Save.
+  $('fOutcome').value = draft.assertOutcome || '';
+  $('fMessage').value = draft.assertMessage;
+  $('fPriority').value = draft.priority;
+  $('fTags').value = draft.tags;
+  $('fRun').value = draft.run ? 'yes' : 'no';
+  $('authorError').classList.remove('show');
+  $('authorOk').style.display = 'none';
+  $('fId').dataset.touched = 'yes';
+  $('fIdBasis').textContent = '';
+  setAuthorMode(draft.testCaseId);
+  renderSystemInfo(draft.testCaseId);
+  $('authorPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * What the FRAMEWORK knows about this case: read-only, and never posted back.
+ *
+ * Four different questions used to be one word on a badge. They are shown apart
+ * here on purpose - authoring readiness, the recording's evidence, what has been
+ * generated, and what happened when it last ran - because "Not Automated" was
+ * true for a row missing an Expected Result, a row whose recording no longer
+ * matched, and a row nobody had got to yet, and the three need different work.
+ */
+function renderSystemInfo(id) {
+  const box = $('sysInfoBox');
+  const body = $('sysInfo');
+  const row = id ? cases.find(c => c.testCaseId === id) : null;
+  if (!row) {
+    box.style.display = 'none';
+    body.innerHTML = '';
+    return;
+  }
+  const esc = s => String(s ?? '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c]);
+  const line = (label, value) => `<div><span class="opt">${label}:</span> ${esc(value) || '—'}</div>`;
+  const readiness = row.readiness || { ready: true, codes: [], findings: [] };
+  const recording = row.recording || { exists: false, stale: null, summary: '' };
+  const system = row.system || {};
+  const blocking = (readiness.findings || []).filter(f => f.severity === 'blocking');
+  const advisory = (readiness.findings || []).filter(f => f.severity === 'advisory');
+
+  const actions = [];
+  if (recording.exists) {
+    actions.push('<button type="button" id="sysRerecord">Re-record this case</button>');
+  }
+  if (!recording.exists || recording.stale !== true)
+    actions.push('<button type="button" id="sysRegenerate">Regenerate automation</button>');
+
+  body.innerHTML = [
+    line('Authoring readiness', readiness.ready ? 'READY' : (readiness.codes || []).join(', ')),
+    ...blocking.map(f => `<div style="margin-left:12px">⛔ ${esc(f.message)}</div>`),
+    ...advisory.map(f => `<div style="margin-left:12px" class="opt">• ${esc(f.message)}</div>`),
+    line('Recording', recording.summary || (recording.exists ? 'present' : 'none')),
+    line('Automation status', system.automationStatus),
+    line('Generated spec', system.testFile),
+    line('Last generated', system.lastGeneratedAt),
+    line('Execution status', system.executionStatus || system.finalStatus),
+    line('Last executed', system.lastExecutionTime),
+    actions.length ? `<div style="margin-top:8px; display:flex; gap:8px">${actions.join('')}</div>` : '',
+    recording.stale === true
+      ? '<div style="margin-top:6px">⛔ Regeneration is refused while the recording is stale: '
+        + 'the old recording is evidence for steps this row no longer has. Re-record it, or undo '
+        + 'the change to the steps.</div>'
+      : '',
+  ].join('');
+  box.style.display = '';
+
+  const rerecord = $('sysRerecord');
+  if (rerecord)
+    rerecord.onclick = () => { setView('record'); };
+  const regenerate = $('sysRegenerate');
+  if (regenerate)
+    regenerate.onclick = () => startGenerationFor(id);
+}
+
+/** Ask the generator for one case, explicitly. Never implied by an edit. */
+async function startGenerationFor(id) {
+  const res = await fetch('/api/autocode', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workbook: $('workbook').value, testCaseIds: [id] }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok)
+    return authorProblem(body.error || 'The generator could not be started.');
+  watchAutocode([id]);
+}
+
+function authorProblem(message) {
+  const box = $('authorError');
+  // Validation comes back as one problem per line; keep the lines.
+  box.textContent = message || '';
+  box.style.whiteSpace = 'pre-line';
+  box.classList.toggle('show', Boolean(message));
+  $('authorOk').style.display = 'none';
+}
+
+$('authorSave').addEventListener('click', async () => {
+  authorProblem('');
+  const res = await fetch('/api/case', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ workbook: $('workbook').value, draft: authorFields(), isNew: !editingId }),
+  });
+  const body = await res.json();
+  if (!res.ok) return authorProblem(body.error);
+
+  const lines = [
+    `${body.created ? 'Added' : 'Updated'} ${body.testCaseId} in row ${body.row}.` +
+      (body.columnsAdded.length ? ` Columns added: ${body.columnsAdded.join(', ')}.` : '') +
+      ' Backup kept in excel/.backups/.',
+  ];
+  // The contract was strengthened on the way in. Never leave that implicit -
+  // the workbook now says something different from what was typed.
+  for (const repair of body.repairs ?? [])
+    lines.push(`Strengthened: ${repair}`);
+  // The generator is reported BEFORE runnability, because a spec-backed case is
+  // runnable and editing it makes its spec out of date. Announcing "nothing else
+  // to do" there is the one message that could send somebody away believing an
+  // edit had landed in the test when it had not.
+  if (body.contractError)
+    lines.push(`This row will FAIL until it is fixed: ${body.contractError}`);
+  else if (body.autocode?.started)
+    lines.push(`The code generator has started and will ${body.runner ? `rewrite ${body.runner}` : 'write this case a spec'} to match the row as saved. Watch it in Generation.`);
+  else if (body.runnable)
+    lines.push(`Runs now via ${body.runner} — cache and mapping are already updated, nothing else to do.`);
+  else
+    lines.push(`Not executable yet and the generator did not start (${body.autocode?.reason ?? 'no runner covers this module'}).`);
+  // Needed code, but the generator was busy. The row is now newer than the spec
+  // meant to implement it, and only saying so stops that going unnoticed.
+  if (body.needsCode && !body.autocode?.started) {
+    lines.push(`This case still needs its spec ${body.runner ? 'rewritten' : 'written'} and the generator ` +
+      `could not start (${body.autocode?.reason ?? 'unknown reason'}). Re-save once it is free, ` +
+      'or run: npm run excel:autocode -- <workbook> --ids ' + body.testCaseId);
+  }
+
+  // One case was sent to the generator, so progress is out of one - taken from
+  // the ID the server actually saved, never assumed.
+  if (body.autocode?.started) watchAutocode([body.testCaseId]);
+
+  const ok = $('authorOk');
+  ok.textContent = lines.join('\n');
+  ok.style.whiteSpace = 'pre-line';
+  ok.style.display = 'block';
+  // The saved row may differ from what was typed; show what is actually stored.
+  if ((body.repairs ?? []).length) {
+    await loadCaseIntoForm(body.testCaseId);
+    ok.style.display = 'block';
+  }
+  await loadWorkbook();
+  if (!(body.repairs ?? []).length)
+    setAuthorMode(null);
+});
+
+/* ---------------- AI generation ---------------- */
+let autocodeStream = null;
+let genStart = 0;
+let genTimer = null;
+let genSeen = new Set();
+let genExpected = 0;
+
+/**
+ * The stages this system genuinely reports, in the order it reports them.
+ *
+ * Every one is matched against a line the generator actually prints - nothing
+ * here is a guess at what it might be doing, and no stage advances on a timer.
+ * `match` is tested against the newest chunk of its log.
+ */
+const STAGES = [
+  { key: 'analyze',  label: 'Analysing the test case',        match: /^\s*=== TC/m },
+  { key: 'context',  label: 'Selecting framework knowledge',  match: /context selected deterministically/ },
+  { key: 'page',     label: 'Checking page knowledge',        match: /page knowledge:/ },
+  { key: 'browser',  label: 'Deciding whether a browser is needed', match: /browser needed:/ },
+  { key: 'write',    label: 'Generating the Playwright test', match: /browser: (none opened|opened|REUSED)/ },
+  { key: 'gate',     label: 'Running the quality gate',       match: /clean run:/ },
+  { key: 'mutated',  label: 'Falsifying it (mutated run)',    match: /mutated run/ },
+  { key: 'done',     label: 'Completed',                      match: /ACCEPTED:|QUARANTINED:|DECLINED:|FAILED:/ },
+];
+let genStage = -1;
+
+function renderStages() {
+  const holder = $('genStages');
+  holder.textContent = '';
+  for (const [index, stage] of STAGES.entries()) {
+    const row = el('div', 'stage');
+    const state = index < genStage ? 'done' : index === genStage ? 'active' : 'todo';
+    row.dataset.state = state;
+    const mark = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    mark.setAttribute('class', 'icon-sm' + (state === 'active' ? ' spin' : ''));
+    mark.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', state === 'done' ? '#i-check' : state === 'active' ? '#i-refresh' : '#i-minus');
+    mark.appendChild(use);
+    row.appendChild(mark);
+    row.appendChild(el('span', '', stage.label));
+    if (state === 'active') row.setAttribute('aria-current', 'step');
+    holder.appendChild(row);
+  }
+}
+
+function tickElapsed() {
+  if (!genStart) return;
+  const seconds = Math.round((Date.now() - genStart) / 1000);
+  $('genElapsed').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+/** Read the generator's own output. Nothing here is inferred or timed. */
+function readGenerationLog(text) {
+  const caseMatch = [...text.matchAll(/^\s*=== (TC[_A-Z0-9]+)/gm)].pop();
+  if (caseMatch) {
+    $('genCase').textContent = caseMatch[1];
+    genSeen.add(caseMatch[1]);
+    genStage = 0;
+  }
+  for (const [index, stage] of STAGES.entries()) {
+    if (stage.match.test(text) && index > genStage) genStage = index;
+  }
+  renderStages();
+
+  if (genExpected > 0) {
+    const done = Math.max(0, genSeen.size - (genStage < STAGES.length - 1 ? 1 : 0));
+    $('genProgressLabel').textContent = `Progress · ${genSeen.size} of ${genExpected} test case(s)`;
+    $('genBar').style.width = `${Math.min(100, (done / genExpected) * 100)}%`;
+  } else if (genSeen.size) {
+    $('genProgressLabel').textContent = `Progress · ${genSeen.size} test case(s) so far`;
+    $('genBar').style.width = '';
+  }
+}
+
+function watchAutocode(ids) {
+  if (autocodeStream) return;
+  setView('generation');
+  $('navGen').hidden = false;
+  $('genLive').hidden = false;
+  $('genIdle').hidden = true;
+  $('autocodeConsole').textContent = '';
+  $('autocodeState').textContent = 'Running — this can take a few minutes';
+  genStart = Date.now();
+  genSeen = new Set();
+  genStage = -1;
+  genExpected = Array.isArray(ids) ? ids.length : 0;
+  $('genCase').textContent = '—';
+  $('genBar').style.width = '0';
+  $('genProgressLabel').textContent = genExpected ? `Progress · 0 of ${genExpected} test case(s)` : 'Progress';
+  renderStages();
+  clearInterval(genTimer);
+  genTimer = setInterval(tickElapsed, 1000);
+  tickElapsed();
+
+  autocodeStream = new EventSource('/api/autocode/stream');
+  autocodeStream.addEventListener('log', e => {
+    const text = JSON.parse(e.data).text;
+    const box = $('autocodeConsole');
+    box.textContent += text;
+    box.scrollTop = box.scrollHeight;
+    readGenerationLog(text);
+  });
+  autocodeStream.addEventListener('idle', () => {
+    $('autocodeState').textContent = 'Not running';
+    stopWatchingAutocode();
+  });
+  autocodeStream.addEventListener('done', e => {
+    const { exitCode } = JSON.parse(e.data);
+    $('autocodeState').textContent = exitCode === 0 ? 'Finished' : `Finished with exit code ${exitCode}`;
+    genStage = STAGES.length - 1;
+    renderStages();
+    $('genBar').style.width = '100%';
+    stopWatchingAutocode();
+    void loadWorkbook();
+    // The run that just finished becomes one of the five retained records, and the
+    // server writes it BEFORE it sends 'done' - so this refresh always finds it.
+    void loadGenerations();
+  });
+  autocodeStream.onerror = () => { if (autocodeStream) stopWatchingAutocode(); };
+}
+
+function stopWatchingAutocode() {
+  autocodeStream?.close();
+  autocodeStream = null;
+  clearInterval(genTimer);
+  genTimer = null;
+  $('navGen').hidden = true;
+}
+
+$('autocodeStop').addEventListener('click', async () => {
+  await fetch('/api/autocode/stop', { method: 'POST' });
+});
+
+/* ---------------- Generation history ---------------- */
+/**
+ * The status vocabulary belongs to the GENERATOR and is open.
+ *
+ * A word this table has never seen is shown exactly as it arrived rather than mapped
+ * onto the nearest one here. Translating `quarantined` into `failed` would be the
+ * dashboard holding a second opinion about a decision the pipeline already made and
+ * recorded, and the two would then disagree about the same run.
+ */
+const GEN_LOOK = {
+  ACCEPTED: { kind: 'pass', icon: 'check' },
+  PASSED: { kind: 'pass', icon: 'check' },
+  GENERATED: { kind: 'run', icon: 'spark' },
+  QUARANTINED: { kind: 'warn', icon: 'alert' },
+  REJECTED: { kind: 'warn', icon: 'alert' },
+  DECLINED: { kind: 'warn', icon: 'alert' },
+  FAILED: { kind: 'fail', icon: 'x' },
+  SKIPPED: { kind: 'skip', icon: 'minus' },
+  UNREPORTED: { kind: 'idle', icon: 'minus' },
+};
+
+const GEN_DISPOSITION_LOOK = {
+  EXISTING_PO_REUSED: 'pass',
+  PO_CREATED_DETERMINISTICALLY: 'pass',
+  PO_CREATED_BY_AI: 'run',
+  AI_REPAIRED_AND_ACCEPTED: 'run',
+  REFUSED_NO_ADMISSIBLE_EVIDENCE: 'warn',
+};
+
+function genPill(status) {
+  const look = GEN_LOOK[status] || { kind: 'idle', icon: 'minus' };
+  return withIcon(el('span', 'pill ' + look.kind, status || 'UNKNOWN'), look.icon);
+}
+
+/**
+ * Only the label. The server owns the cap and reports it; this is what the chip says
+ * when the server did not answer at all.
+ */
+const GEN_HISTORY_LABEL_LIMIT = 5;
+
+async function loadGenerations() {
+  // A dashboard started before this feature existed has no such route. The version
+  // banner already says so plainly, and everything init() does AFTER this - picking up
+  // a generation already in progress, and a recorder somebody left open - matters more
+  // than a history table, so a 404 here is an empty table rather than an abandoned
+  // page with a live generation it never noticed.
+  const res = await fetch('/api/generations');
+  const body = res.ok ? await res.json() : {};
+  const generations = body.generations ?? [];
+  const limit = body.limit ?? GEN_HISTORY_LABEL_LIMIT;
+  $('genHistoryLimit').textContent = `latest ${limit}`;
+
+  const tbody = $('genRows');
+  tbody.textContent = '';
+  if (!generations.length) {
+    const tr = document.createElement('tr');
+    const td = cell(tr, '', 'empty');
+    td.colSpan = 6;
+    td.appendChild(el('div', 'lead', 'No generations recorded yet'));
+    td.appendChild(document.createTextNode(
+        `Saving a test case that needs code starts the generator, and the last ${limit} runs are kept here.`));
+    tbody.appendChild(tr);
+    return;
+  }
+
+  for (const gen of generations) {
+    const tr = el('tr', 'row-click');
+    tr.title = 'Show this generation’s output and Page Object decisions';
+    cell(tr, runHandle(gen.id), 'id');
+    cell(tr, gen.testCaseIds.join(', ') || '—', 'id');
+    cell(tr, gen.caseCount > 1 ? `${gen.scenario} (+${gen.caseCount - 1} more)` : (gen.scenario || '—'), 'muted');
+    const status = document.createElement('td');
+    status.appendChild(genPill(gen.status));
+    tr.appendChild(status);
+    cell(tr, String(gen.lifecycleCount), 'num muted');
+    const actions = document.createElement('td');
+    const open = el('button', 'edit-link', 'Details');
+    open.title = 'Show the captured log and every Page Object decision';
+    open.addEventListener('click', e => { e.stopPropagation(); void showGeneration(gen.id); });
+    actions.appendChild(open);
+    tr.appendChild(actions);
+    tr.addEventListener('click', () => void showGeneration(gen.id));
+    tbody.appendChild(tr);
+  }
+}
+
+async function showGeneration(id) {
+  const res = await fetch(`/api/generations/${encodeURIComponent(id)}`);
+  const detail = await res.json();
+  if (!res.ok) {
+    // Only five are kept, so a row can be evicted between the table being drawn and
+    // somebody clicking it. Say that, and redraw rather than leaving a dead row.
+    showError(detail.error || 'That generation is no longer one of the retained runs.');
+    void loadGenerations();
+    return;
+  }
+  showError('');
+  $('genDetailCard').hidden = false;
+  $('genDetailId').textContent = runHandle(detail.id);
+
+  const ms = duration(detail);
+  const meta = $('genDetailMeta');
+  meta.textContent = '';
+  meta.appendChild(kv([
+    ['Status', genPill(detail.status)],
+    ['Started', new Date(detail.startedAt).toLocaleString()],
+    ['Finished', detail.finishedAt ? new Date(detail.finishedAt).toLocaleString() : '—'],
+    ['Took', ms === null ? '—' : formatMs(ms)],
+    ['Workbook', detail.workbook],
+    // null means a signal, which is what the Stop button sends. "killed" says that;
+    // "0" would claim the generator finished its work.
+    ['Exit code', detail.exitCode === null ? 'killed' : String(detail.exitCode)],
+    ['Generator run id', detail.runId || 'not reported — Page Object decisions could not be joined'],
+    ['Asked for', detail.requestedIds.length ? detail.requestedIds.join(', ') : 'whatever needed code'],
+  ]));
+
+  const caseRows = $('genCaseRows');
+  caseRows.textContent = '';
+  if (!detail.cases.length) {
+    const tr = document.createElement('tr');
+    cell(tr, 'This generation reported on no test case.', 'empty').colSpan = 4;
+    caseRows.appendChild(tr);
+  }
+  for (const one of detail.cases) {
+    const tr = document.createElement('tr');
+    cell(tr, one.testCaseId, 'id');
+    cell(tr, one.scenario || '—', 'muted');
+    const status = document.createElement('td');
+    status.appendChild(genPill(one.status));
+    tr.appendChild(status);
+    cell(tr, one.reason || '—', 'muted');
+    caseRows.appendChild(tr);
+  }
+
+  const lifecycleRows = $('genLifecycleRows');
+  lifecycleRows.textContent = '';
+  if (!detail.lifecycle.length) {
+    const tr = document.createElement('tr');
+    const td = cell(tr, '', 'empty');
+    td.colSpan = 6;
+    td.textContent = detail.runId
+      ? 'No Page Object decisions were recorded for this generation.'
+      : 'The generator did not report its run id, so its Page Object decisions could not be joined to this record.';
+    lifecycleRows.appendChild(tr);
+  }
+  for (const decision of detail.lifecycle) {
+    const tr = document.createElement('tr');
+    cell(tr, decision.testCaseId, 'id');
+    cell(tr, decision.target || '—').title = decision.from || '';
+    const disposition = document.createElement('td');
+    disposition.appendChild(
+        el('span', 'pill ' + (GEN_DISPOSITION_LOOK[decision.disposition] || 'idle'), decision.disposition));
+    tr.appendChild(disposition);
+    const method = decision.pageObject && decision.method
+      ? `${decision.pageObject}.${decision.method}(${(decision.parameters || []).join(', ')})`
+      : '—';
+    cell(tr, method, 'muted');
+    cell(tr, `${decision.evidenceStatus} · ${decision.validationStatus}`, 'muted');
+    // The refusal CODES are what decides who may clear a refusal, so they are shown
+    // beside the prose rather than in place of it, and the remedy - the one thing that
+    // would change the answer - is shown whenever there is one.
+    const why = [decision.reason, (decision.refusalCodes || []).join(' + '),
+      decision.remedy ? `Remedy: ${decision.remedy}` : ''].filter(Boolean).join(' — ');
+    cell(tr, why || '—', 'muted');
+    lifecycleRows.appendChild(tr);
+  }
+
+  $('genDetailLog').textContent = detail.log || '(no output recorded)';
+  $('genDetailCard').scrollIntoView({ block: 'nearest' });
+}
+
+$('refreshGenerations').addEventListener('click', () => void loadGenerations());
+$('genDetailClose').addEventListener('click', () => { $('genDetailCard').hidden = true; });
+
+$('authorReset').addEventListener('click', resetAuthorForm);
+$('fSheet').addEventListener('change', () => {
+  const creating = $('fSheet').value === '__new__';
+  $('fNewSheet').style.display = creating ? '' : 'none';
+  if (creating) $('fNewSheet').focus();
+  void refreshSuggestedId();
+});
+$('fNewSheet').addEventListener('input', () => void refreshSuggestedId());
+$('fModule').addEventListener('input', () => void refreshSuggestedId());
+// Typing an ID by hand switches off the suggestion; clearing it switches back on.
+$('fId').addEventListener('input', () => {
+  $('fId').dataset.touched = $('fId').value.trim() ? 'yes' : '';
+  if (!$('fId').value.trim()) void refreshSuggestedId();
+});
+
+$('upload').addEventListener('change', async e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const note = $('uploadNote');
+  note.className = 'note info show';
+  note.textContent = `Uploading ${file.name}…`;
+  const res = await fetch(`/api/upload?name=${encodeURIComponent(file.name)}`, { method: 'POST', body: file });
+  const body = await res.json();
+  if (!res.ok) {
+    note.className = 'note bad show';
+    note.textContent = body.error;
+    return;
+  }
+  note.className = 'note info show';
+  note.textContent = `${body.workbook}: ${body.cases} test case(s) across ${body.worksheets.length} sheet(s)` +
+    (body.malformed.length ? ` · ${body.malformed.length} row(s) skipped with no Test Case ID` : '') +
+    (body.autocode?.started
+      ? ' · writing code for every row that needs a spec'
+      : ` · code generation did not start (${body.autocode?.reason ?? 'unknown'})`);
+  if (body.autocode?.started) watchAutocode();
+  // Add it to the picker if new, then select it.
+  if (![...$('workbook').options].some(o => o.value === body.workbook)) {
+    const option = document.createElement('option');
+    option.value = body.workbook;
+    option.textContent = body.workbook.replace(/^excel\//, '');
+    $('workbook').appendChild(option);
+  }
+  $('workbook').value = body.workbook;
+  await loadWorkbook();
+  e.target.value = '';
+});
+
+/* ---------------- Record Test ----------------
+ *
+ * A second way IN to the same pipeline. Everything after "Save" is the existing
+ * machinery: the draft below is the same `CaseDraft` the Add/Edit form builds, and
+ * it is posted to the same `/api/case` endpoint, so ID generation, validation,
+ * duplicate detection, the backup, the workbook write, the data-driven cache and
+ * the mapping update are all code that was already here.
+ *
+ * Nothing in this section calls a model. The steps, test data, scenario and
+ * expected result all arrive already derived from the server's deterministic
+ * parse of Playwright's own recording.
+ */
+let recording = null;          // the structured recording from /api/record/stop
+let recSteps = [];             // editable copy of recording.actions
+let recAsserts = [];           // editable copy of recording.assertions
+let recTimer = null;
+let recStartedMs = 0;
+let recPoll = null;
+
+function recStage(stage) {
+  $('recSetup').hidden = stage !== 'setup';
+  $('recLive').hidden = stage !== 'recording';
+  $('recReview').hidden = stage !== 'review';
+  $('recordMode').textContent =
+    stage === 'recording' ? 'recording' : stage === 'review' ? 'review before saving' : 'not recording';
+}
+
+function recTick() {
+  const seconds = Math.round((Date.now() - recStartedMs) / 1000);
+  $('recElapsed').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function recProblem(id, message) {
+  const box = $(id);
+  box.textContent = message || '';
+  box.style.whiteSpace = 'pre-line';
+  box.classList.toggle('show', Boolean(message));
+}
+
+$('recStart').addEventListener('click', async () => {
+  recProblem('recError', '');
+  const res = await fetch('/api/record/start', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ url: $('recUrl').value, browser: $('recBrowser').value }),
+  });
+  const body = await res.json();
+  if (!res.ok || !body.started) {
+    recProblem('recError', body.error || 'The recorder could not start.');
+    return;
+  }
+  recStage('recording');
+  recStartedMs = Date.now();
+  recTick();
+  clearInterval(recTimer);
+  recTimer = setInterval(recTick, 1000);
+  // The browser has its own close button, so the recorder can end without anyone
+  // pressing Stop. Poll for that rather than leaving a dead session on screen.
+  clearInterval(recPoll);
+  recPoll = setInterval(async () => {
+    const state = await (await fetch('/api/record')).json();
+    if (!state.recording) { clearInterval(recPoll); return; }
+    if (state.browserClosed) {
+      $('recLiveNote').textContent = 'The browser was closed. Press Stop to review what was captured.';
+      $('recLiveNote').className = 'note show';
+    }
+  }, 2000);
+});
+
+$('recStop').addEventListener('click', async () => {
+  clearInterval(recTimer); recTimer = null;
+  clearInterval(recPoll); recPoll = null;
+  $('recStop').disabled = true;
+  const res = await fetch('/api/record/stop', { method: 'POST' });
+  $('recStop').disabled = false;
+  const body = await res.json();
+  if (!res.ok) {
+    recStage('setup');
+    recProblem('recError', body.error || 'The recording could not be read.');
+    return;
+  }
+  recording = body.recording;
+  recSteps = recording.actions.map(a => ({ ...a }));
+  recAsserts = recording.assertions.map(a => ({ ...a }));
+  await openReview(body.draft);
+});
+
+async function openReview(draft) {
+  recStage('review');
+  const metrics = recording.metrics;
+  $('recActionCount').textContent = String(metrics.recordingActionCount);
+  $('recAssertCount').textContent = String(metrics.assertionCount);
+  $('recRedacted').textContent = String(metrics.redactedValues);
+  $('recDuration').textContent = formatMs(metrics.durationMs);
+  $('recAiCalls').textContent = String(metrics.aiCalls);
+
+  // Worksheets from the workbook already loaded - no second source of truth.
+  const sheets = $('recSheet');
+  sheets.textContent = '';
+  for (const option of $('fSheet').options) {
+    if (option.value === '__new__') continue;
+    const copy = document.createElement('option');
+    copy.value = option.value; copy.textContent = option.textContent;
+    sheets.appendChild(copy);
+  }
+
+  $('recScenario').value = draft.scenario;
+  $('recExpected').value = draft.expectedResult;
+  // The same predicate `syncExpected` uses, so the warning cannot say one thing on
+  // arrival and another after an edit. `draft.needsConfirmation` is the server's
+  // answer to exactly this question and agrees with it - it is not consulted twice.
+  $('recNeedsConfirm').classList.toggle('show', recAsserts.length === 0);
+  // The origin tag comes from the server, so the marker the generator reads and the
+  // marker the dashboard shows can never drift apart.
+  //
+  // Defaulted, because a missing value here is silently destructive: an out-of-date
+  // server that does not send `tags` put the STRING "undefined" into the field, and
+  // that is what got written to the workbook - two real rows ended up tagged
+  // `["undefined"]` instead of `["recorded"]`, so they were treated as ordinary
+  // manual cases and lost the recorded pipeline entirely. A tag is the only thing
+  // marking a row as recorded, so it must never be able to arrive as a mistake.
+  $('recTags').value = draft.tags || 'recorded';
+
+  // Authentication: the fact, and nothing about the credentials.
+  const auth = draft.authentication || { detected: false };
+  $('recAuthNote').classList.toggle('show', auth.detected === true);
+  $('recAuthEvidence').textContent = auth.evidence || '';
+
+  const locators = draft.locators || [];
+  $('recLocators').textContent = locators.length
+    ? `Locator strategies captured: ${locators.map(l => `${l.strategy} ×${l.count}`).join(', ')}`
+    : '';
+  recProblem('recSaveError', '');
+  $('recSaveOk').style.display = 'none';
+  renderRecSteps();
+  renderRecAsserts();
+  await recSuggestId();
+  $('recordPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/** The EXISTING id endpoint, so a recorded case is numbered like every other. */
+async function recSuggestId() {
+  const params = new URLSearchParams({
+    workbook: $('workbook').value,
+    worksheet: $('recSheet').value,
+    module: $('recModule').value,
+  });
+  const res = await fetch(`/api/next-id?${params}`);
+  if (!res.ok) return;
+  const suggestion = await res.json();
+  $('recId').value = suggestion.testCaseId;
+  $('recIdBasis').textContent = suggestion.basis ? `· ${suggestion.basis}` : '';
+}
+$('recSheet').addEventListener('change', () => void recSuggestId());
+$('recModule').addEventListener('input', () => void recSuggestId());
+
+const ACTION_VERB = {
+  navigate: 'Open', click: 'Click', dblclick: 'Double-click', hover: 'Hover over',
+  press: 'Press', check: 'Tick', uncheck: 'Untick', select: 'Choose', fill: 'Enter the',
+};
+
+function renderRecSteps() {
+  const tbody = $('recSteps');
+  tbody.textContent = '';
+  if (!recSteps.length) {
+    const tr = document.createElement('tr');
+    cell(tr, 'No actions were captured.', 'empty').colSpan = 5;
+    tbody.appendChild(tr);
+    return;
+  }
+  recSteps.forEach((step, index) => {
+    const tr = document.createElement('tr');
+    cell(tr, String(index + 1), 'step-no');
+
+    const action = document.createElement('td');
+    action.appendChild(el('span', 'act ' + step.type, step.type));
+    tr.appendChild(action);
+
+    cell(tr, step.target, step.type === 'navigate' ? 'mono' : '');
+
+    const value = document.createElement('td');
+    if (step.redacted) {
+      const mark = el('span', 'redacted', '[type=password]');
+      mark.title = 'A sensitive field. The value was never captured.';
+      value.appendChild(mark);
+    } else if (step.value !== null && step.value !== undefined) {
+      value.textContent = step.value;
+    } else {
+      value.appendChild(el('span', 'faint', '—'));
+    }
+    tr.appendChild(value);
+
+    const tools = document.createElement('td');
+    const group = el('div', 'mini');
+    const up = el('button', 'sm ghost');
+    up.title = 'Move up'; up.setAttribute('aria-label', `Move step ${index + 1} up`);
+    up.appendChild(iconNode('up'));
+    up.disabled = index === 0;
+    up.addEventListener('click', () => { move(recSteps, index, -1); renderRecSteps(); });
+    const down = el('button', 'sm ghost');
+    down.title = 'Move down'; down.setAttribute('aria-label', `Move step ${index + 1} down`);
+    down.appendChild(iconNode('down'));
+    down.disabled = index === recSteps.length - 1;
+    down.addEventListener('click', () => { move(recSteps, index, 1); renderRecSteps(); });
+    const remove = el('button', 'sm ghost');
+    remove.title = 'Remove this step'; remove.setAttribute('aria-label', `Remove step ${index + 1}`);
+    remove.appendChild(iconNode('trash'));
+    remove.addEventListener('click', () => { recSteps.splice(index, 1); renderRecSteps(); });
+    group.append(up, down, remove);
+    tools.appendChild(group);
+    tr.appendChild(tools);
+    tbody.appendChild(tr);
+  });
+}
+
+function iconNode(name) {
+  const holder = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  holder.setAttribute('class', 'icon-sm');
+  holder.setAttribute('aria-hidden', 'true');
+  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+  use.setAttribute('href', '#i-' + name);
+  holder.appendChild(use);
+  return holder;
+}
+
+function move(list, index, by) {
+  const to = index + by;
+  if (to < 0 || to >= list.length) return;
+  [list[index], list[to]] = [list[to], list[index]];
+}
+
+/** The same wording the server derives, so the page cannot drift from it. */
+function assertionPhrase(assertion) {
+  switch (assertion.type) {
+    case 'visible': return `${assertion.target} is visible`;
+    case 'hidden': return `${assertion.target} is not visible`;
+    case 'text': return `${assertion.target} reads "${assertion.value ?? ''}"`;
+    case 'contains': return `${assertion.target} contains "${assertion.value ?? ''}"`;
+    case 'value': return `${assertion.target} holds "${assertion.value ?? ''}"`;
+    case 'checked': return `${assertion.target} is ticked`;
+    case 'url': return `the URL is ${assertion.value ?? ''}`;
+    case 'count': return `${assertion.target} appears ${assertion.value ?? ''} time(s)`;
+    case 'title': return `the page title is "${assertion.value ?? ''}"`;
+    default: return `${assertion.target} ${assertion.type}`;
+  }
+}
+
+const NEEDS_CONFIRMATION = 'Needs confirmation';
+
+/**
+ * Recompute the expected result from the assertions that exist RIGHT NOW.
+ *
+ * Only ever from explicit assertions. Removing the last one puts "Needs
+ * confirmation" back rather than leaving a sentence nothing supports, and nothing
+ * is ever assembled out of the actions.
+ */
+function syncExpected() {
+  const derived = recAsserts.length
+    ? recAsserts.map(assertionPhrase).join('; ')
+    : NEEDS_CONFIRMATION;
+  const sentenceCase = derived.charAt(0).toUpperCase() + derived.slice(1);
+  $('recExpected').value = sentenceCase;
+  $('recNeedsConfirm').classList.toggle('show', recAsserts.length === 0);
+}
+
+function renderRecAsserts() {
+  const tbody = $('recAsserts');
+  tbody.textContent = '';
+  // The card counts what is in the list NOW, not what the recorder captured: an
+  // assertion added here is as real as one recorded, and a card reading 0 above a
+  // table showing one is the kind of small lie a demo audience spots.
+  $('recAssertCount').textContent = String(recAsserts.length);
+  if (!recAsserts.length) {
+    const tr = document.createElement('tr');
+    const td = cell(tr, '', 'empty');
+    td.colSpan = 4;
+    td.appendChild(el('div', 'lead', 'No assertions recorded'));
+    td.appendChild(document.createTextNode('Add one below, or save with “Needs confirmation”.'));
+    tbody.appendChild(tr);
+    return;
+  }
+  recAsserts.forEach((assertion, index) => {
+    const tr = document.createElement('tr');
+    const type = document.createElement('td');
+    type.appendChild(el('span', 'act assert', assertion.type));
+    tr.appendChild(type);
+    cell(tr, assertion.target);
+    cell(tr, assertion.value ?? '—', assertion.value ? '' : 'faint');
+    const tools = document.createElement('td');
+    const remove = el('button', 'sm ghost');
+    remove.title = 'Remove this assertion';
+    remove.setAttribute('aria-label', `Remove assertion ${index + 1}`);
+    remove.appendChild(iconNode('trash'));
+    remove.addEventListener('click', () => { recAsserts.splice(index, 1); renderRecAsserts(); syncExpected(); });
+    tools.appendChild(remove);
+    tr.appendChild(tools);
+    tbody.appendChild(tr);
+  });
+}
+
+$('recAddAssert').addEventListener('click', () => {
+  const target = $('recNewAssertTarget').value.trim();
+  const type = $('recNewAssertType').value;
+  const value = $('recNewAssertValue').value.trim();
+  const needsTarget = !['url', 'title'].includes(type);
+  if (needsTarget && !target) {
+    recProblem('recSaveError', 'An assertion needs a target — the thing on the page it is about.');
+    return;
+  }
+  const needsValue = ['text', 'contains', 'value', 'url', 'title'].includes(type);
+  if (needsValue && !value) {
+    recProblem('recSaveError', `"${$('recNewAssertType').selectedOptions[0].textContent}" needs an expected value.`);
+    return;
+  }
+  recProblem('recSaveError', '');
+  recAsserts.push({ type, target: target || '(page)', locator: '', locatorStrategy: 'manual', value: value || null });
+  $('recNewAssertTarget').value = '';
+  $('recNewAssertValue').value = '';
+  renderRecAsserts();
+  syncExpected();
+});
+
+/** The recorded steps as workbook prose, rebuilt after any edit or reorder. */
+function recStepLines() {
+  return recSteps.map(step => {
+    if (step.type === 'navigate') return `Open ${step.value ?? step.target}`;
+    if (step.type === 'fill') return `Enter the ${String(step.target).toLowerCase()}`;
+    if (step.type === 'press') return `Press ${step.value} in ${step.target}`;
+    if (step.type === 'select') return `Choose ${step.value} in ${step.target}`;
+    return `${ACTION_VERB[step.type] || step.type} ${step.target}`;
+  });
+}
+
+/**
+ * Test Data, rebuilt after any edit — the mirror of `testDataFrom` in recorder.ts.
+ *
+ * This page rebuilds the lines rather than posting the server's, because the steps
+ * are editable here, so the two must agree on the credential rule: a redacted field
+ * in a recording that CONTAINED A SIGN-IN is written as the workbook's own
+ * `<valid-password>` token, never as the redaction marker. `[type=password]` is not
+ * a value the workbook can resolve — it parses as a literal, which is what made
+ * every recorded sign-in unsaveable. Neither string is a password.
+ */
+const CREDENTIAL_TOKEN = '<valid-password>';
+
+function recTestDataLines() {
+  const signedIn = recording?.authentication?.detected === true;
+  return recSteps
+      .filter(step => step.type === 'fill' || step.type === 'select')
+      .map(step => `${step.target} = ${step.redacted && signedIn ? CREDENTIAL_TOKEN : step.value ?? ''}`);
+}
+
+/** The EXISTING CaseDraft. No new model, no new fields. */
+function recDraft() {
+  return {
+    worksheet: $('recSheet').value,
+    testCaseId: $('recId').value,
+    module: $('recModule').value,
+    feature: $('recFeature').value,
+    scenario: $('recScenario').value,
+    steps: recStepLines().join('\n'),
+    testData: recTestDataLines().join('\n'),
+    expectedResult: $('recExpected').value,
+    // Blank on purpose: in this framework a blank Assert Outcome means "the
+    // assertion lives in a spec", which sends the row to the existing generator
+    // rather than turning it into a data-driven contract.
+    assertOutcome: '',
+    assertMessage: '',
+    priority: $('recPriority').value,
+    tags: $('recTags').value,
+    run: true,
+  };
+}
+
+async function recSaveCase() {
+  recProblem('recSaveError', '');
+  const res = await fetch('/api/case', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ workbook: $('workbook').value, draft: recDraft(), isNew: true }),
+  });
+  const body = await res.json();
+  if (!res.ok) {
+    recProblem('recSaveError', body.error);
+    return null;
+  }
+  return body;
+}
+
+function recSavedMessage(body) {
+  const lines = [`Added ${body.testCaseId} in row ${body.row}. Backup kept in excel/.backups/.`];
+  for (const repair of body.repairs ?? [])
+    lines.push(`Strengthened: ${repair}`);
+  if (body.autocode?.started)
+    lines.push('The existing code generator has started and will write this case a spec. Watch it in Generation.');
+  else if (body.runnable)
+    lines.push(`Runs now via ${body.runner}.`);
+  else
+    lines.push(`Not executable yet and the generator did not start (${body.autocode?.reason ?? 'no runner covers this module'}).`);
+  const ok = $('recSaveOk');
+  ok.textContent = lines.join('\n');
+  ok.style.whiteSpace = 'pre-line';
+  ok.style.display = 'block';
+}
+
+$('recSave').addEventListener('click', async () => {
+  const body = await recSaveCase();
+  if (!body) return;
+  recSavedMessage(body);
+  if (body.autocode?.started) watchAutocode([body.testCaseId]);
+  await loadWorkbook();
+  recording = null;
+  recStage('setup');
+  $('recSaveOk').style.display = 'block';
+});
+
+/**
+ * Save, generate, and run only if the gate accepted.
+ *
+ * Every step is the existing machinery: /api/case saves and starts the existing
+ * generator, and /api/run is the existing runner. The only thing added is the
+ * *sequencing* - and the refusal to run when generation did not produce a
+ * registered, runnable test.
+ */
+$('recSaveRun').addEventListener('click', async () => {
+  const body = await recSaveCase();
+  if (!body) return;
+  recSavedMessage(body);
+  const id = body.testCaseId;
+  await loadWorkbook();
+  recording = null;
+  recStage('setup');
+
+  if (!body.autocode?.started) {
+    if (!body.runnable) {
+      recProblem('recSaveError', `Saved, but generation did not start (${body.autocode?.reason ?? 'unknown'}), `
+        + 'so there is nothing to run yet.');
+      return;
+    }
+    return startRunFor(id);
+  }
+
+  watchAutocode([id]);
+  // Wait for the existing generator to finish, then ask the workbook - not the
+  // generator's log - whether the case actually became runnable. The quality gate
+  // quarantines a spec that proves nothing, and a quarantined case must not run.
+  const finished = new Promise(resolve => {
+    const stream = new EventSource('/api/autocode/stream');
+    stream.addEventListener('done', e => { stream.close(); resolve(JSON.parse(e.data)); });
+    stream.addEventListener('idle', () => { stream.close(); resolve({ exitCode: 0 }); });
+    stream.onerror = () => { stream.close(); resolve({ exitCode: null }); };
+  });
+  await finished;
+  await loadWorkbook();
+  const saved = cases.find(c => c.testCaseId === id);
+  if (!saved?.runnable) {
+    recProblem('recSaveError',
+        `${id} was saved, but the quality gate did not accept a spec for it, so it was not run. `
+        + 'Open Generation to see why.');
+    setView('generation');
+    return;
+  }
+  await startRunFor(id);
+});
+
+/** Run one case through the EXISTING run endpoint and UI. */
+async function startRunFor(id) {
+  selected = new Set([id]);
+  renderCases();
+  showError('');
+  setRunning(true);
+  $('console').textContent = '';
+  renderResults([], [], '', {});
+  setReportLink(null, false);
+  setView('executions');
+  const res = await fetch('/api/run', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      workbook: $('workbook').value,
+      testCaseIds: [id],
+      browser: $('browser').value,
+      workers: Number($('workers').value),
+      headed: $('headed').checked,
+      inPlace: $('inPlace').checked,
+      screenshot: $('screenshot').value,
+      video: $('video').value,
+      trace: $('trace').value,
+    }),
+  });
+  const body = await res.json();
+  if (!res.ok) { showError(body.error); setRunning(false); return; }
+  connectStream();
+}
+
+$('recCancel').addEventListener('click', () => {
+  recording = null;
+  recSteps = [];
+  recAsserts = [];
+  recStage('setup');
+  recProblem('recSaveError', '');
+  $('recSaveOk').style.display = 'none';
+});
+
+/** The API this page expects. Must match API_VERSION in server.ts. */
+const EXPECTED_API = 7;
+
+/**
+ * Catch the "old server, new page" trap.
+ *
+ * The server reads index.html from disk on every request, so a dashboard process
+ * started before these features existed still serves this page in full — every
+ * button present, half the endpoints missing. Left undetected that surfaces as
+ * "No route for /api/case", which points at nothing useful.
+ */
+async function checkServerVersion() {
+  let api = 0;
+  try {
+    const res = await fetch('/api/health');
+    if (res.ok) api = (await res.json()).api ?? 0;
+  } catch { /* treated as too old */ }
+  $('apiVersion').textContent = api ? `v${api}` : 'unknown';
+  if (api >= EXPECTED_API) return;
+
+  const note = $('uploadNote');
+  note.className = 'note bad show';
+  note.textContent =
+    `This page is being served by an out-of-date dashboard (API ${api || 'unknown'}, expected ` +
+    `${EXPECTED_API}). Saving and running will fail with "No route" errors. Stop that process ` +
+    'and start it again with: npm run excel:dashboard — and check you are not on an old tab ' +
+    'pointing at a leftover port.';
+}
+
+(async function init() {
+  await checkServerVersion();
+  $('envBrowser').textContent = $('browser').selectedOptions[0].textContent;
+  const { workbooks } = await (await fetch('/api/workbooks')).json();
+  const select = $('workbook');
+  for (const file of workbooks) {
+    const option = document.createElement('option');
+    option.value = file; option.textContent = file.replace(/^excel\//, '');
+    select.appendChild(option);
+  }
+  await loadWorkbook();
+  await loadRuns();
+  // Generation history is read from disk, so it survives this page being closed and
+  // the dashboard process being restarted - which is the whole point of it.
+  await loadGenerations();
+  const { active } = await (await fetch('/api/runs')).json();
+  if (active) { setRunning(true); connectStream(); }
+  // A generation already in progress when the page opens: pick it up, with the
+  // ids the server reports so progress is real rather than assumed.
+  const gen = await (await fetch('/api/autocode')).json();
+  if (gen.running) watchAutocode(gen.ids);
+  // Same for a recorder left open by a reloaded page - the browser is still there
+  // and its actions are still being captured, so show the truth rather than a
+  // setup form that would start a second one.
+  const rec = await (await fetch('/api/record')).json();
+  if (rec.recording) {
+    recStage('recording');
+    recStartedMs = Date.parse(rec.startedAt) || Date.now();
+    recTick();
+    recTimer = setInterval(recTick, 1000);
+    setView('cases');
+  }
+})();
+</script>
+</body>
+</html>

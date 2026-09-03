@@ -1,0 +1,45 @@
+- generic [ref=f5e2]:
+  - generic [ref=f5e6]:
+    - generic [ref=f5e7]:
+      - link [ref=f5e8] [cursor=pointer]:
+        - /url: https://bugasura.io/
+        - img "Bugasura" [ref=f5e9]
+      - generic [ref=f5e10]:
+        - button "Italian " [ref=f5e11] [cursor=pointer]:
+          - generic [ref=f5e12]: Italian
+          - generic [ref=f5e17]: 
+        - text: done
+    - generic [ref=f5e20]:
+      - heading [level=2] [ref=f5e21]:
+        - text: Benvenuto su
+        - strong [ref=f5e22]: Bugasura
+      - paragraph [ref=f5e23]: Il sistema operativo per costruire qualità
+      - button "Google Accedi con Google" [ref=f5e25] [cursor=pointer]:
+        - img "Google" [ref=f5e26]
+        - generic [ref=f5e27]: Accedi con Google
+      - paragraph [ref=f5e29]: Oppure accedi con email
+      - generic [ref=f5e30]:
+        - generic [ref=f5e32]:
+          - generic [ref=f5e33]: Email
+          - textbox "Email" [active] [ref=f5e35]:
+            - /placeholder: Inserisci la tua email
+          - paragraph
+        - generic [ref=f5e37]:
+          - generic [ref=f5e38]: Password
+          - generic [ref=f5e39]:
+            - textbox "Password" [ref=f5e40]:
+              - /placeholder: Inserisci la tua password
+            - generic [ref=f5e41] [cursor=pointer]: visibility
+          - paragraph
+          - link "Password dimenticata?" [ref=f5e44] [cursor=pointer]:
+            - /url: javascript:void(0)
+        - button "Accedi" [ref=f5e46] [cursor=pointer]
+        - paragraph [ref=f5e48]:
+          - text: Continuando, accetti i nostri
+          - link "Termini" [ref=f5e50] [cursor=pointer]:
+            - /url: https://bugasura.io/terms-of-service
+          - text: e
+          - link "Informativa sulla privacy" [ref=f5e52] [cursor=pointer]:
+            - /url: https://bugasura.io/privacy
+        - paragraph [ref=f5e54]: Nuovo su Bugasura? Crea un account
+  - text: done

@@ -1,0 +1,51 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e2]:
+    - generic [ref=f5e9]:
+      - generic [ref=f5e10]:
+        - link [ref=f5e11] [cursor=pointer]:
+          - /url: https://bugasura.io/
+          - img "Bugasura" [ref=f5e12]
+        - generic [ref=f5e13]:
+          - button "Russian " [ref=f5e14] [cursor=pointer]:
+            - generic [ref=f5e15]: Russian
+            - generic [ref=f5e20]: 
+          - text: done
+      - generic [ref=f5e23]:
+        - heading [level=2] [ref=f5e24]:
+          - text: Добро пожаловать в
+          - strong [ref=f5e25]: Bugasura
+        - paragraph [ref=f5e26]: Операционная система построения качества
+        - button "Google Войти через Google" [ref=f5e28] [cursor=pointer]:
+          - img "Google" [ref=f5e29]
+          - generic [ref=f5e30]: Войти через Google
+        - paragraph [ref=f5e32]: Или войдите с помощью электронной почты
+        - generic [ref=f5e33]:
+          - generic [ref=f5e35]:
+            - generic [ref=f5e36]: Электронная почта
+            - textbox "Электронная почта" [ref=f5e38]:
+              - /placeholder: Введите ваш email
+            - paragraph
+          - generic [ref=f5e40]:
+            - generic [ref=f5e41]: Пароль
+            - generic [ref=f5e42]:
+              - textbox "Пароль" [ref=f5e43]:
+                - /placeholder: Введите ваш пароль
+              - generic [ref=f5e44] [cursor=pointer]: visibility
+            - paragraph
+            - link "Забыли пароль?" [ref=f5e47] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - button "Войти" [ref=f5e49] [cursor=pointer]
+          - paragraph [ref=f5e51]:
+            - text: Продолжая, вы соглашаетесь с нашими
+            - link "Условиями" [ref=f5e53] [cursor=pointer]:
+              - /url: https://bugasura.io/terms-of-service
+            - text: и
+            - link "Политикой конфиденциальности" [ref=f5e55] [cursor=pointer]:
+              - /url: https://bugasura.io/privacy
+          - paragraph [ref=f5e57]: Впервые в Bugasura? Создать учетную запись
+    - text: done
+  - iframe [ref=f5e59]:
+    - generic:
+      - generic:
+        - text: 
+        - button "Open chat" [ref=f9e1] [cursor=pointer]

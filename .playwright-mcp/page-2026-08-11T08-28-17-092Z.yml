@@ -1,0 +1,59 @@
+- generic [ref=f5e1]:
+  - generic [ref=f5e2]:
+    - generic [ref=f5e6]:
+      - generic [ref=f5e7]:
+        - link [ref=f5e8] [cursor=pointer]:
+          - /url: https://bugasura.io/
+          - img "Bugasura" [ref=f5e9]
+        - generic [ref=f5e10]:
+          - button "Portuguese " [ref=f5e11] [cursor=pointer]:
+            - generic [ref=f5e12]: Portuguese
+            - generic [ref=f5e17]: 
+          - text: done
+      - generic [ref=f5e20]:
+        - heading [level=2] [ref=f5e21]:
+          - text: Bem-vindo ao
+          - strong [ref=f5e22]: Bugasura
+        - paragraph [ref=f5e23]: O sistema operacional para construir qualidade
+        - button "Google Entrar com Google" [ref=f5e25] [cursor=pointer]:
+          - img "Google" [ref=f5e26]
+          - generic [ref=f5e27]: Entrar com Google
+        - paragraph [ref=f5e29]: Ou entrar com e-mail
+        - generic [ref=f5e30]:
+          - generic [ref=f5e32]:
+            - generic [ref=f5e33]: E-mail
+            - textbox "E-mail" [active] [ref=f5e35]:
+              - /placeholder: Insira seu e-mail
+            - paragraph
+          - generic [ref=f5e37]:
+            - generic [ref=f5e38]: Senha
+            - generic [ref=f5e39]:
+              - textbox "Senha" [ref=f5e40]:
+                - /placeholder: Insira sua senha
+              - generic [ref=f5e41] [cursor=pointer]: visibility
+            - paragraph
+            - link "Esqueceu a senha?" [ref=f5e44] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - button "Entrar" [ref=f5e46] [cursor=pointer]
+          - paragraph [ref=f5e48]:
+            - text: Ao continuar, você concorda com a nossa
+            - link "Termos" [ref=f5e50] [cursor=pointer]:
+              - /url: https://bugasura.io/terms-of-service
+            - text: e
+            - link "Política de Privacidade" [ref=f5e52] [cursor=pointer]:
+              - /url: https://bugasura.io/privacy
+          - paragraph [ref=f5e54]: Novo no Bugasura? Criar uma conta
+    - text: done
+  - generic [ref=f5e55]:
+    - generic [ref=f5e56] [cursor=pointer]: ×
+    - generic [ref=f5e57]:
+      - generic [ref=f5e58]: Dark mode coming soon to Bugasura
+      - generic [ref=f5e62] [cursor=pointer]:
+        - radio [ref=f5e63]
+        - text: Yay
+      - generic [ref=f5e66] [cursor=pointer]:
+        - radio [ref=f5e67]
+        - text: Nay
+      - generic [ref=f5e68]:
+        - text: Powered by
+        - img "Lucky Orange Chat Logo" [ref=f5e70] [cursor=pointer]

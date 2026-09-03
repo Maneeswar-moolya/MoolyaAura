@@ -1,0 +1,178 @@
+- generic [active] [ref=f5e1]:
+  - main [ref=f5e4]:
+    - generic [ref=f5e11]:
+      - link [ref=f5e12] [cursor=pointer]:
+        - /url: /
+        - img "Bugasura" [ref=f5e13]
+      - button "Open menu" [ref=f5e14] [cursor=pointer]
+    - generic [ref=f5e17]:
+      - heading "TERMS OF SERVICE" [level=1] [ref=f5e18]
+      - paragraph [ref=f5e19]: This terms is effective as of 19 November 2025
+    - article [ref=f5e21]:
+      - paragraph [ref=f5e22]: These Terms of Service govern the use of the Bugasura platform (“Service”), owned and operated by Moolya, India (“we”, “us”, “our”). By accessing or using the Service, you (“Customer”, “User”, “you”) agree to these Terms. If you do not agree, please discontinue use of the Service.These Terms apply equally to all users, including those on the Free Plan, Paid Plans, Trial Plans, or Enterprise Plans.
+      - heading "1. Definitions" [level=2] [ref=f5e23]
+      - paragraph [ref=f5e24]: "Service: The Bugasura web/mobile applications, APIs, and all related components.Account: Your registered identity within Bugasura.Content: Any information, files, attachments, data, bug reports, text, or materials submitted by Users.Subscription: The plan you use (free or paid).AI Services: Automated or machine-learning functions that may process data for classification, analysis, summarization, or similar tasks.User: Any individual accessing the Service through your Account."
+      - heading "2. Acceptance of Terms" [level=2] [ref=f5e25]
+      - paragraph [ref=f5e26]: By creating an account or using the Service, you agree to these Terms and our Privacy Policy. If you are using Bugasura on behalf of an organization, you represent and warrant that you are authorized to do so and to bind the organization to these Terms.
+      - heading "3. Account Responsibilities" [level=2] [ref=f5e27]
+      - paragraph [ref=f5e28]: You are responsible for all activity under your Account. You agree to use strong passwords, maintain the confidentiality of your credentials, and ensure only authorized individuals have access to your Account.
+      - heading "4. Use of Data and AI Processing" [level=2] [ref=f5e29]
+      - paragraph [ref=f5e30]: We process your data to operate, maintain, and improve the Service. This includes actions such as storage, indexing, search, collaboration functionality, analytics, and stability enhancements. To provide AI-related features, we may transmit certain data to secure third-party AI processors whose security standards are equal to or greater than ours. This may include model providers or inference platforms.If you prefer that your data is not processed by external AI systems, you should refrain from enabling or using any AI features within the platform. All non-AI functionality will continue to work normally.
+      - heading "5. Fair and Permitted Use" [level=2] [ref=f5e31]
+      - paragraph [ref=f5e32]: You may use Bugasura for internal operations, client work, development, testing, and commercial services you offer to third parties, provided such use does not disrupt the platform or harm other users.
+      - paragraph [ref=f5e33]: "You may not:"
+      - list [ref=f5e34]:
+        - listitem [ref=f5e35]: Copy, imitate, clone, reverse engineer, or attempt to derive the source code or underlying logic of the Service
+        - listitem [ref=f5e36]: Scrape or extract large amounts of data
+        - listitem [ref=f5e37]: Build competing products using the Service or Content
+        - listitem [ref=f5e38]: Circumvent system limits or security controls
+        - listitem [ref=f5e39]: Use automation or scripts in a manner that degrades system performance
+        - listitem [ref=f5e40]: Act in any way that interferes with the normal operation of the Service
+      - paragraph [ref=f5e41]: We reserve the right to restrict unreasonable or abusive use.
+      - heading "6. Commercial Use" [level=2] [ref=f5e42]
+      - paragraph [ref=f5e43]: You may use Bugasura for commercial services such as testing, bug reporting, or work done for your clients. Such use must remain reasonable, must not overload system resources, and must not inconvenience or negatively affect other users. Excessive or abusive commercial use may result in restrictions.
+      - heading "7. Restrictions on Pen-Testing, Bounty Hunting, and Security Testing" [level=2] [ref=f5e44]
+      - paragraph [ref=f5e45]:
+        - text: "Because the Service may handle sensitive data belonging to our customers, all forms of penetration testing, vulnerability scanning, ethical hacking, security research, bug bounty testing, or any attempt to probe the platform’s security, availability, or integrity are strictly prohibited without explicit written authorization from Moolya. Unauthorized security testing may violate Indian cyber laws and may lead to account termination, suspension, legal action, and reporting to authorities. Requests for authorized security testing may be submitted to:"
+        - link "security@bugasura.io" [ref=f5e46] [cursor=pointer]:
+          - /url: mailto:security@bugasura.io
+      - heading "8. Acceptable Use" [level=2] [ref=f5e47]
+      - paragraph [ref=f5e48]: You agree not to upload malware, malicious scripts, or harmful code. You may not use automated systems that overload the platform, attempt to bypass rate limits, access APIs in unintended ways, or perform actions that compromise system stability or security.
+      - heading "9. Intellectual Property" [level=2] [ref=f5e49]
+      - paragraph [ref=f5e50]: All intellectual property in the Service—including features, workflows, UI/UX design, architecture, code, branding, and documentation—belongs solely to Moolya. You may not copy or reproduce any part of the Service for competitive or derivative purposes.
+      - heading "10. Security" [level=2] [ref=f5e51]
+      - paragraph [ref=f5e52]:
+        - text: "We implement strong security controls, aligned with SOC 2 principles, to safeguard the Service and user data. Measures include encryption, access controls, monitoring, logging, secure development practices, and incident response processes. Full details are available at:"
+        - link "https://bugasura.io/security" [ref=f5e53] [cursor=pointer]:
+          - /url: /security/
+      - heading "11. Security Limitations and Customer Responsibilities" [level=2] [ref=f5e54]
+      - paragraph [ref=f5e55]: We take all reasonable and industry-standard measures to protect your data. However, no platform can guarantee absolute security or protection against all possible attacks or breaches. We will implement commercially reasonable efforts to mitigate incidents and notify customers in accordance with applicable laws.You agree to take reasonable steps on your end, such as protecting your passwords, restricting access appropriately, and following secure data-handling practices.
+      - heading "12. Service Availability" [level=2] [ref=f5e56]
+      - paragraph [ref=f5e57]: We aim to provide continuous availability, but we do not guarantee uninterrupted service, error-free operation, or the absence of downtime. Scheduled or emergency maintenance may occur.
+      - heading "13. Billing and Fees" [level=2] [ref=f5e58]
+      - paragraph [ref=f5e59]: Fees for Paid Plans are displayed on our pricing page. All payments are non-refundable except where required by law. If payment fails or is not received, we may suspend or terminate access to the Service.
+      - heading "14. Termination" [level=2] [ref=f5e60]
+      - paragraph [ref=f5e61]: We may suspend or terminate your account if you breach these Terms, misuse the Service, engage in prohibited activities, or negatively impact other Users. Termination may occur without prior notice in serious cases.On termination, access to the Service ends immediately. Your data may be deleted after a reasonable retention period.
+      - heading "15. Disclaimer of Warranties" [level=2] [ref=f5e62]
+      - paragraph [ref=f5e63]: The Service is provided “as is” and “as available,” without any warranties of any kind, whether express or implied. We do not warrant that the Service will be error-free, uninterrupted, or meet your expectations.
+      - heading "16. Limitation of Liability" [level=2] [ref=f5e64]
+      - paragraph [ref=f5e65]: If you use the Free Plan, you agree that we have no liability to you for any claim of any kind. For Paid Plans, our total cumulative liability for all claims combined will not exceed the fees you have paid in the preceding three (3) months.We are not liable for loss of profits, loss of revenue, loss of data, business interruption, or any indirect, consequential, special, or punitive damages, regardless of the legal theory.
+      - heading "17. Indemnification" [level=2] [ref=f5e66]
+      - paragraph [ref=f5e67]: You agree to indemnify and hold harmless Moolya and its personnel from any claims arising out of your use of the Service, your Content, your commercial activities, or your violation of these Terms.
+      - heading "18. Changes to Terms" [level=2] [ref=f5e68]
+      - paragraph [ref=f5e69]: We may modify these Terms from time to time. The updated version will include a revised “Last Updated” date. Continued use of the Service after changes take effect constitutes acceptance of the updated Terms.
+      - heading "19. Governing Law and Jurisdiction" [level=2] [ref=f5e70]
+      - paragraph [ref=f5e71]: These Terms are governed by the laws of India.As Moolya is an MSME-registered entity, any payment or fee-related disputes must first be raised under the MSME Samadhaan mechanism before approaching courts. All disputes shall fall under the exclusive jurisdiction of the courts located in Bengaluru, Karnataka, India.
+      - heading "20. API Usage and Rate Limits" [level=2] [ref=f5e72]
+      - paragraph [ref=f5e73]: We provide a non-transferable, revocable license to use our APIs for the purpose of integrating the Service into your internal operations or workflows.You may not use the APIs to build competing services, extract large amounts of data, share API keys externally, or perform automated actions that exceed reasonable usage.
+      - paragraph [ref=f5e74]: "API rate limits are as follows:"
+      - list [ref=f5e75]:
+        - listitem [ref=f5e76]: "Read (GET) requests: up to 30 requests per minute"
+        - listitem [ref=f5e77]: "Write (POST/PUT/PATCH/DELETE) requests: up to 15 requests per minute"
+      - paragraph [ref=f5e78]: We may throttle, block, or suspend API access for excessive or abusive usage. API availability, endpoints, and limits may change without notice.
+      - paragraph [ref=f5e79]: If you need additional limits, please get in touch with us on our support email
+      - heading "21. Data Retention" [level=2] [ref=f5e80]
+      - paragraph [ref=f5e81]:
+        - text: "We retain customer data for as long as your account is active and for a reasonable period thereafter. Retention periods, backups, and deletion procedures are described on our Security page:"
+        - link "https://bugasura.io/security" [ref=f5e82] [cursor=pointer]:
+          - /url: /security/
+        - text: If your organization requires a custom data-retention arrangement, this must be agreed upon separately in writing.
+      - heading "22. SLA and Issue Reporting" [level=2] [ref=f5e83]
+      - paragraph [ref=f5e84]:
+        - text: "Users may report platform issues or bugs at the following link:"
+        - link "https://my.bugasura.io/bugasura-team/bugasura-io" [ref=f5e85] [cursor=pointer]:
+          - /url: https://my.bugasura.io/bugasura-team/bugasura-io
+      - paragraph [ref=f5e86]: We will make reasonable efforts to acknowledge and resolve issues based on severity, impact, engineering bandwidth, and defined internal priorities. This constitutes a best-effort support model and does not represent a guaranteed SLA unless separately agreed upon in an enterprise contract.
+      - heading "23. Contact Information" [level=2] [ref=f5e87]
+      - paragraph [ref=f5e88]:
+        - text: "Moolya40, Sri Lakshminarayana Mansion,S End Rd, Tata Silk Farm, Jayanagar,Bengaluru, Karnataka, IndiaEmail:"
+        - link "support@bugasura.io" [ref=f5e89] [cursor=pointer]:
+          - /url: mailto:support@bugasura.io
+    - generic [ref=f5e90]:
+      - generic [ref=f5e92]:
+        - heading "Everyone forgets customers using AI." [level=2] [ref=f5e93]:
+          - generic [ref=f5e94]: Everyone forgets
+          - text: customers using AI.
+        - heading "We bring customer focus back." [level=2] [ref=f5e95]
+        - paragraph [ref=f5e96]: Join 1K+ teams using Bugasura to match the quality of AI built software your customers expect.
+        - generic [ref=f5e97]:
+          - link "Start Free" [ref=f5e98] [cursor=pointer]:
+            - /url: https://my.bugasura.io?go=sign_up
+          - link "See in Action" [ref=f5e99] [cursor=pointer]:
+            - /url: https://calendly.com/get-bugasura/45min
+      - generic [ref=f5e100]:
+        - generic [ref=f5e101]:
+          - paragraph [ref=f5e102]: Platform
+          - link "Platform Overview" [ref=f5e103] [cursor=pointer]:
+            - /url: /platform/
+          - link "Testpert" [ref=f5e104] [cursor=pointer]:
+            - /url: /testpert/
+          - link "Test Management" [ref=f5e105] [cursor=pointer]:
+            - /url: https://bugasura.io/test-management
+          - link "Bug Tracker" [ref=f5e106] [cursor=pointer]:
+            - /url: https://bugasura.io/ai-issue-tracker
+          - link "Requirement Mgmt" [ref=f5e107] [cursor=pointer]:
+            - /url: https://bugasura.io/requirements-management
+          - link "Knowledge Base" [ref=f5e108] [cursor=pointer]:
+            - /url: https://bugasura.io/knowledge-base
+          - link "Integration & MCP" [ref=f5e109] [cursor=pointer]:
+            - /url: https://bugasura.io/mcp-server
+        - generic [ref=f5e110]:
+          - paragraph [ref=f5e111]: Solutions
+          - link "Engineering Teams" [ref=f5e112] [cursor=pointer]:
+            - /url: /solutions/engineering-teams/
+          - link "QA Teams" [ref=f5e113] [cursor=pointer]:
+            - /url: /solutions/qa-teams/
+          - link "Engineering Leaders" [ref=f5e114] [cursor=pointer]:
+            - /url: https://bugasura.io/user-journey
+          - link "Enterprise" [ref=f5e115] [cursor=pointer]:
+            - /url: /enterprise/
+        - generic [ref=f5e116]:
+          - paragraph [ref=f5e117]: Asuras
+          - link "World of Asuras" [ref=f5e118] [cursor=pointer]:
+            - /url: /asuras/
+          - link "Browser Asura" [ref=f5e119] [cursor=pointer]:
+            - /url: /asuras/#asuras
+          - link "API Asura" [ref=f5e120] [cursor=pointer]:
+            - /url: /asuras/#asuras
+          - link "Duplicate Bug Asura" [ref=f5e121] [cursor=pointer]:
+            - /url: /asuras/#asuras
+          - link "Mobile Asura" [ref=f5e122] [cursor=pointer]:
+            - /url: /asuras/#asuras
+          - link "Platform Intelligence" [ref=f5e123] [cursor=pointer]:
+            - /url: /asuras/#platform
+          - link "Build an Asura" [ref=f5e124] [cursor=pointer]:
+            - /url: /asuras/#build
+        - generic [ref=f5e125]:
+          - paragraph [ref=f5e126]: Resources
+          - link "Docs & API" [ref=f5e127] [cursor=pointer]:
+            - /url: https://bugasura.io/api/#overview
+          - link "Blog" [ref=f5e128] [cursor=pointer]:
+            - /url: https://bugasura.io/blog/
+          - link "Changelog" [ref=f5e129] [cursor=pointer]:
+            - /url: https://bugasura.io/release-notes/
+          - link "Community" [ref=f5e130] [cursor=pointer]:
+            - /url: https://join.slack.com/t/bugasuraspaces/shared_invite/zt-1zgsj1cxt-zjGy08DwWP2KhnvIJqdq_Q
+          - link "Security" [ref=f5e131] [cursor=pointer]:
+            - /url: /security/
+          - link "Marketplace" [ref=f5e132] [cursor=pointer]:
+            - /url: /marketplace/register/
+        - generic [ref=f5e133]:
+          - paragraph [ref=f5e134]: Pricing
+          - link "Free Plan" [ref=f5e135] [cursor=pointer]:
+            - /url: /pricing/
+          - link "Custom / Enterprise" [ref=f5e136] [cursor=pointer]:
+            - /url: /pricing/
+          - link "Testpert Add-on" [ref=f5e137] [cursor=pointer]:
+            - /url: /pricing/
+          - link "Talk to Us" [ref=f5e138] [cursor=pointer]:
+            - /url: https://calendly.com/get-bugasura/45min
+      - paragraph [ref=f5e139]:
+        - text: © 2026 Moolya |
+        - link "Privacy" [ref=f5e140] [cursor=pointer]:
+          - /url: /privacy/
+        - text: "|"
+        - link "Terms" [ref=f5e141] [cursor=pointer]:
+          - /url: /terms-of-service/
+      - img "Bugasura" [ref=f5e143]
+  - alert [ref=f5e144]

@@ -1,0 +1,158 @@
+- generic [ref=f10e2]:
+  - navigation [ref=f10e3]:
+    - list [ref=f10e4]:
+      - listitem [ref=f10e5]:
+        - link [ref=f10e6] [cursor=pointer]:
+          - /url: https://my.bugasura.io/apps
+          - img "Logo" [ref=f10e7]
+      - listitem [ref=f10e8]:
+        - link [ref=f10e9] [cursor=pointer]:
+          - /url: https://my.bugasura.io/apps
+          - img "Home" [ref=f10e10]
+      - listitem [ref=f10e11]:
+        - link "Notifications" [ref=f10e12] [cursor=pointer]:
+          - /url: javascript:void(0);
+          - img "Notifications" [ref=f10e13]
+      - listitem [ref=f10e14]:
+        - link [ref=f10e15] [cursor=pointer]:
+          - /url: javascript:void(0);
+          - img "What's New" [ref=f10e16]
+      - listitem [ref=f10e17]:
+        - link [ref=f10e18] [cursor=pointer]:
+          - /url: https://my.bugasura.io/teams/manage
+          - img "Manage" [ref=f10e19]
+      - listitem [ref=f10e20]:
+        - link [ref=f10e21] [cursor=pointer]:
+          - /url: javascript:void(0);
+          - img "Tour" [ref=f10e22]
+      - listitem [ref=f10e23]:
+        - link [ref=f10e24] [cursor=pointer]:
+          - /url: https://my.bugasura.io/account/userprofile
+          - img "Avatar" [ref=f10e27]
+  - generic [ref=f10e30]:
+    - generic [ref=f10e31]:
+      - generic [ref=f10e32]:
+        - img "Abstract" [ref=f10e35]
+        - generic [ref=f10e36]:
+          - paragraph [ref=f10e39]: Projects
+          - heading "Multi tasking is hard. Focus is good." [level=1] [ref=f10e40]
+          - paragraph [ref=f10e41]: Name your projects the way your teams recognize it.
+      - generic [ref=f10e42]:
+        - generic [ref=f10e43]:
+          - img "My Favourites" [ref=f10e44]
+          - text: My Favourites
+          - generic [ref=f10e45] [cursor=pointer]: (0)
+        - generic [ref=f10e47]:
+          - img "All" [ref=f10e48]
+          - text: All
+          - generic [ref=f10e49] [cursor=pointer]: (4)
+        - generic [ref=f10e50]:
+          - img "My Team Projects" [ref=f10e51]
+          - text: Team Projects
+          - generic [ref=f10e52] [cursor=pointer]: (3)
+        - generic [ref=f10e53]:
+          - img "Following" [ref=f10e54]
+          - text: Following
+          - generic [ref=f10e55] [cursor=pointer]: (1)
+    - generic [ref=f10e57]:
+      - heading "All Projects" [level=2] [ref=f10e59]
+      - generic [ref=f10e62]:
+        - generic [ref=f10e63]:
+          - generic [ref=f10e64]:
+            - img "Back" [ref=f10e66]
+            - textbox "Search" [ref=f10e67]
+          - button "Filter Filter " [ref=f10e70] [cursor=pointer]:
+            - img "Filter" [ref=f10e71]
+            - generic [ref=f10e72]: Filter
+            - generic [ref=f10e73]: 
+        - button "+ Create Project" [ref=f10e74] [cursor=pointer]
+      - generic [ref=f10e77]:
+        - generic [ref=f10e79]:
+          - generic:
+            - generic [ref=f10e82] [cursor=pointer]:
+              - img "Project Icon" [ref=f10e85]
+              - generic [ref=f10e87]:
+                - heading "sample Private" [level=4] [ref=f10e88]:
+                  - generic [ref=f10e89]: sample
+                  - img "Private" [ref=f10e91]
+                - generic [ref=f10e92]: kwysight
+            - generic [ref=f10e94] [cursor=pointer]:
+              - generic [ref=f10e95]:
+                - heading "Open" [level=5] [ref=f10e96]
+                - generic [ref=f10e97]: "0"
+                - generic [ref=f10e98]: /0
+              - generic [ref=f10e100]:
+                - heading "Closed" [level=5] [ref=f10e101]
+                - generic [ref=f10e102]: "0"
+                - generic [ref=f10e103]: /0
+        - generic [ref=f10e105]:
+          - generic:
+            - generic [ref=f10e108] [cursor=pointer]:
+              - generic [ref=f10e109]:
+                - img "Project Icon" [ref=f10e111]
+                - img "desktop-web" [ref=f10e113]
+              - generic [ref=f10e115]:
+                - heading "Faclon labs Private" [level=4] [ref=f10e116]:
+                  - generic [ref=f10e117]: Faclon labs
+                  - img "Private" [ref=f10e119]
+                - generic [ref=f10e120]: Faclon
+            - generic [ref=f10e122] [cursor=pointer]:
+              - generic [ref=f10e123]:
+                - heading "Open" [level=5] [ref=f10e124]
+                - generic [ref=f10e125]: "7"
+                - generic [ref=f10e126]: /10
+              - generic [ref=f10e128]:
+                - heading "Closed" [level=5] [ref=f10e129]
+                - generic [ref=f10e130]: "3"
+                - generic [ref=f10e131]: /10
+        - generic [ref=f10e133]:
+          - generic:
+            - generic [ref=f10e136] [cursor=pointer]:
+              - generic [ref=f10e137]:
+                - img "Project Icon" [ref=f10e139]
+                - img "desktop-web" [ref=f10e141]
+              - generic [ref=f10e143]:
+                - heading "iosense.io Private" [level=4] [ref=f10e144]:
+                  - generic [ref=f10e145]: iosense.io
+                  - img "Private" [ref=f10e147]
+                - generic [ref=f10e148]: Faclon
+            - generic [ref=f10e150] [cursor=pointer]:
+              - generic [ref=f10e151]:
+                - heading "Open" [level=5] [ref=f10e152]
+                - generic [ref=f10e153]: "0"
+                - generic [ref=f10e154]: /0
+              - generic [ref=f10e156]:
+                - heading "Closed" [level=5] [ref=f10e157]
+                - generic [ref=f10e158]: "0"
+                - generic [ref=f10e159]: /0
+        - generic [ref=f10e161]:
+          - button [ref=f10e164]:
+            - img "Pin Project" [ref=f10e165]
+          - generic:
+            - generic [ref=f10e167] [cursor=pointer]:
+              - generic [ref=f10e168]:
+                - img "Project Icon" [ref=f10e170]
+                - img "desktop-web" [ref=f10e172]
+              - generic [ref=f10e174]:
+                - heading "Bugasura Live Support Contributed" [level=4] [ref=f10e175]:
+                  - generic [ref=f10e176]: Bugasura Live Support
+                  - img "Contributed" [ref=f10e178]
+                - generic [ref=f10e179]: Bugasura Team
+                - generic [ref=f10e180]:
+                  - generic "https://my.bugasura.io/bugasura-team/bugasura-io" [ref=f10e181]
+                  - generic "Copy" [ref=f10e182]:
+                    - img "Copy" [ref=f10e183]
+            - generic [ref=f10e185] [cursor=pointer]:
+              - generic [ref=f10e186]:
+                - heading "Open" [level=5] [ref=f10e187]
+                - generic [ref=f10e188]: "39"
+                - generic [ref=f10e189]: /173
+              - generic [ref=f10e191]:
+                - heading "Closed" [level=5] [ref=f10e192]
+                - generic [ref=f10e193]: "134"
+                - generic [ref=f10e194]: /173
+  - text: NEW
+  - list [ref=f10e196]:
+    - listitem [ref=f10e197]:
+      - link "© 2026 Moolya. All Rights Reserved. Bugasura.io is SOC2 Type II Compliant in Data Security." [ref=f10e198] [cursor=pointer]:
+        - /url: https://moolya.com

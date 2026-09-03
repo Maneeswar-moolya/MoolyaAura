@@ -1,0 +1,99 @@
+- generic [ref=f30e1]:
+  - generic [ref=f30e2]:
+    - generic [ref=f30e6]:
+      - generic [ref=f30e7]:
+        - link [ref=f30e8] [cursor=pointer]:
+          - /url: https://bugasura.io/
+          - img "Bugasura" [ref=f30e9]
+        - generic [ref=f30e10]:
+          - button "Turkish " [expanded] [active] [ref=f30e11] [cursor=pointer]:
+            - generic [ref=f30e12]: Turkish
+            - generic [ref=f30e17]: 
+          - list [ref=f30e55]:
+            - listitem [ref=f30e56]: Dil Seç
+            - generic [ref=f30e57]:
+              - listitem
+              - generic [ref=f30e58]:
+                - listitem [ref=f30e59]:
+                  - link "English" [ref=f30e60] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e62]:
+                  - link "German" [ref=f30e63] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e65]:
+                  - link "Indonesian" [ref=f30e66] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e68]:
+                  - link "Japanese" [ref=f30e69] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e71]:
+                  - link "Portuguese" [ref=f30e72] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e74]:
+                  - link "Spanish" [ref=f30e75] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e77]:
+                  - link "Thai" [ref=f30e78] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e80]:
+                  - link "Vietnamese" [ref=f30e81] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e83]:
+                  - link "French" [ref=f30e84] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e86]:
+                  - link "Russian" [ref=f30e87] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e89]:
+                  - link "Italian" [ref=f30e90] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e92]:
+                  - link "Greek" [ref=f30e93] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e95]:
+                  - link "Dutch" [ref=f30e96] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f30e98]:
+                  - link "Turkish done" [ref=f30e99] [cursor=pointer]:
+                    - /url: "#"
+                    - generic [ref=f30e100]: Turkish
+                    - text: done
+      - generic [ref=f30e20]:
+        - heading [level=2] [ref=f30e21]:
+          - text: Hoş geldiniz
+          - strong [ref=f30e22]: Bugasura
+        - paragraph [ref=f30e23]: Kalite oluşturan işletim sistemi
+        - button "Google Google ile Giriş Yap" [ref=f30e25] [cursor=pointer]:
+          - img "Google" [ref=f30e26]
+          - generic [ref=f30e27]: Google ile Giriş Yap
+        - paragraph [ref=f30e29]: Veya E-posta ile Giriş Yap
+        - generic [ref=f30e30]:
+          - generic [ref=f30e32]:
+            - generic [ref=f30e33]: E-posta
+            - textbox "E-posta" [ref=f30e35]:
+              - /placeholder: E-posta adresinizi girin
+            - paragraph
+          - generic [ref=f30e37]:
+            - generic [ref=f30e38]: Parola
+            - generic [ref=f30e39]:
+              - textbox "Parola" [ref=f30e40]:
+                - /placeholder: Şifrenizi girin
+              - generic [ref=f30e41] [cursor=pointer]: visibility
+            - paragraph
+            - link "Şifrenizi mi unuttunuz?" [ref=f30e44] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - button "Giriş Yap" [ref=f30e46] [cursor=pointer]
+          - paragraph [ref=f30e48]:
+            - text: "Devam ederek, şu şartları kabul etmiş olursunuz:"
+            - link "Şartlar" [ref=f30e50] [cursor=pointer]:
+              - /url: https://bugasura.io/terms-of-service
+            - text: ve
+            - link "Gizlilik Politikası" [ref=f30e52] [cursor=pointer]:
+              - /url: https://bugasura.io/privacy
+          - paragraph [ref=f30e54]: Bugasura'ya yeni misiniz? Hesap oluştur
+    - text: done
+  - iframe [ref=f30e102]:
+    - generic:
+      - generic:
+        - text:   
+        - button "Open chat" [ref=f34e1] [cursor=pointer]

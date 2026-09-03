@@ -1,0 +1,199 @@
+- generic [ref=f14e2]:
+  - navigation [ref=f14e3]:
+    - list [ref=f14e4]:
+      - listitem [ref=f14e5]:
+        - link [ref=f14e6] [cursor=pointer]:
+          - /url: https://my.bugasura.io/apps
+          - img "Logo" [ref=f14e7]
+      - listitem [ref=f14e8]:
+        - link [ref=f14e9] [cursor=pointer]:
+          - /url: https://my.bugasura.io/apps
+          - img "Home" [ref=f14e10]
+      - listitem [ref=f14e11]:
+        - link "Notifications" [ref=f14e12] [cursor=pointer]:
+          - /url: javascript:void(0);
+          - img "Notifications" [ref=f14e13]
+      - listitem [ref=f14e14]:
+        - link [ref=f14e15] [cursor=pointer]:
+          - /url: javascript:void(0);
+          - img "What's New" [ref=f14e16]
+      - listitem [ref=f14e17]:
+        - link [ref=f14e18] [cursor=pointer]:
+          - /url: https://my.bugasura.io/teams/manage
+          - img "Manage" [ref=f14e19]
+      - listitem [ref=f14e20]:
+        - link [ref=f14e21] [cursor=pointer]:
+          - /url: javascript:void(0);
+          - img "Tour" [ref=f14e22]
+      - listitem [ref=f14e23]:
+        - link [ref=f14e24] [cursor=pointer]:
+          - /url: https://my.bugasura.io/account/userprofile
+          - img "Avatar" [ref=f14e27]
+  - generic [ref=f14e28]:
+    - generic:
+      - navigation [ref=f14e29]:
+        - list [ref=f14e31]:
+          - generic [ref=f14e33]:
+            - img "Project Icon" [ref=f14e35]
+            - generic "Faclon labs" [ref=f14e36]
+          - listitem [ref=f14e38]:
+            - link [ref=f14e39] [cursor=pointer]:
+              - /url: https://my.bugasura.io/userjourney/82362/110769
+              - img "User Journey" [ref=f14e40]
+              - text: Revenue Flows
+          - listitem [ref=f14e41]:
+            - link [ref=f14e42] [cursor=pointer]:
+              - /url: https://my.bugasura.io/chat/110769
+              - img "Chat" [ref=f14e43]
+              - text: Chat
+          - listitem [ref=f14e45]:
+            - link "Knowledge Base Knowledge Base" [ref=f14e46] [cursor=pointer]:
+              - /url: https://my.bugasura.io/knowledgeBase/110769
+              - img "Knowledge Base" [ref=f14e47]
+              - generic [ref=f14e48]: Knowledge Base
+          - listitem [ref=f14e49]:
+            - link [ref=f14e50] [cursor=pointer]:
+              - /url: https://my.bugasura.io/requirements/110769
+              - img "Requirements Management" [ref=f14e51]
+              - text: Requirements
+          - listitem [ref=f14e52]:
+            - link "Test Cases Management Test Repo 1" [ref=f14e53] [cursor=pointer]:
+              - /url: https://my.bugasura.io/testCases/110769
+              - img "Test Cases Management" [ref=f14e54]
+              - text: Test Repo
+              - generic [ref=f14e55]: "1"
+          - listitem [ref=f14e56]:
+            - link "Test Runs Management Sprints 1" [ref=f14e57] [cursor=pointer]:
+              - /url: https://my.bugasura.io/testRuns/110769
+              - img "Test Runs Management" [ref=f14e58]
+              - text: Sprints
+              - generic [ref=f14e59]: "1"
+          - listitem "Test Data" [ref=f14e60]:
+            - link [ref=f14e61] [cursor=pointer]:
+              - /url: https://my.bugasura.io/testData/110769
+              - img "Test Data" [ref=f14e62]
+              - text: Test Data
+          - listitem [ref=f14e63]:
+            - link "Issues Icon Issues 10" [ref=f14e64] [cursor=pointer]:
+              - /url: https://my.bugasura.io/issues/110769
+              - img "Issues Icon" [ref=f14e65]
+              - text: Issues
+              - generic [ref=f14e66]: "10"
+          - listitem [ref=f14e68]:
+            - link [ref=f14e69] [cursor=pointer]:
+              - /url: https://my.bugasura.io/110769/settings
+              - img "Settings" [ref=f14e70]
+              - text: Settings
+          - listitem [ref=f14e71]:
+            - link [ref=f14e72] [cursor=pointer]:
+              - /url: https://my.bugasura.io/110769/trash
+              - img "Trash" [ref=f14e73]
+              - text: Trash
+          - list [ref=f14e75]:
+            - listitem [ref=f14e76]:
+              - link [ref=f14e77] [cursor=pointer]:
+                - /url: https://my.bugasura.io/110769/settings?projectIntegration=1
+                - img "SLACK Icon" [ref=f14e78]
+            - listitem [ref=f14e79]:
+              - link [ref=f14e80] [cursor=pointer]:
+                - /url: https://my.bugasura.io/110769/settings?projectIntegration=1
+                - img "JIRA Icon" [ref=f14e81]
+            - listitem [ref=f14e82]:
+              - link [ref=f14e83] [cursor=pointer]:
+                - /url: https://my.bugasura.io/110769/settings?projectIntegration=1
+                - img "ASANA Icon" [ref=f14e84]
+            - listitem [ref=f14e85]:
+              - link [ref=f14e86] [cursor=pointer]:
+                - /url: https://my.bugasura.io/110769/settings?projectIntegration=1
+                - img "ZENDESK Icon" [ref=f14e87]
+            - listitem [ref=f14e88]:
+              - link "+9" [ref=f14e89] [cursor=pointer]:
+                - /url: https://my.bugasura.io/110769/settings?projectIntegration=1
+      - generic [ref=f14e90] [cursor=pointer]: 
+    - generic [ref=f14e93]:
+      - tablist [ref=f14e94]:
+        - listitem "Issue List" [ref=f14e95]:
+          - link "Issues":
+            - /url: https://my.bugasura.io/issues/110769
+        - listitem "Project Dashboard" [ref=f14e96]:
+          - link "Reports" [ref=f14e97] [cursor=pointer]:
+            - /url: https://my.bugasura.io/dashboard/project/110769
+        - listitem "Activity" [ref=f14e99]:
+          - link "Activity" [ref=f14e100] [cursor=pointer]:
+            - /url: https://my.bugasura.io/activity/project/110769
+      - generic [ref=f14e103]:
+        - heading "All Issues" [level=1] [ref=f14e104]
+        - generic [ref=f14e105]:
+          - list [ref=f14e106]:
+            - listitem [ref=f14e107]: Na
+            - listitem [ref=f14e108]:
+              - img "Avatar" [ref=f14e109]
+            - listitem [ref=f14e110]:
+              - img "Avatar" [ref=f14e111]
+            - listitem [ref=f14e112]:
+              - link "+1" [ref=f14e113] [cursor=pointer]:
+                - /url: "#invite_user_modal"
+          - generic [ref=f14e114]:
+            - button "add Add Issue" [ref=f14e115] [cursor=pointer]:
+              - generic [ref=f14e116]: add
+              - generic [ref=f14e117]: Add Issue
+            - button [ref=f14e119] [cursor=pointer]:
+              - img "Icon" [ref=f14e120]
+          - generic [ref=f14e121]:
+            - button [ref=f14e122] [cursor=pointer]:
+              - img "Icon" [ref=f14e123]
+            - text: play_arrow
+      - generic [ref=f14e126]:
+        - generic [ref=f14e128]:
+          - generic [ref=f14e131] [cursor=pointer]:
+            - img "Icon" [ref=f14e132]
+            - generic [ref=f14e134]:
+              - paragraph [ref=f14e135]: "1"
+              - paragraph [ref=f14e136]: Total Issues
+          - generic [ref=f14e139] [cursor=pointer]:
+            - img "Icon" [ref=f14e140]
+            - generic [ref=f14e142]:
+              - paragraph [ref=f14e143]: "1"
+              - paragraph [ref=f14e144]: NEW
+          - generic [ref=f14e147] [cursor=pointer]:
+            - img "Icon" [ref=f14e148]
+            - generic [ref=f14e150]:
+              - paragraph [ref=f14e151]: "0"
+              - paragraph [ref=f14e152]: In Progress
+          - generic [ref=f14e155] [cursor=pointer]:
+            - img "Icon" [ref=f14e156]
+            - generic [ref=f14e158]:
+              - paragraph [ref=f14e159]: "1"
+              - paragraph [ref=f14e160]: Closed
+        - generic [ref=f14e164]:
+          - text: play_arrow
+          - generic [ref=f14e168]:
+            - generic [ref=f14e169]:
+              - img "Back" [ref=f14e171]
+              - textbox "Search" [ref=f14e172]
+            - generic [ref=f14e173]:
+              - button "Filter Filter " [ref=f14e176] [cursor=pointer]:
+                - img "Filter" [ref=f14e177]
+                - generic [ref=f14e178]: Filter
+                - generic [ref=f14e179]: 
+              - button "Sort Sort " [ref=f14e183] [cursor=pointer]:
+                - img "Sort" [ref=f14e184]
+                - generic [ref=f14e185]: Sort
+                - generic [ref=f14e186]: 
+            - generic [ref=f14e188]:
+              - list [ref=f14e189]:
+                - listitem [ref=f14e190]:
+                  - button "Icon":
+                    - img "Icon"
+                - listitem [ref=f14e191]:
+                  - button [ref=f14e192] [cursor=pointer]:
+                    - img "Icon" [ref=f14e193]
+              - button [ref=f14e195] [cursor=pointer]:
+                - img "Export Issues Icon" [ref=f14e196]
+      - button [ref=f14e214] [cursor=pointer]:
+        - img "back-to-top" [ref=f14e215]
+  - text: Enter email addresses ( or paste multiple )   NEW
+  - list [ref=f14e217]:
+    - listitem [ref=f14e218]:
+      - link "© 2026 Moolya. All Rights Reserved. Bugasura.io is SOC2 Type II Compliant in Data Security." [ref=f14e219] [cursor=pointer]:
+        - /url: https://moolya.com

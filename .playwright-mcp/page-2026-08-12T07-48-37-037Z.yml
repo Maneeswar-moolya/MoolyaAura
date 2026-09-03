@@ -1,0 +1,99 @@
+- generic [ref=f20e1]:
+  - generic [ref=f20e2]:
+    - generic [ref=f20e6]:
+      - generic [ref=f20e7]:
+        - link [ref=f20e8] [cursor=pointer]:
+          - /url: https://bugasura.io/
+          - img "Bugasura" [ref=f20e9]
+        - generic [ref=f20e10]:
+          - button "Greek " [expanded] [active] [ref=f20e11] [cursor=pointer]:
+            - generic [ref=f20e12]: Greek
+            - generic [ref=f20e17]: 
+          - list [ref=f20e55]:
+            - listitem [ref=f20e56]: Επιλογή γλώσσας
+            - generic [ref=f20e57]:
+              - listitem
+              - generic [ref=f20e58]:
+                - listitem [ref=f20e59]:
+                  - link "English" [ref=f20e60] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f20e62]:
+                  - link "German" [ref=f20e63] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f20e65]:
+                  - link "Indonesian" [ref=f20e66] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f20e68]:
+                  - link "Japanese" [ref=f20e69] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f20e71]:
+                  - link "Portuguese" [ref=f20e72] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f20e74]:
+                  - link "Spanish" [ref=f20e75] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f20e77]:
+                  - link "Thai" [ref=f20e78] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f20e80]:
+                  - link "Vietnamese" [ref=f20e81] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f20e83]:
+                  - link "French" [ref=f20e84] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f20e86]:
+                  - link "Russian" [ref=f20e87] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f20e89]:
+                  - link "Italian" [ref=f20e90] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f20e92]:
+                  - link "Greek done" [ref=f20e93] [cursor=pointer]:
+                    - /url: "#"
+                    - generic [ref=f20e94]: Greek
+                    - text: done
+                - listitem [ref=f20e95]:
+                  - link "Dutch" [ref=f20e96] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f20e98]:
+                  - link "Turkish" [ref=f20e99] [cursor=pointer]:
+                    - /url: "#"
+      - generic [ref=f20e20]:
+        - heading [level=2] [ref=f20e21]:
+          - text: Καλώς ήρθατε στο
+          - strong [ref=f20e22]: Bugasura
+        - paragraph [ref=f20e23]: Το λειτουργικό σύστημα για την οικοδόμηση ποιότητας
+        - button "Google Σύνδεση με Google" [ref=f20e25] [cursor=pointer]:
+          - img "Google" [ref=f20e26]
+          - generic [ref=f20e27]: Σύνδεση με Google
+        - paragraph [ref=f20e29]: Ή σύνδεση με email
+        - generic [ref=f20e30]:
+          - generic [ref=f20e32]:
+            - generic [ref=f20e33]: Email
+            - textbox "Email" [ref=f20e35]:
+              - /placeholder: Εισάγετε το email σας
+            - paragraph
+          - generic [ref=f20e37]:
+            - generic [ref=f20e38]: Κωδικός πρόσβασης
+            - generic [ref=f20e39]:
+              - textbox "Κωδικός πρόσβασης" [ref=f20e40]:
+                - /placeholder: Εισάγετε τον κωδικό πρόσβασης
+              - generic [ref=f20e41] [cursor=pointer]: visibility
+            - paragraph
+            - link "Ξεχάσατε τον κωδικό σας;" [ref=f20e44] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - button "Σύνδεση" [ref=f20e46] [cursor=pointer]
+          - paragraph [ref=f20e48]:
+            - text: Συνεχίζοντας, αποδέχεστε τους
+            - link "Όρους" [ref=f20e50] [cursor=pointer]:
+              - /url: https://bugasura.io/terms-of-service
+            - text: και
+            - link "Πολιτική Απορρήτου" [ref=f20e52] [cursor=pointer]:
+              - /url: https://bugasura.io/privacy
+          - paragraph [ref=f20e54]: Νέος στο Bugasura; Δημιουργία λογαριασμού
+    - text: done
+  - iframe [ref=f20e102]:
+    - generic:
+      - generic:
+        - text:   
+        - button "Open chat" [ref=f24e1] [cursor=pointer]

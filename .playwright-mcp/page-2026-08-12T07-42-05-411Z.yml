@@ -1,0 +1,99 @@
+- generic [ref=f10e1]:
+  - generic [ref=f10e2]:
+    - generic [ref=f10e6]:
+      - generic [ref=f10e7]:
+        - link [ref=f10e8] [cursor=pointer]:
+          - /url: https://bugasura.io/
+          - img "Bugasura" [ref=f10e9]
+        - generic [ref=f10e10]:
+          - button "English " [expanded] [active] [ref=f10e11] [cursor=pointer]:
+            - generic [ref=f10e12]: English
+            - generic [ref=f10e17]: 
+          - list [ref=f10e55]:
+            - listitem [ref=f10e56]: Select Language
+            - generic [ref=f10e57]:
+              - listitem
+              - generic [ref=f10e58]:
+                - listitem [ref=f10e59]:
+                  - link "English done" [ref=f10e60] [cursor=pointer]:
+                    - /url: "#"
+                    - generic [ref=f10e61]: English
+                    - text: done
+                - listitem [ref=f10e62]:
+                  - link "German" [ref=f10e63] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f10e65]:
+                  - link "Indonesian" [ref=f10e66] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f10e68]:
+                  - link "Japanese" [ref=f10e69] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f10e71]:
+                  - link "Portuguese" [ref=f10e72] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f10e74]:
+                  - link "Spanish" [ref=f10e75] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f10e77]:
+                  - link "Thai" [ref=f10e78] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f10e80]:
+                  - link "Vietnamese" [ref=f10e81] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f10e83]:
+                  - link "French" [ref=f10e84] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f10e86]:
+                  - link "Russian" [ref=f10e87] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f10e89]:
+                  - link "Italian" [ref=f10e90] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f10e92]:
+                  - link "Greek" [ref=f10e93] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f10e95]:
+                  - link "Dutch" [ref=f10e96] [cursor=pointer]:
+                    - /url: "#"
+                - listitem [ref=f10e98]:
+                  - link "Turkish" [ref=f10e99] [cursor=pointer]:
+                    - /url: "#"
+      - generic [ref=f10e20]:
+        - heading [level=2] [ref=f10e21]:
+          - text: Welcome to
+          - strong [ref=f10e22]: Bugasura
+        - paragraph [ref=f10e23]: The operating system of building quality
+        - button "Google Google Sign In" [ref=f10e25] [cursor=pointer]:
+          - img "Google" [ref=f10e26]
+          - generic [ref=f10e27]: Google Sign In
+        - paragraph [ref=f10e29]: Or Sign In with Email
+        - generic [ref=f10e30]:
+          - generic [ref=f10e32]:
+            - generic [ref=f10e33]: Email
+            - textbox "Email" [ref=f10e35]:
+              - /placeholder: Enter your email
+            - paragraph
+          - generic [ref=f10e37]:
+            - generic [ref=f10e38]: Password
+            - generic [ref=f10e39]:
+              - textbox "Password" [ref=f10e40]:
+                - /placeholder: Enter your password
+              - generic [ref=f10e41] [cursor=pointer]: visibility
+            - paragraph
+            - link "Forgot Password?" [ref=f10e44] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - button "Sign In" [ref=f10e46] [cursor=pointer]
+          - paragraph [ref=f10e48]:
+            - text: By continuing, you agree to our
+            - link "Terms" [ref=f10e50] [cursor=pointer]:
+              - /url: https://bugasura.io/terms-of-service
+            - text: and
+            - link "Privacy Policy" [ref=f10e52] [cursor=pointer]:
+              - /url: https://bugasura.io/privacy
+          - paragraph [ref=f10e54]: New to Bugasura? Create an account
+    - text: done
+  - iframe [ref=f10e102]:
+    - generic:
+      - generic:
+        - text:   
+        - button "Open chat" [ref=f14e1] [cursor=pointer]
