@@ -1,6 +1,6 @@
 # REMAINING
 
-Last updated: 2026-08-24 (assertion timing, faithful reconstruction, archived-evidence gate, structural safety)
+Last updated: 2026-09-12 (old project cleanup; empty registry; full sweep 79/80, documentation follow-up green)
 
 <!-- ===================================================================== -->
 <!-- MACHINE-READABLE STATUS. Any session, any account: read this first.   -->
@@ -8,29 +8,1364 @@ Last updated: 2026-08-24 (assertion timing, faithful reconstruction, archived-ev
 <!-- ===================================================================== -->
 
 ```yaml
-status_version: 6
-updated: 2026-08-24
+status_version: 44
+updated: 2026-09-12
 verified_by: >
-  offline regression (see `regression` below) + Playwright collection of the fresh
-  TC_LOGIN_112 spec (2 tests in 2 files) + LIVE execution of the fresh spec against
-  my.bugasura.io, passing in 24.8s + four live resolver exchanges through the real
-  headless Claude Code transport
+  2026-09-12 cleanup: 2488 verified application-owned files removed; registry and state
+  empty. 13/13 post-cleanup focused fixtures; 20 source mutants killed. One complete
+  full sweep: 79/80 in 728.93 seconds. Sole failure: omitted elementRef/captureRef guide
+  paragraph. Restored documentation only; locator-validation follow-up exit 0.
+  Zero repository writes during the full sweep. Earlier entries below are historical.
+  2026-09-12: locator benchmark contract correction, 32 focused checks, three behavioral
+  mutations killed, workspace accordion 22/22, and exactly one final full regression:
+  78/78 fixtures by exit code, zero failures, 648.10 seconds in an isolated copy.
+  Production and application artifact hashes unchanged. See locator_benchmark_contract_alignment.
+  2026-09-12: foundational onboarding gates (13/13), nine behavioral mutations killed,
+  affected project/dashboard/authoring fixtures, and exactly one full 78-fixture sweep
+  in an isolated copy. No live application tests or AI calls. See
+  foundational_dashboard_onboarding for the two sweep failures and focused follow-up.
+  2026-09-04: the full offline fixture regression on the settled tree, plus the isolation
+  gate driving the REAL production accessors under a two-application registry (98 checks).
+  Nothing live was run this session and nothing was generated - see
+  `application_isolation_phase_2` for exactly what was and was not exercised.
+  2026-08-24 (still true, not re-run): Playwright collection of the fresh TC_LOGIN_112
+  spec (2 tests in 2 files) + LIVE execution against my.bugasura.io passing in 24.8s +
+  four live resolver exchanges through the real headless Claude Code transport.
 implementation: COMPLETE for future generations; see blockers for what is not
 regression:
-  fixtures: 54
-  checks: 3282
-  failures: 0
-  verified_on: final settled tree, 2026-08-24
+  fixtures: 80
+  failures: 1
+  remaining_failures_after_focused_followup: 0
+  verified_on: >
+    Current cleanup: one complete full sweep, 79/80, 728.93 seconds. Only F6 in
+    locator-validation failed: shortened ai/CLAUDE.md omitted the elementRef/captureRef
+    distinction. Documentation restored; targeted rerun passed. No second full sweep.
+    The following results predate cleanup.
+    2026-09-12, after test-only locator benchmark alignment: 78/78 passed by exit code,
+    zero failures, 648.10 seconds. Exactly one final full sweep after the tests settled.
+    Both locator-quality-benchmark and workspace-accordion passed in this sweep.
+    Historical onboarding sweep earlier on 2026-09-12: 76/78 passed (702.49 seconds).
+    workspace-accordion had an obsolete project API stub; after declaring its synthetic
+    project, its existing browser assertions pass (exit 0). No production change followed
+    the sweep and no second full sweep was run. locator-quality-benchmark remains red:
+    its authored-ID preference expectation conflicts with selection on existing TC_LOGIN_160
+    evidence. Benchmark, ranking/proof code and evidence match pre-implementation hashes.
+    Earlier results below are historical.
+    2026-09-09, after P12B (Page Object / knowledge bootstrap): 76/76 by EXIT CODE, 0
+    failures, on the settled tree, including the new
+    ai/projects/bootstrap-knowledge.fixture.ts. Before that,
+    2026-09-09, after P12A (locator strategy contract): 75/75 by EXIT CODE, 0 failures, on
+    the settled tree, including the new ai/autocode/strategy-contract.fixture.ts. Before
+    that, 2026-09-08, after P11 (candidate durability): 74/74 by EXIT CODE, 0 failures, on the
+    settled tree, including the new ai/autocode/candidate-durability.fixture.ts. Before
+    that, after P10 (exact + non-exact semantic candidates): 73/73 by EXIT CODE,
+    0 failures, on the settled tree. One fixture went red during the phase and was a real
+    contract change, not a stale assertion - see `fixture_contract_changed` in
+    `p10_exact_and_non_exact_semantic_candidates`. Previously
+    2026-09-05, after the P5 locator-engine implementation: 66/66 by EXIT CODE, 0 failures,
+    including ai/autocode/abstraction.fixture.ts and the new
+    ai/autocode/semantic-candidates.fixture.ts. Two fixtures went red during P5 and were
+    real regressions, not stale assertions - see `p5_locator_engine`. Previously 63/63
+    after the TypeScript diagnostic cleanup; final settled tree 2026-09-04 (Phase 8).
+  failure_is_pre_existing: >
+    Current cleanup failure was a documentation omission, not a production regression.
+    Fixed in ai/CLAUDE.md only; targeted locator-validation rerun exit 0. Remaining
+    known failures: zero. The following explanations are historical.
+    No remaining failures in the current sweep. The prior locator-quality-benchmark
+    failure was classified STALE TEST EXPECTATION: universal authored-ID preference
+    contradicted the existing ranking contract. Corrected only the test; production
+    ranking/proof code and TC_LOGIN_160 evidence are unchanged.
+    The following abstraction note is historical and was not a failure in this sweep.
+    NOT caused by Phase 2 and not a code defect - one sound outstanding proposal
+    (TC_LOGIN_087 -> WorkspacePage.bugNewSubmit) against two SNAPSHOT assertions. It was
+    invisible until the CRLF parser fix, because with the pre-fix parser the fixture
+    could not load at all on any checkout. Full reasoning in `abstraction_fixture_red`.
+    DO NOT edit that fixture to make the regression green.
   baseline_before: >
-    49 fixtures on 2026-08-21. The 2026-08-22 session opened with ONE pre-existing red
-    (proven-locator-reuse: the #password_field-error duplicate) and gained a second when a
-    new recording entered the corpus (abstraction: a BLOCKED write). Both are fixed; see
-    `sessions_2026_08_22_24` below.
+    54 fixtures / 3282 checks / 0 failures, claimed on 2026-08-24 and measured on a tree
+    whose knowledge YAML still parsed. 49 fixtures on 2026-08-21.
   command: "for f in $(find ai -name '*.fixture.ts' | sort); do npx tsx $f; done"
+  and_then: "Compare artifact hashes and counts against the measured pre-run baseline, never a historical total."
+  flipkart_count: >
+    20 files as of 2026-09-08, not the 8 quoted by earlier phases: four recordings
+    (TC_SMOKE_006..009) were made through the dashboard recorder during the P11 session.
+    A fixture that pins a corpus TOTAL will go red whenever this happens - see
+    `corpus_grew_mid_phase_and_a_fixture_had_pinned_a_snapshot` in p11_candidate_durability
+    for the one that did and how it was restated.
   note: >
-    RUN THIS BEFORE BELIEVING ANY NUMBER HERE. The numbers in `page_object_lifecycle`
-    below were measured on the settled tree at the end of that session; a corpus that
-    has gained a recording since will move the corpus-derived ones.
+    RUN THIS BEFORE BELIEVING ANY NUMBER HERE. Check EXIT CODES, not the printed
+    summaries - several fixtures print their own wording and a grep for PASS/FAIL reports
+    NO-SUMMARY for them while they are perfectly green. The numbers in
+    `page_object_lifecycle` below were measured at the end of the 2026-08-24 session; a
+    corpus that has gained a recording since will move the corpus-derived ones.
+
+# ------------------------------------------------------------------- 2026-09-12
+old_project_cleanup:
+  status: "DONE; ready for dashboard onboarding, with the regression qualification below"
+  report: docs/history/OLD-PROJECT-CLEANUP.md
+  results: docs/history/OLD-PROJECT-CLEANUP-RESULTS.json
+  registry: "schemaVersion 1; applications empty; no Keysight added"
+  removed: "2488 verified application-owned files; registry entries and generation state cleared"
+  synthetic_tests: "78 migrated existing fixtures; two new fixtures; no installed corpus copied"
+  mutations: "20 source mutants killed; contextual falsification retained"
+  full_regression: "79/80, 728.93 seconds; sole failure documentation assertion F6"
+  followup: "elementRef/captureRef explanation restored in ai/CLAUDE.md; locator-validation exit 0"
+  remaining_known_failures: 0
+  integrity: "Zero repository writes during full sweep; 16 protected core files unchanged"
+  next: "Onboard the real application from the dashboard when requested; do not restore old data"
+  qualification: >
+    A partial sweep was stopped to correct a prompt helper and test its shared export.
+    Exactly one complete full sweep followed. Its 79/80 result is not relabeled green;
+    the only later correction was documentation, verified by the affected fixture.
+
+# ------------------------------------------------------------------- 2026-09-12
+locator_benchmark_contract_alignment:
+  status: "DONE - test/fixture hardening; no production behavior change."
+  root_cause: >
+    The benchmark treated a historical authored-ID selection count as a universal
+    preference. TC_LOGIN_160 has four proven semantic selections scoring 95 ahead of
+    proven authored IDs scoring 70, which is valid under the existing ranking contract.
+  test_change: >
+    Replaced the universal ID assertion with an independent weakest-segment score
+    comparison over press-time identity-proven action candidates. The selected proven
+    candidate must have no strictly higher-scoring admissible proven competitor.
+    Unscoreable expressions retain the contract's -1 score; ties acquire no new rule.
+    Authored-ID selection counts are informational only. The returned measurement
+    itself must carry proof and belong to the proven set; no proof requires abstention.
+    Page Object reuse and the existing state-dependent-name checks remain intact.
+    Corpus-only imports are deferred so synthetic selection checks need no app setup.
+  focused_result: >
+    Benchmark exit 0, 32/32 checks, 7.41 seconds: 1097 captured graphs, 625 with proof,
+    396 with multiple proven candidates, zero unproven or outranked selections.
+    Authored IDs: 210 selected, four not selected; all three existing Page Object reuse
+    cases pass. Workspace accordion exit 0, 22/22 browser assertions, 13.08 seconds.
+  mutations_command: "npx tsx ai/autocode/locator-quality-benchmark.mutations.ts"
+  mutations_result: >
+    3/3 killed, driver exit 0, 36.51 seconds. Reversed ranking and forced lower-scoring
+    ID selection each fail the higher-scoring-competitor gate. Removing proof admission
+    fails the inadmissible-candidate gate. Synthetic checks cover no match, ambiguity,
+    wrong target, another document, assertion-pick timing for an action and unknown
+    identity, including abstention with no proven candidate. Baseline and restored
+    controls pass. Mutants modify only guarded OS temporary source copies; no application
+    artifacts or credentials are installed there. Import/syntax errors cannot count as kills.
+  final_regression: >
+    Exactly one full sweep on the settled tests: 78/78 fixtures passed by exit code,
+    zero failures, 648.10 seconds. Includes both previously failing fixtures and all
+    13 onboarding gates, including empty -> first -> second -> third via dashboard HTTP,
+    stable ownership and generic runtime without Bugasura files. No live application
+    tests or AI calls. Only this handoff documentation was updated after the sweep.
+  integrity: >
+    All workspace files were SHA256-snapshotted before the task (2739 files, excluding
+    dependencies, Git internals and pre-existing temporary directories). Only the
+    benchmark, its new mutation driver and this handoff changed; no file was removed.
+    Production ranking, scorer, proof, evidence, locator generation and all application
+    artifacts are byte-identical. Existing uncommitted and untracked work is preserved.
+  files_changed:
+    - ai/autocode/locator-quality-benchmark.fixture.ts
+    - ai/autocode/locator-quality-benchmark.mutations.ts
+    - docs/history/REMAINING.md
+  next_action: >
+    The benchmark blocker is resolved. Proceed to a scoped old-project cleanup task:
+    back up and inventory owned artifacts, preserve generic capabilities, and migrate
+    or sanitize corpus-dependent regression inputs before deleting application data.
+    The full benchmark still reads the existing corpus, knowledge and named Bugasura
+    Page Object reuse cases; green regression is not proof those inputs can be removed.
+    No Bugasura, Flipkart or demo data was deleted in this task.
+
+# ------------------------------------------------------------------- 2026-09-12
+foundational_dashboard_onboarding:
+  status: >
+    IMPLEMENTED. A valid empty registry can start the dashboard; the same Add Project
+    route provisions the first, second and subsequent applications. Workbooks are
+    created at registration; existing scope/lifecycle writers create other artifacts
+    on demand. No per-application framework edit or production-registry change.
+  root_causes: >
+    Empty registry validation rejected the initial state. Singleton fallbacks granted
+    flat paths, undeclared workbooks, bare historical state and derived-index ownership.
+    Collection bypassed isolation for a singleton, and discovery forgot namespace
+    boundaries when an application was deregistered. The generic runner imported the
+    legacy application fixture bundle; shared mutation guards borrowed its opt-in.
+  ownership: >
+    Only explicit legacyLayout declarations grant flat compatibility. Undeclared
+    workbooks and bare historical keys remain unowned. Scoped directories stay scoped
+    after deregistration. Singleton selection remains UI/selection metadata only.
+  focused_validation: >
+    ai/projects/onboarding.fixture.ts: 13 behavioral gates pass, including an empty
+    dashboard browser check, real HTTP empty -> alpha -> beta -> gamma provisioning,
+    identical-ID Playwright collection/execution, and real local generic form execution
+    in a temporary checkout with no installed application artifacts. Existing affected
+    project/dashboard/authoring fixtures also exercised in an isolated corpus copy.
+  mutations_command: "npx tsx ai/projects/onboarding.fixture.ts --mutations"
+  mutations_result: >
+    9/9 killed, exit 0 from the mutation driver. Reintroduced empty rejection,
+    singleton flat ownership, undeclared-workbook ownership, bare-state reassignment,
+    cardinality-based index naming and collection, foreign-file discovery, the legacy
+    generic fixture import, and Bugasura-authorized shared mutations. Every mutant
+    failed its intended behavioral gate in a disposable checkout.
+  fixture_contract_changes: >
+    isolation.fixture now explicitly declares its legacy owner. provisioning-isolation
+    no longer expects deregistration to grant ownership; its scan uses a guarded OS
+    temporary artifact root. Corpus integrity compares against this run's measured
+    baseline, not the obsolete 409-recording snapshot. No application artifact changed.
+  final_regression: >
+    Exactly one full sweep: 78 fixtures, 76 passed, two exit 1, 702.49 seconds.
+    workspace-accordion's obsolete API stub was corrected after the sweep; its existing
+    assertions then passed in a focused browser run (exit 0, 10.88 seconds). Production
+    was unchanged after the full sweep. locator-quality-benchmark remains red on the
+    pre-existing TC_LOGIN_160 authored-ID-versus-semantic ranking expectation.
+  integrity: >
+    1258 protected files, including 466 recording files, match the pre-change SHA256
+    snapshot. Production registry, Page Objects, knowledge, recordings, mappings,
+    generated specs, workbooks, application fixtures and history are untouched.
+    No existing file was removed; uncommitted and untracked work is preserved.
+  files_changed:
+    - ai/projects/registry.ts
+    - ai/projects/scope.ts
+    - ai/autocode/work.ts
+    - ai/excel/mapping.ts
+    - ai/knowledge/index.ts
+    - ai/dashboard/public/index.html
+    - tests-e2e/generic/generic.spec.ts
+    - tests-e2e/support/base-fixtures.ts
+    - tests-e2e/support/collection-scope.ts
+    - ai/projects/onboarding.fixture.ts
+    - ai/projects/isolation.fixture.ts
+    - ai/projects/provisioning-isolation.fixture.ts
+    - ai/dashboard/workspace-accordion.fixture.ts
+    - docs/history/REMAINING.md
+  remaining_before_old_project_cleanup: >
+    Do not delete Bugasura/Flipkart/demo data yet. Inventory and preserve owned artifacts
+    and legacy declarations; separate corpus-dependent regression inputs from removable
+    application data. Auth selectors, workbook/upload behavior, global history retention
+    and details, and provisioning concurrency/rollback limitations were not redesigned.
+    Existing legacy application helpers remain for existing application consumers.
+  next_action: >
+    Resolve the pre-existing benchmark expectation through a separate investigation.
+    Review cleanup ownership, generic capabilities and backups before old-project removal.
+    GitHub Copilot integration and Keysight onboarding remain out of scope.
+
+# ------------------------------------------------------------------- 2026-09-09
+p13_7_resolver_terminal_decline_and_page_object_bootstrap:
+  status: >
+    DONE - two unrelated real-world blockers, kept apart. A: the semantic resolver spent two
+    further transport calls on a question its own validator had already settled. B: a
+    bootstrapped Page Object could not resolve BasePage from a scoped application directory.
+  a_root_cause: >
+    `revalidate` computes `decisionIsTheAnswer` and says in its rejection text that such a
+    decline "is a correct answer"; the loop stopped only on accepted/REUSE/REFUSED, so the
+    settled decline read as repairable. The reasoning existed and was not communicated.
+  a_the_rule: >
+    TERMINAL iff the resolver declined AND every question still unanswered is one whose
+    ANSWER IS THE DECISION - UNCLASSIFIED_TARGET, CONTAINER_OR_CAPABILITY,
+    CONSTANT_PARAMETER_VALUE. A decline leaving NO_METHOD_NAME or an owner problem open stays
+    repairable. A timeout is never terminal.
+  a_why_it_is_safe: >
+    A terminal exchange ends exactly where a spent budget ends - NEEDS_REVIEW, a STRUCTURAL
+    RESOLVER_EXHAUSTED refusal, not re-asked. No answer is accepted that was not accepted
+    before, no validation is skipped, no standard is lowered. Only transport calls change.
+  a_measured: >
+    Replaying the REAL recorded first attempts through the REAL validator: over the last 12
+    exchanges 32 transport calls become 24. TC_SMOKE_013 3 -> 1 (~278s -> ~93s at the measured
+    ~93s/call). TC_SMOKE_016 9 -> 7. TC_SMOKE_012 unchanged at 3, correctly - NO_METHOD_NAME
+    is repairable. The residue in TC_SMOKE_016 is two TEXT_ONLY_IDENTITY exchanges that
+    legitimately repair and then hit the 120s transport ceiling.
+  a_scope_verified: >
+    `ensurePageObjects` already passes only this case's proposals to the resolver, by
+    testCaseId or sighting. There is NO corpus-wide semantic path. `analyseCorpus` is
+    corpus-wide and costs 2.2-2.8s (Bugasura) / 0.08-0.13s (Flipkart).
+  a_observability: >
+    Per attempt: transportMs, responded, terminal. Per exchange: startedAt, finishedAt,
+    totalMs, terminal. Per case: a `semantic` block on the attempt metrics (exchanges, calls,
+    attempts, totalMs, accepted, rejected, terminalStops). The metrics SCHEMA is deliberately
+    NOT bumped - it rides in frameworkFingerprint, so a bump would grant every row a fresh
+    attempt budget, and an observational field decides nothing.
+  b_root_cause: >
+    `renderPageObjectClass` emitted two FIXED relative imports correct only for a class
+    written directly into tests-e2e/pages - the legacy unscoped layout. A scoped application
+    is one directory deeper, so `./base.page` and `../support/resilient-locator` both named
+    files that do not exist, and Playwright refused the spec at COLLECTION.
+  b_the_fix: >
+    Both specifiers are computed from the class file's own directory to the framework file's
+    real location, anchored on the fixtures module's directory (the layout root the scope
+    resolves). Generalized: a third application resolves the same way with nothing named
+    after it. The legacy layout emits byte-identical strings.
+  b_artefact_repair: >
+    tests-e2e/pages/flipkart/home.page.ts had been written by the defective renderer; its two
+    import lines were corrected. No capability, locator, knowledge entry or identity touched.
+    Verified: `npx playwright test --config=playwright.excel.config.ts --list` on the Flipkart
+    generated spec now reports "Total: 1 test in 1 file".
+  tests: >
+    semantic.fixture.ts section T (10 checks); bootstrap-knowledge.fixture.ts section F (6
+    checks). Fixture COUNT unchanged at 77.
+  mutations: >
+    Eight, all bite. R1 terminal short-circuit removed -> T1/T2/T8/T10. R2 non-terminal
+    decline treated as terminal -> T4. R3 timeout becomes a terminal rejection -> T6 and the
+    existing outage check. R4 stop on the first rejection regardless of validation -> T4.
+    R5 resolver bypassed -> sections D and E. B1 fixed BasePage path -> F2/F6. B2 fixed
+    support path -> F3/F6. B3 framework looked for beside the class -> F2/F3/F5/F6.
+  production_files_changed: >
+    ai/autocode/abstraction/semantic.ts, ai/autocode/abstraction/types.ts,
+    ai/autocode/abstraction/writer.ts, ai/autocode/metrics.ts, ai/autocode/orchestrate.ts.
+  regression: "77 fixtures run, 77 green, 0 failures, exit code 0 - 2026-09-09, one run on the settled tree. One fixture went RED during the phase and was a REAL defect, not a stale assertion: locator-validation E20 judged every application's specs against the ACTIVE application's fixture list, and a concurrent recording run produced the first scoped generated spec destructuring a scoped fixture. The sweep is now application-aware and E1 proves it bites. Fixture COUNT unchanged at 77."
+  next_action: >
+    Resume broad Flipkart validation. Two known costs remain and neither is a correctness
+    problem: (1) transport calls take ~83-102s with a 120s ceiling, so an exchange that
+    legitimately repairs still costs minutes - that is a transport question, not a resolver
+    one, and A3 forbids converting a timeout into a semantic answer; (2) Phase 13.6 moved 8
+    Bugasura rows from a false REUSE to an honest NEEDS_REVIEW, which raises AI-eligible
+    proposals there from 10 to 18 - real review work whose cost lands the next time Bugasura
+    runs with --create-page-objects, and which a re-recording clears without a model call.
+
+# ------------------------------------------------------------------- 2026-09-09
+p13_6_capability_identity_is_measured:
+  status: >
+    DONE - framework correctness. The duplicate gate no longer infers element identity from
+    a selector token; it reads a measurement taken at the interaction. Option (a) MEASURE,
+    as authorised after the Phase 13.5 investigation.
+  the_invariant: >
+    An existing capability may be credited with the recorded element only where the element
+    resolved by that capability's own declared locator, in the document the interaction
+    happened in, IS the element that was acted on. A name, a selector token, a score and a
+    method name are each not element identity. Unknown never becomes yes.
+  production_files_changed:
+    ai/autocode/dom-evidence.ts: >
+      CandidateMeasurement gains an optional `capability: {owner, method}`; TargetEvidence
+      gains an optional `capabilityMeasurements` list; `provenMeasurements(evidence, role)`
+      is the one reader that returns every measurement satisfying `provesIdentity` across
+      all four lists; `sanitiseEvidence` carries the new list, attributed and bounded by the
+      existing `maxRejectedCandidates` limit. All additive and optional.
+    ai/dashboard/live-recorder.ts: >
+      `measureDeclaredCapabilities` resolves the ACTIVE application's declared capability
+      locators against the parked node through the EXISTING `measureExpressionCandidates` -
+      same faithful rebuild, same document guard, same in-page identity comparison, same
+      bar - and attributes each answer. Called from `measureAtPress` and from the assertion
+      pick. Bounded by MAX_CAPABILITY_MEASUREMENTS (40) so it cannot sit in a person's click
+      path; prose and parameterised declarations are skipped because they are not locators.
+    ai/autocode/abstraction/propose.ts: >
+      `existingCapability` rewritten. It now takes the element's proven measurements (and,
+      for a parameterised group, the template) instead of a locator string, matches on an
+      attributed capability measurement or on a proven candidate whose expression IS the
+      declared locator, matches a parameterised capability on its template, and refuses
+      when more than one capability qualifies. `selectorTokens`/`declaredSelectors` are no
+      longer imported here. Row members carry their own `identityProofs`.
+  what_did_NOT_change: >
+    Candidate generation, families, budgets, scoring, ranking, durability, exact-vs-loose,
+    AI eligibility, the resolvers in from-recording.ts, the writer, the transaction, the
+    lifecycle vocabulary. No new strategy, no new evidence store, no fallback.
+  corpus_before_after:
+    bugasura: >
+      Same 409 recordings. Element-gate claims 9 -> 1; retained alternatives 2 -> 0;
+      REUSE 14 -> 6; NEEDS_REVIEW 66 -> 74; REFUSED 11 -> 11. Proposals 91, matcher reuses
+      458 and unmeasured 207 are unchanged, and PROPOSED is EMPTY before and after - so
+      nothing new is written and nothing established moved. Measured both ways on the same
+      tree by substituting the token basis back in, which reproduced the Phase 13.5 numbers
+      exactly.
+    the_one_surviving_claim: >
+      The row-scoped `.bugChecked` group against IssuesPage.issueCheckboxState, on the
+      TEMPLATE basis - the declared template is byte-identical to the proposed one and the
+      instantiated expression was proven at the press. It was already REUSE by the name
+      gate, so no outcome depends on it.
+    the_eight_that_disappeared: >
+      3 provably wrong (.mdl-button across different containers with disjoint text filters),
+      1 wrong on the recorded evidence (a container id), 4 that proved nothing (a container
+      id or a shared class). Each becomes NEEDS_REVIEW - visible work rather than false
+      coverage. `lifecycle.ts` had been recording all eight as EXISTING_PO_REUSED / passed /
+      no remedy.
+    flipkart: >
+      Unchanged, and by inspection must be: its single declared capability is a getByRole
+      chain, which yields no selector token, so the token gate could never match it either.
+      Measured 21 proposals / 5 reuses / 2 unmeasured / 0 claims / 0 alternatives on both
+      bases.
+  corpus_grew_during_this_phase: >
+    NOT BY THIS WORK. A person was recording Flipkart through the dashboard while the phase
+    ran: TC_SMOKE_010/011/012 appeared at 12:07-12:48 on 2026-09-09, and the 12:07 autocode
+    run bootstrapped `ai/knowledge/page/flipkart/flipkart__root.yaml` plus
+    `tests-e2e/pages/flipkart/home.page.ts` (HomePage.homeLink) - Phase 12B working on a
+    live application for the first time. Flipkart recordings 20 -> 30 files; Bugasura
+    unchanged at 409. Recorded here because the testing contract's baselines are facts about
+    the repository, and this one moved for a legitimate reason that was not this phase.
+  tests: >
+    ai/projects/knowledge-enrichment.fixture.ts, 47 -> 67 checks. Section J is I1-I14 plus
+    I4b (a name that NAMES an established capability), I8b (a measurement from another
+    document) and I10a/I10b (attribution follows identity), driven through the real
+    analyseCorpus/applyProposals in a temporary artefact root with TWO registered
+    applications. Sections C, D and H were updated - not relaxed - so the simulated recorder
+    carries the capability measurement a real press now takes; the cases that must NOT prove
+    identity carry none.
+  mutations: >
+    Six, all bite: M1 token equality (I3, I5, I11, I12), M2 accessible-name equality (C4,
+    C5, D4, H1-H4, H9, I4b, I5, G2), M3 same-document protection removed (I8b), M4
+    unresolved counts as identity (I6), M5 several resolved count as identity (I7), M6
+    identity bypassed on token overlap (I3, I5, I11, I12). M7 - attribution without proven
+    identity - was written, applied and measured, and CANNOT bite: attribution has no gate
+    of its own, and a name-resolved item is resolved by `findMethod` before the analyser
+    sees it. Applying it leaves the retained alternatives byte-identical. M1/M2/M6 protect
+    the same invariant from the reachable side.
+  governance: >
+    MOOLYAAURA-ARCHITECTURE.md extends the Phase 13.3 attribution rule with how identity IS
+    established (measurement at the interaction), what is not identity (name, selector token,
+    score, method name), and what happens when it cannot be established (the proposal and
+    review path; unknown is not yes). No rule was weakened.
+  the_honest_cost: >
+    A recording carrying no capability measurement and no proven candidate equal to the
+    declared locator now leaves identity unproven, so a real duplicate can reach the
+    proposal path where the token gate would have blocked it. That is the governed outcome
+    rather than a regression - the brief is explicit that unknown must not become yes - and
+    it shrinks with every recording made from now on, because every press measures the
+    declared capabilities. On the current corpus nothing is written either way.
+  regression: "77 fixtures run, 77 green, 0 failures, exit code 0 - 2026-09-09, one run, after every change was complete. Fixture count unchanged (the enrichment fixture grew from 47 to 70 checks rather than a new file being added)."
+  next_action: >
+    None outstanding for identity. Two things follow from it and are separate: (1) the
+    eight elements now in NEEDS_REVIEW are real coverage work, and their capabilities can be
+    created once a recording measures them; (2) `lifecycle.ts` reports any REUSE as
+    EXISTING_PO_REUSED / validationStatus passed / remedy null, including a REUSE the NAME
+    gate produced - on this corpus all six are genuinely the same element, so it is a
+    reporting hazard rather than a live defect, and it is not this phase's to fix.
+
+# ------------------------------------------------------------------- 2026-09-09
+p13_5_element_identity_investigation:
+  status: >
+    INVESTIGATION COMPLETE, NO FIX APPLIED - authorised as read-only. The duplicate gate
+    is NOT a local defect. It is one place where the framework claims ELEMENT IDENTITY on
+    a basis that cannot establish it, and it is the only resolver that does so.
+  the_gate: >
+    existingCapability(template, knowledge, index) in ai/autocode/abstraction/propose.ts.
+    It tokenises the proposal's template, takes the LAST token, and returns the first
+    knowledge entry whose declaredSelectors() contain that one token. Two call sites: the
+    per-target ladder (~line 1138) and the parameterised group (~line 1342). A match sets
+    status REUSE, adds METHOD_EXISTS "already wraps this element", and - since P13.3 -
+    is ALSO the sole authority that attributes alternative evidence to a capability.
+  what_the_basis_actually_proves: >
+    Nothing about identity. Two expressions sharing a selector token are not thereby the
+    same element, and two sharing none are not thereby different elements. The gate's own
+    premise - "the LAST concrete token names the element the method returns" - is false
+    for any expression whose final narrowing step contributes no token: getByText(...),
+    getByRole(...), a bare tag. For those the trailing token is the CONTAINER, so the
+    gate compares a scope against an element.
+  the_framework_already_holds_the_right_standard_everywhere_else:
+    findMethodByProvenLocator: >
+      Full expression equality, or a sole authored id that is the entry's ONLY declared
+      selector; and it honours `usage`.
+    findParameterisedMethod: >
+      A structural template match whose round-trip must reproduce the measured expression
+      byte for byte.
+    disambiguateByProvenLocator: >
+      Uses token containment, but ONLY to narrow a set already tied on another basis -
+      "it can only ever narrow, never invent a match".
+    existingCapability: >
+      Token containment as a POSITIVE identity claim, on its own, with no usage check, no
+      owner/page check, and no ambiguity refusal.
+    therefore: >
+      The generalized rule is not new. It is the framework's own standard, which this one
+      resolver does not meet: identity may be claimed only on an identity-grade basis, and
+      token overlap may only narrow a set some identity-grade basis already justified.
+  measured_on_the_real_corpus:
+    element_gate_matches: 9
+    provably_wrong: >
+      3 - TC_DASHBOARD_004 ("close"), TC_LOGIN_071 ("Cancel") and TC_LOGIN_074
+      ("Close is visible") each matched WorkspacePage.newIssue on `.mdl-button` alone,
+      against a declared locator scoped to a DIFFERENT container id AND filtered to
+      disjoint text ('add Add Issue'). Corroborated outside the analyser: a person had to
+      hand-write `#first_report_modal button:has-text("close")` in projects.page.ts, on a
+      different class, for the element the gate calls already wrapped.
+    wrong_on_the_recorded_evidence: >
+      1 - TC_LOGIN_126 "Select your team" matched ProjectsPage.projectButton on the
+      CONTAINER id `#team_select_create`; the declared element is a `.team-list-item` row.
+    unproven_basis_defensible_outcome: >
+      4 - TC_DASHBOARD_008, TC_DASHBOARD_027 x2, TC_LOGIN_074 "Notification Preferences".
+      The capability named is plausibly the right one (generated specs do call
+      bugReportOverviewLink, reportsNavLink and notificationsPanel.panel) but the gate
+      matched a container id or a shared class, so it did not establish that.
+    true_and_redundant: >
+      1 - the row-scoped `.bugChecked` group matched IssuesPage.issueCheckboxState on a
+      BYTE-IDENTICAL template, and that proposal was already REUSE by the name gate.
+    crossed_a_declared_usage: 2 - TC_LOGIN_074 and TC_DASHBOARD_024
+    two_claimants_first_won_silently: >
+      1 - TC_LOGIN_074, where both NotificationsPanel.panel and
+      NotificationsPanel.settingsButton declare `#ap_notifications_panel`.
+    exposure: >
+      47 declared capabilities, all 47 implemented; 28 declare at least one concrete
+      token; 18 of those END in a class token. Of 91 proposals, 29 have a basis ending in
+      a class (the false-positive shape) and 35 have no token at all (the gate is blind to
+      them). Flipkart shows 0 matches only because it has 0 declared capabilities - the
+      failure mode GROWS with maturity rather than being self-limiting.
+  falsification_three_mutations_applied_to_the_real_source_and_reverted:
+    method: >
+      analyseCorpus() only - applyProposals was never called, so nothing was written under
+      any mutation; both BASELINE measurements are identical.
+    M1_every_token_not_just_the_last: >
+      9 -> 10 matches, and IssuesPage.resultRows immediately claims two row-scoped groups.
+      The code comment predicting this was right. All-tokens is worse; last-token is not
+      thereby right - both are token overlap.
+    M2_the_gate_never_matches: >
+      DECISIVE. Matches 9 -> 0, REUSE 14 -> 6, NEEDS_REVIEW 66 -> 74, and PROPOSED stays
+      EMPTY. On this corpus the gate prevents no write whatsoever. Its entire measurable
+      effect is to move 8 rows out of the review queue on a premise it did not establish,
+      and to manufacture 2 false evidence records.
+    M3_whole_expression_equality: >
+      9 -> 1 match (the byte-identical `.bugChecked` one) and 0 alternatives. Exactly one
+      of the nine is a real duplicate, and expression equality alone finds it.
+  counterexamples_A_to_G:
+    what_was_built: >
+      Seven minimal cases, each in its OWN temporary artefact root under os.tmpdir() with a
+      synthetic registry - no Bugasura DOM, no `.mdl-button`, no WorkspacePage - driven
+      through the real analyseCorpus + applyProposals.
+      A shared class, different containers -> BLOCKED (wrong).
+      B shared class and container, disjoint text filters -> BLOCKED (wrong).
+      C the new element is text INSIDE the established container -> BLOCKED (wrong).
+      D the new element is a bare tag inside it -> BLOCKED (wrong).
+      E byte-identical expression -> correctly reused, but by findMethodByProvenLocator; the
+        item never reaches the gate.
+      F same element, quoting differs only -> same, also resolved by the matcher.
+      G same element, CSS expression vs SEMANTIC expression -> NOT blocked, PROPOSED, and
+        APPLIED: a SECOND capability (saveNowButton beside saveButton) was written for one
+        element. The false-negative half is not hypothetical.
+    conclusion: >
+      Unsound in BOTH directions, so it is not a conservative approximation of identity.
+      A-D reproduce the failure in an application that shares nothing with Bugasura, which
+      is what makes the rule generalized rather than application-specific.
+  governance_position: >
+    MOOLYAAURA-ARCHITECTURE.md already states the rule this violates: "Evidence is
+    attributed to a capability only where the framework has established that the recorded
+    element is the one that capability wraps. A match made on a name is not element
+    identity." A match made on a shared selector token is not element identity either. The
+    governance text needs no change to forbid this; the implementation does not meet it.
+  consequences_that_are_not_cosmetic:
+    review_queue: >
+      lifecycle.ts turns status REUSE into disposition EXISTING_PO_REUSED with
+      validationStatus "passed" and remedy null. Eight elements are therefore recorded as
+      covered by an existing Page Object when they are not, and no remedy is ever offered.
+    evidence_store: >
+      Both alternative-evidence records the corpus produces are false attributions to
+      WorkspacePage.newIssue. That is 2 of 2 - the entire P13.3 evidence store, on this
+      corpus, is wrong. Nothing is on disk yet: ai/reports/abstraction-alternatives.jsonl
+      does not exist and is only written when the pipeline next runs.
+    no_wrong_call_was_ever_emitted: >
+      Checked: no generated spec calls a capability the gate mis-associated. Spec emission
+      is decided by the matcher, not by this gate, and the matcher requires expression
+      equality. The damage is to the ledger, the review queue and the evidence store.
+  what_a_fix_must_decide_NOT_DECIDED_HERE: >
+    Two directions, and the choice is a governance decision rather than a coding one.
+    (a) MEASURE: resolve the declared locator in the press's own document and ask
+    __auraSameElement - the only thing that can PROVE identity, and the framework already
+    has the primitive. Requires evidence a knowledge entry does not carry today: an entry
+    records a locator STRING, not an element identity, which is the structural gap under
+    all of this. (b) REFUSE TO CLAIM: keep the gate as a REVIEW FLAG rather than an
+    identity answer - an unprovable identity must not silently settle the question. Note
+    that (b) alone re-opens counterexample G, which is a real duplicate write.
+  integrity_of_this_phase: >
+    Production behaviour unchanged - three mutations applied to propose.ts and reverted
+    byte-for-byte (no markers remain; both baselines identical). No capability, knowledge
+    file, recording, spec or mapping modified. No report artefact created;
+    abstraction-proposals.jsonl untouched (mtime 2026-09-08). Artefacts: Bugasura 409,
+    Flipkart 20, zero TC_TEST*, knowledge 3, Page Objects 7, generated specs 63. No full
+    77/77 regression was run - none was required, because no production change was made;
+    knowledge-enrichment, abstraction and po-discovery fixtures were run as an integrity
+    check and are green.
+  next_action: >
+    DECIDE (a) or (b) above, then authorise Phase 13.6 to implement it. Do not widen or
+    narrow the token comparison - both were measured and both are token overlap.
+
+# ------------------------------------------------------------------- 2026-09-09
+p13_4_enrichment_fails_closed_and_verifies_what_it_wrote:
+  status: DONE - safety phase. No decision, ranking, budget or corpus outcome changed.
+  authorised_by: >
+    Architecture: knowledge/Page Object/fixture updates are ONE TRANSACTION; a capability
+    requires deterministic evidence and proof at the interaction; established capabilities
+    are append-only; no artefact resolved outside the active applicationId; and the rule
+    added this phase - evidence is attributed to a capability only where the framework has
+    established the recorded element is the one that capability wraps, a name being no
+    element identity.
+  what_changed: >
+    ai/autocode/abstraction/writer.ts only.  (pre-write, pure) feeds
+    the  array the batch already refuses on;  joins the
+    existing  step and therefore the existing rollback. No second writer, no
+    second transaction, no new evidence store, and 13.3s observational report is NOT an
+    input to any mutation.
+  pre_write_invariants: >
+    capability named; every file the write would touch inside the ACTIVE scope
+    (, which had no production caller before this); locator is a measured
+    expression, never prose;  holds for the press-time proof; the write
+    would not change what an established capability resolves to; and it would not give one
+    element a second name.
+  post_write_invariants: >
+    every capability that existed still declares what it declared, and no file this run
+    did not intend to write has changed - compared as BYTES against a snapshot taken
+    before the write. Never mtime, never ordering, never a timestamp.
+  unreachable_mutation_recorded: >
+    Removing the post-write CALL SITE cannot bite: every defect reachable today is refused
+    before the write, so nothing reaches the verification with something to find. That is
+    the fail-closed property, not a hole. The two checks it runs are protected reachably
+    (P6, P7) through a deliberately corrupted result.
+  corpus: >
+    bugasura 91/458/207 and flipkart 18/0/2 - byte-identical to the accepted 13.3 baseline.
+    The writer eligible set on the real corpus is EMPTY (0 PROPOSED, archived included), so
+    no existing capability could be affected either way.
+  pinned_by: ai/projects/knowledge-enrichment.fixture.ts (47 checks, 12 new in section I)
+
+# ------------------------------------------------------------------- 2026-09-09
+p13_3_alternative_evidence_is_retained_for_review:
+  status: DONE - operationalises one governance sentence. No decision anywhere changed.
+  authorised_by: >
+    Architecture / Project Knowledge Lifecycle: "New evidence about an established
+    capability - including a locator that appears stronger - may be retained for review.
+    It is never applied automatically." Until now the second half was enforced and the
+    first half was not: the evidence was simply discarded.
+  what_changed: >
+    ai/autocode/abstraction/propose.ts only. , 
+    and  (its own report file, rewritten from the corpus like the
+    ledger). The record is built at ONE place - the analyser duplicate gate that
+    established the element is already wrapped - and read by nothing.
+  the_record: >
+    application, recording, step, role, the established owner and method, the DECLARED
+    locator and the OBSERVED one verbatim, the knowledge file, and the identity basis. No
+    score, no verdict, no timestamp.
+  three_corrections_the_corpus_and_fixture_forced: >
+    (1) THE MATCHER PATH RECORDS NOTHING.  matches by accessible NAME, which is
+    not element identity - a control sharing a name was recorded as new evidence for an
+    unrelated capability.  can only match when declared equals
+    proven, so it has nothing to report. Only the duplicate gate knows both facts.
+    (2) AN INSTANTIATED TEMPLATE IS NOT A RIVAL: a parameterised capability plus one row
+    is the capability being used - 118 of the first 150 records were that.
+    (3) A PROSE  states no locator to differ from. Also: one line per
+    distinct alternative, and formatting is not evidence.
+  corpus: >
+    Bugasura 91 proposals / 458 reuses / 207 unmeasured and flipkart 18/0/2 - BYTE-IDENTICAL
+    to the accepted baseline. Observations: bugasura 2 from 101 recordings, flipkart 0.
+  a_finding_for_a_future_phase_not_changed_here: >
+    Both Bugasura observations are , and both show the duplicate
+    gate associating differently-scoped buttons because they share a last selector token
+    (): a modal Close and a Cancel control are currently treated as already
+    wrapped by newIssue, which blocks two legitimate capabilities from ever being created.
+    The gate errs conservatively (it refuses to create, never to overwrite) so nothing is
+    unsafe, and it is exactly the kind of thing this report exists to surface. NOT changed
+    in this phase.
+  pinned_by: ai/projects/knowledge-enrichment.fixture.ts (35 checks, 9 mutations, all bit)
+
+# ------------------------------------------------------------------- 2026-09-09
+p13_1_and_13_2_governance_and_enrichment_contract:
+  status: DONE - governance updated, enrichment behaviour PINNED. Zero production change.
+  governance: >
+    Nine durable rules landed in the pack (G1-G8 plus the approved removal of the obsolete
+    AI candidate-family claim): append-only automated enrichment with an explicit reviewed
+    maintenance path, new evidence retained for review rather than applied, capability
+    requires deterministic proof while prose does not, AI descriptive authorship carries no
+    authority, transactional writes, idempotent enrichment, accepted specs are never
+    silently regenerated, the P12A strategy contract, and the corrected Flipkart baseline
+    (8 -> 20). Placement: Architecture (knowledge lifecycle + AI boundary), Principles
+    (item 11), Locator Contract (new Strategy Contract section), Testing Contract
+    (artifact safety).
+  what_13_2_added: >
+    ONE FIXTURE AND NOTHING ELSE - ai/projects/knowledge-enrichment.fixture.ts, 22 offline
+    checks in a temporary artefact root. It pins the enrichment behaviour that already
+    existed BEFORE any Phase 13 change touches it: a second proven capability is appended
+    with the first entry byte-identical; the same element recorded again adds nothing; an
+    element already wrapped is a REUSE even under a different name and a different proven
+    locator; a rival locator for an established capability is written nowhere; an unproven
+    target adds nothing; an unsound proposal is refused by validation before any file is
+    written; and the enriched capability is what the next recording reuses.
+  defence_in_depth_measured: >
+    Several enrichment invariants are guarded twice - a reuse resolver answers before a
+    proposal is made, and the writer refuses again on disk - so single mutations often
+    cannot bite. Each of the five mutations is therefore aimed at the gate that actually
+    decides in the scenario the fixture drives: append-only (M1), element identity (M2),
+    the proof requirement (M3), the pre-write refusal (M4, with the rollback deliberately
+    left holding), fixture idempotency (M5). All five bite.
+  not_done: >
+    13.3 (superseding-evidence record) and 13.4 (pre-write knowledge validation with
+    post-write verification, per the approved decision) are NOT implemented.
+
+# ------------------------------------------------------------------- 2026-09-09
+p12b_page_object_and_knowledge_bootstrap:
+  status: DONE - framework capability. Existing owner decisions byte-identical.
+  the_gap: >
+    MoolyaAura could reuse an application's knowledge and never create the first piece of
+    it. All four resolveOwner rules read a knowledge file; OWNER_UNKNOWN is not in
+    SEMANTIC_ENABLED so no resolver may be asked; and applyProposals refuses a proposal
+    whose owner no knowledge file declares. Flipkart proved it live: 0 Page Objects, 0
+    knowledge files, 1 generated spec, 5 raw locators, 0 reuse.
+  what_changed: >
+    (1) ai/autocode/dom-capture-source.ts captures `location.pathname` at the press, in
+    the document that parked it, on both registration sites; (2) TargetEvidence.route
+    carries it, allow-listed through sanitiseEvidence and dropped whole when a path
+    segment looks like a secret (routeCarriesSecret); (3) live-recorder carries it onto
+    the press and pick evidence rows; (4) propose.ts gains bootstrapOwner + a FIFTH owner
+    rule and declaredForRoute; (5) types.ts gains BOOTSTRAP_ROUTE_UNKNOWN (SEMANTIC, NOT
+    in SEMANTIC_ENABLED) and Proposal.bootstrap; (6) writer.ts gains renderKnowledgeFile +
+    bootstrapKnowledgePath and creates the first knowledge file inside the existing
+    transaction.
+  the_rule: >
+    An owner is derived from TWO facts and no others - the active applicationId and the
+    route the DOCUMENT stated at the press. canonicalIdentity turns them into
+    `<app>__<routeSlug>`; the class is that slug in PascalCase plus `Page`, with `HomePage`
+    for the root route (the approved naming decision). Nothing is derived from a page
+    title, DOM shape, text, accessible name, locator strength or a model.
+  fail_closed: >
+    No route, a route carrying a generated identifier (`/issues/636432` names a record),
+    an origin naming another application, or no origin at all - each refuses with no
+    knowledge file, no class and no fixture. A historical recording is never enriched to
+    become bootstrapable.
+  existing_knowledge_always_wins: >
+    Containment, declared container, declared component and declared route all answer
+    first, and an AMBIGUOUS declared owner stays ambiguous. `declaredForRoute` was
+    extracted so the declared rules are asked with the PRESS-TIME route as well as the
+    reconstructed one - without it, a recording whose goto the step walker cannot read had
+    its second element bootstrapped on a screen it had already described (found by the
+    fixture, not reasoned about).
+  corpus: >
+    Bugasura 91 proposals / 458 reuses / 207 unmeasured - BYTE-IDENTICAL to the pre-phase
+    baseline. Flipkart: identical statuses, owners and methods; the only difference is a
+    more precise refusal sentence on two targets (BOOTSTRAP_ROUTE_UNKNOWN where it was
+    OWNER_UNKNOWN - both SEMANTIC, both unaskable, both PROPOSAL_REJECTED /
+    REFUSED_NO_ADMISSIBLE_EVIDENCE). Owner decisions over every real recorded target:
+    2034 for bugasura, all unchanged, 0 bootstrapped.
+  pinned_by: ai/projects/bootstrap-knowledge.fixture.ts (37 checks, 10 mutations, all bit)
+  mutations_that_taught_something: >
+    Two mutations could not bite as first written and both were informative. Removing the
+    writer's pre-write block is caught by the ROLLBACK (defence in depth, applied:false and
+    nothing on disk either way); letting an existing knowledge file be re-rendered is
+    UNREACHABLE because knowledgeFileFor finds that file first, so bootstrap never runs for
+    a screen that already has one. The reachable form of the same concern - existing
+    knowledge SKIPPED - bites. Separately, the two origin guards were merged into one
+    comparison because each masked the other, so neither could be tested alone.
+  not_done_deliberately: >
+    No navigation/open() method is generated for a bootstrapped page (a capability nothing
+    measured); no component is created; no historical evidence is migrated; no locator
+    strategy, ranking, budget or AI behaviour is touched. AI is not involved in ownership
+    at any point.
+
+# ------------------------------------------------------------------- 2026-09-09
+p12a_locator_strategy_contract:
+  status: DONE - framework capability. ZERO locator-behaviour change, proven by corpus diff.
+  what_changed: >
+    ONE table and one derivation, both in ai/autocode/dom-evidence.ts. `STRATEGY_CONTRACT`
+    declares, for all 35 strategy names, family + budget kind + measurement path +
+    scoreable + rebuildable; `strategyContract()` reads it through a Map built once;
+    `familyOf` derives the family from it and keeps its old default for an undeclared
+    name. No other production file changed. No ranking, score, budget, generation order,
+    identity gate, safety gate, Page Object or AI behaviour was touched.
+  the_gap_it_closes: >
+    A strategy was a bare string spelled at four unrelated places - emission site,
+    familyOf, the scorer's shape classifier, buildLocator's REBUILDABLE - and every
+    disagreement failed SILENTLY in the same direction. Measured: an unmapped family falls
+    to `structural`, which has no FAMILY_BUDGET entry, so applyFamilyBudget retains 0 of
+    it; scoreExpression returns null for an unknown Playwright call, which ranks it last;
+    buildLocator returns null for the same, which makes matchCount null so the candidate
+    can never be proven. None of the three produces an error.
+  what_the_contract_found: >
+    THREE STRATEGIES ARE GENUINELY NOT REBUILDABLE - container-text, scoped-class-text and
+    scoped-class-pair-text - because they build `.filter({ hasText })` and `readOptions`
+    supports `name`/`exact` only, deliberately. All three are measured in the page by
+    __auraMeasure and never need a rebuild, so the contract records `rebuildable: false`
+    and the fixture requires rebuildability only of an `expression` strategy. Measured
+    over the corpus: 0 refusals for every other strategy, 2480 refusals across those three.
+  behaviour_unchanged: >
+    Corpus diff over all 1041 captured graphs, before vs after: per-graph ordered candidate
+    lists with family and measurement path - IDENTICAL; all 1247 ranked selections
+    (action + assertion) - IDENTICAL; totals - IDENTICAL (raw 18039, retained 17272, proven
+    candidates 3050, zero-proven targets 172, ambiguous 8431, wrong-target 563, unresolved
+    49, at-ceiling 0, dropped-by-budget 767; families identifier 316, container 1875,
+    structural 10023, semantic 1209, semantic-scoped 1530, attribute 1455, content 864).
+  performance: >
+    familyOf 13.9 ns -> 19.5 ns per call (min of 5 x 1,000,000 calls), about 17 calls per
+    captured target. Whole-corpus generation timing is dominated by machine noise at this
+    scale (0.16-0.44 ms/target on both trees across repeats), which is why the isolated
+    function was measured instead.
+  pinned_by: ai/autocode/strategy-contract.fixture.ts (9 checks over 30 emitted strategies)
+  mutations: >
+    EIGHT, all bit. Declaration side: entry removed (A1), scoreable lied about (B-E),
+    rebuildable lied about (B-E), family moved to one with no budget (B-E + G1),
+    measurement path swapped (B-E). Reality side: FAMILY_BUDGET entry removed (B-E + G1),
+    getByRole removed from REBUILDABLE (B-E), and a NEW EMISSION SITE with no contract
+    entry (A1 + G1) - the case the whole phase exists for.
+  deliberately_not_done: >
+    The scorer's shape classifier was NOT rewired to read the contract. It classifies an
+    arbitrary RECORDED chain, not only our own strategies, so making it contract-driven
+    would either change how a Codegen locator scores or add a second path - both are
+    behaviour changes this phase forbids. Same reasoning for REBUILDABLE, which must keep
+    parsing Codegen's chains and is deliberately a SUPERSET of what our strategies use
+    (first/last/nth are rebuildable and no strategy emits them). The fixture asserts the
+    relationship behaviourally instead: every emitted expression must actually rebuild.
+
+# ------------------------------------------------------------------- 2026-09-08
+p11_candidate_durability:
+  status: DONE - measurement/knowledge phase. NO ranking change, and none is proposed yet.
+  production_change: >
+    ONE pure function and one export keyword, both instrumentation. `classifyDurability`
+    in ai/dashboard/live-recorder.ts answers "does this candidate still identify the
+    pressed element after a state transition" and is called by NOTHING in the recording
+    path; `measureExpressionCandidates` became exported (visibility only, no behaviour).
+    No evidence field carries a durability verdict, and no locator is chosen or refused by
+    one. Ranking, candidate budgets, AI eligibility, Page Object reuse, the falsification
+    gates, application isolation and every locator safety rule are untouched.
+  methodology: >
+    19 targets measured across my.bugasura.io and flipkart.com (21 planned; 2 could not be
+    measured and are reported as such, not as data). Production path throughout:
+    PREACTION_HOOK -> recordParkedEntry -> measureAtPress for the press, production
+    splitCandidates for the press verdicts, the page's own __auraMeasure for CSS
+    candidates and production measureExpressionCandidates for Playwright ones after the
+    transition, classifyDurability for the verdict, classifyNameStability for the name.
+    Every transition ends on a signal the application produces; no sleep anywhere.
+  press_matrix: >
+    296 candidate measurements at the press: 126 proven, 144 ambiguous, 14 wrong-target,
+    12 unresolved.
+  durability_matrix: >
+    Of the 126 proven at the press: 104 durable, 11 unknown (both reload transitions -
+    the document is gone), 10 unresolved, 1 ambiguous. Per target:
+    BOTH_DURABLE 7, EXACT_DURABLE_ONLY 3, NONEXACT_DURABLE_ONLY 2, NOT_GENERATED 5,
+    UNKNOWN 2. By application - bugasura {BOTH 4, EXACT_ONLY 2, NONEXACT_ONLY 2,
+    NOT_GENERATED 3, UNKNOWN 1}, flipkart {BOTH 3, EXACT_ONLY 1, NOT_GENERATED 2,
+    UNKNOWN 1}.
+  three_failure_modes: >
+    (1) NAME EXTENSION breaks the EXACT form: Bugasura email "Email" ->
+    "Email Please enter a valid email id" and password "Password" -> "Password Not too
+    short! enter min 5 characters." take getByRole(..., exact:true) from 1 to 0 while the
+    non-exact form stays at 1 and identity-matched. (2) A NEW SIMILAR ELEMENT breaks the
+    NON-EXACT form: Flipkart's Mobiles link goes 1 -> 3 when a search query brings
+    suggestions whose names contain "Mobiles" - with the accessible name perfectly stable.
+    (3) DYNAMIC TEXT breaks every text-derived candidate: Bugasura's password error label
+    keeps its element and its slot, its scoped-text and scoped-class-text candidates go to
+    0, and #password_field-error stays durable.
+  name_stability_is_not_durability: >
+    13 candidate-measurements are DURABLE through a CHANGED name; 1 is AMBIGUOUS through
+    a STABLE one. The two contracts share no input: classifyDurability takes no name and
+    classifyNameStability takes no count. accessibleNameStable is unchanged and was not
+    redefined.
+  deterministic_alternatives: >
+    NEITHER "id is better" NOR "semantic is better" survives the corpus. Unscoped
+    [name="..."] was AMBIGUOUS at the press 7 times (the three simultaneously mounted
+    Bugasura forms) against 5 proven; the SCOPED attribute form was proven 8/8 and durable
+    10/10; the authored id (stable-id) was proven 5/5 and durable 5/5. What held up across
+    both applications was SCOPE, not the family. Also measured durable: scoped-class 13/13,
+    scoped-placeholder 4/4, scoped-role-name-loose 5/5, role-name 10/14, role-name-loose
+    9/12, scoped-role-name 13/19 (the shortfalls are the two reload rows and the two
+    validation rows).
+  selection_impact: NONE. No candidate selection changed, because nothing consumes the verdict.
+  performance: >
+    Re-measurement after a transition costs 159 ms median per target for every proven
+    candidate - the in-page batch is 4 ms median for all CSS candidates at once, and the
+    Playwright-expressed ones cost 40 ms median each on the Node side (max 89 ms). Press
+    measurement itself is 243 ms median, unchanged. No timeouts were introduced and no
+    polling was added to manufacture a durable verdict; 2 of 21 targets could not be
+    measured (a flipkart login dialog that did not render and its suggestion list, which
+    the search box would not accept a query for on the final run).
+  harness_fault_found_and_fixed: >
+    The first run reported 42 of 42 CSS-path candidates as `unknown`. That uniformity was
+    a HARNESS fault, not a page property: __auraMeasure answers `count` and production's
+    measureAtPress translates it to `matchCount`; the harness read `matchCount` off the raw
+    result, got undefined, and classifyDurability correctly refused to guess. Reading the
+    field the page actually sends took durable from 66 to 104. Recorded here because the
+    Phase 8 lesson repeated exactly: a suppression fault always flatters the tool.
+  ranking_question: >
+    NOT ANSWERED, deliberately. The evidence shows both forms failing, in different ways,
+    on both applications - 3 EXACT_DURABLE_ONLY against 2 NONEXACT_DURABLE_ONLY - so no
+    repeatable "A survives where B does not" pattern exists for either. What DOES repeat
+    is that scoped candidates and authored ids were durable wherever they were proven
+    (23/23 across stable-id, scoped-attribute and scoped-placeholder), and that is the
+    hypothesis a future phase could test - on more targets, more applications and more
+    transition kinds than 19/2/12.
+  pinned_by: ai/autocode/candidate-durability.fixture.ts (25 checks, 8 mutations, all bit)
+  corpus_grew_mid_phase_and_a_fixture_had_pinned_a_snapshot: >
+    FOUR flipkart recordings were made through the dashboard recorder at 21:22-21:44 on
+    2026-09-08, while this phase was running - genuine human recordings (Codegen chains
+    with assertions, their own .spec.ts and .authoring.json). Nothing in this phase wrote
+    them and none of them was deleted. Flipkart therefore holds 20 files, not the 8 that
+    earlier phases recorded; bugasura is unchanged at 409.
+    They turned three checks in ai/autocode/accessible-name-stability.fixture.ts red,
+    because section C asserted CORPUS TOTALS - 52 named, 0 browser-verified, 0 proven
+    role+name - which were true of every recording that existed when P7 was written and
+    could not survive a new one. The claim those totals stood for is the honest limit:
+    evidence captured before browser-computed names existed cannot answer the stability
+    question and none was fabricated to make it. A pre-capability capture is identifiable
+    PER TARGET - it carries no `accessibleNameSource` key - so the limit is now asserted
+    over exactly that population (1031 graphs, 52 named, 0 verified, 0 proven role+name -
+    the original numbers, intact) and holds however many recordings are added. It also
+    now asserts the other half, which the snapshot could never check: every
+    post-capability target carrying a name carries a VERIFIED one (10 of 10).
+    NOT A WEAKENING - the same refusals, stated over the population they were about.
+  historical_data: >
+    No recording was written, no durability value was invented for existing evidence, and
+    nothing under ai/dashboard/recordings was read for a durability claim - every number
+    here comes from a live press taken during this phase.
+
+p10_exact_and_non_exact_semantic_candidates:
+  status: DONE - production change, measured before and after.
+  what_changed: >
+    THREE lines of behaviour, no new mechanism. (1) `semanticCandidatesFor` emits a
+    non-exact twin for every role+name candidate it already emitted, unscoped and scoped;
+    (2) both twins are emitted LAST within their families, after every other candidate;
+    (3) `rankProvenCandidates` keeps a loose twin behind its exact one. Nothing else in
+    generation, measurement, identity, the gates or the AI boundary moved.
+  the_finding: >
+    NEITHER FORM IS GENERALLY BETTER, and the live matrix says so in one table. 20 pressed
+    targets across my.bugasura.io and flipkart.com, production hook and production
+    measurement: 15 BOTH_VALID, 1 EXACT_ONLY_VALID, 5 NEITHER_VALID (2 of which generate
+    no role+name at all), 0 NONEXACT_ONLY_VALID at the press. Through a state change:
+    4 BOTH_SURVIVE, 1 NONEXACT_ONLY_SURVIVES (Bugasura's password field, whose name gains
+    the validation error - exact goes to 0 matches), 1 EXACT_ONLY_SURVIVES (Sign In, whose
+    loose form matches Google's sign-in button too), 1 NEITHER_SURVIVES.
+  why_it_is_generated_and_not_preferred: >
+    The exact form was introduced in P5.1 for a real reason (Flipkart's "Home" matched two
+    loosely) and the loose form answers a real failure (an appended validation message
+    takes exact to zero). Both are refused by the machinery that was already there when
+    they are wrong - ambiguity at the press, identity against the pressed node - so
+    generating both costs nothing that is not measured, and choosing between them offline
+    would be a preference nothing has established.
+  budget_pressure_measured_explicitly: >
+    Emitted BESIDE its exact twin, the loose form displaced 150 candidates the generator
+    already produced across the 1026 captured targets - 125 scoped-semantic-text and 25
+    scoped-label - because `semantic-scoped` is budgeted at 4 over 2 scopes. None of the
+    150 is proven in the corpus, but the family budget exists so that nothing proven today
+    can be displaced by anything added, and "not proven yet" is not "worthless". Emitted
+    LAST it displaces ZERO and still offers 374 of the 524 loose candidates (236 unscoped,
+    138 scoped). No budget constant changed: MAX_CANDIDATES 16, MAX_TOTAL_CANDIDATES 28,
+    FAMILY_BUDGET {semantic 5, semantic-scoped 4, attribute 3}.
+  ranking_invariant: >
+    Both forms score 95/95 over one segment, so the shorter-expression tie-break would
+    have promoted the loose form wherever both are proven - a global preference decided by
+    counting characters. `LOOSE_STRATEGIES` in classify.ts breaks that tie for the exact
+    twin. VERIFIED over the whole archived corpus: 1231 ranked lists before and after,
+    0 differing. Page Object reuse therefore cannot move - `findMethodByProvenLocator`
+    walks the same list in the same order.
+  corpus_before_after: >
+    1026 targets. Candidates 16804 -> 17178 (+2.2%). Semantic family 948 -> 1184. Loose
+    kept 0 -> 374. Targets at the total ceiling 0 -> 0. Candidates dropped by budget
+    467 -> 767, and the whole increase is the loose form dropping ITSELF (300); the 467
+    attribute-pair drops are the pre-existing baseline. Proven candidates no longer
+    generated: 15 before, 15 after - identical, and pre-existing drift in the text limits
+    rather than anything this phase did.
+  cost: >
+    Generation 0.297 -> 0.43 ms per target (arithmetic, 3 passes over 1026 graphs). At the
+    press, live on Bugasura over 5 targets: 15 -> 19 ms mean, 19 -> 20 candidates measured.
+  not_done_deliberately: >
+    Durability is NOT ranked on. The loose form survived the one transition exact did not,
+    and exact survived one where loose was already ambiguous; ranking on that would need
+    durability measured, and a press is one instant. No application-specific rule, no
+    change to identity/document/slot/ambiguity/forbidden-locator/dynamic-id/falsification
+    rules, no AI involvement, no workbook or mapping or historical evidence rewritten.
+  pinned_by: ai/autocode/exact-nonexact.fixture.ts (22 checks, 8 mutations, all bit)
+  fixture_contract_changed: >
+    ai/autocode/semantic-candidates.fixture.ts asserted "every generated role+name
+    candidate carries exact:true" - the P5 contract, and P10 is exactly the change to it.
+    It went red in the regression and was UPDATED, not weakened: the exact form must still
+    be generated and must still be the settling one, and the loose twin must follow it -
+    never instead of it, never before it. Two checks where there was one.
+  evidence: >
+    Live matrix and the before/after corpus runs were driven by scratchpad harnesses over
+    the PRODUCTION path (PREACTION_HOOK, recordParkedEntry -> measureAtPress,
+    candidateSelectorsFor). Nothing was saved to ai/dashboard/recordings and no credential
+    was read - Bugasura was driven anonymously.
+
+p9_stability_coverage_and_the_exactness_finding:
+  status: DONE - collection quality + coverage. ZERO production changes.
+  headline: >
+    THE HAZARD IS `exact: true`, NOT "a changed name". Measured on Bugasura in both
+    states: getByRole('textbox', {name:'Password'}) matches 1 CLEAN and 1 AFTER the
+    validation error; the same locator with exact:true matches 1 clean and ZERO after.
+    Identical for Email. The error text is APPENDED, so substring matching survives and
+    exact matching breaks. Phases 6-8 had framed this as "the accessible name changed",
+    which is true and is not the operative fact.
+  the_tension_this_exposes: >
+    Production's GENERATED semantic candidates all carry exact:true - added in P5.1
+    deliberately, because the non-exact form matched two elements for Flipkart's "Home".
+    So exact:true fixes ambiguity and creates state-fragility. That is a real measured
+    trade-off, not a defect, and it is what a ranking phase would have to weigh.
+  suppression_sources_diagnosed: >
+    "press never claimed" = HARNESS fault, not production. Phase 8 invented expressions
+    Codegen would never write: `page.locator('#loginForm .login-input-group i')` yields
+    the literal "loginForm .login-input-group i" and claims nothing, while
+    `getByText('visibility')` claims immediately; and defaulting a missing role to 'link'
+    made `getByRole('link', ...)` on an <i> unclaimable by construction. Fixed by asking
+    the BROWSER for role+name via ariaSnapshot, which is Codegen's own basis.
+    "unverified approximation" = GENUINE limitation, left alone. Those Flipkart footer
+    anchors come back from Accessibility.getPartialAXTree as `ignored: true, role: none`,
+    with and without scrolling into view - the browser computes no name, so `unknown` is
+    correct and no approximation was promoted.
+  sample: >
+    26 interactions across 11 categories. stable 15 (57.7%), changed 2 (7.7%), unknown 9
+    (34.6%). Bugasura 14: 8/2/4. Flipkart 12: 7/0/5. Unknown reasons: 3 no accessible name
+    at all, 2 press never claimed, 4 element absent or a page timeout.
+  answer_to_the_A_B_C_question: >
+    A - inline validation, and narrower still. Across ~50 observations over Phases 8-9
+    spanning navigation, dropdowns, expanded/collapsed, toggles, buttons, links, form
+    fields, dialogs, typing and search, the ONLY changed names are the two Bugasura fields
+    an error label attaches to. Flipkart: ZERO changed in 24 observations. Even the Sign In
+    button inside the same validation flow is stable - only the field the error is bound to
+    moves.
+  recommendation: NO ranking change. The evidence supports a narrower question about exactness.
+
+# ------------------------------------------------------------------- 2026-09-08
+p8_stability_evidence_collected:
+  status: DONE - observation only. ZERO production changes.
+  pinned_by: ai/autocode/accessible-name-stability.fixture.ts (section E)
+  how: >
+    The production recording path driven live against both applications - production
+    PREACTION_HOOK, production recordParkedEntry/measureAtPress, production captureFor ->
+    takePreAction. NO artefact was saved: Phase 8's own integrity rule requires Bugasura
+    to stay at 409 and Flipkart at 8, so the evidence objects were collected in memory and
+    only the analysis was written to the scratchpad. The data is real; the stores are not.
+  distribution: >
+    24 interactions. stable 11 (45.8%), changed 2 (8.3%), unknown 11 (45.8%).
+    Bugasura 12: 5 stable / 2 changed / 5 unknown. Flipkart 12: 6 stable / 0 changed /
+    6 unknown. Every `changed` is in the VALIDATION category (2 of 4); navigation 4/4
+    stable; expanded/collapsed stable; dialogs, toggles and unlabelled images unknown.
+  the_one_real_hazard_observed: >
+    Bugasura's EMAIL field through validation: "Email" -> "Email Please enter a valid
+    email id", and the engine SELECTED `getByRole("textbox", { name: "Email", exact:
+    true })` while `#email_field` was proven and available. That locator matches nothing
+    once the error shows. The password field also changed but the engine selected
+    `#password_field`, so it is unaffected. ONE of two changed targets is actually
+    exposed - a first observed instance, not a pattern.
+  unknown_reasons: >
+    5 unverified approximation (not browser-computed), 3 press never claimed (the
+    expression matched no parked entry), 3 other. `unknown` is dominated by elements the
+    page gives no accessible name and by claim-matching, NOT by CDP failure: across two
+    instrumented runs only 1 of 24 press measurements timed out and zero failed.
+  harness_corrections_worth_recording: >
+    Four, each of which had made the data look better than it was: waiting for any parked
+    entry rather than a NEW one; reporting the press-time name as the settled name;
+    waiting on `parked[length-1]` (a moving target) rather than the pinned entry; and
+    attributing every unknown to "CDP unavailable". The contradiction that exposed the
+    third - 17 rows with no name while only ONE measurement had timed out - is the reason
+    the attribution logic is now pinned and mutation-tested.
+  sufficient_for_a_ranking_experiment: >
+    NOT YET. 2 changed targets, both in one category of one application, one of them
+    actually exposed. That is a first instance, not a distribution.
+
+# ------------------------------------------------------------------- 2026-09-08
+p7_collect_accessible_name_stability:
+  status: DONE - COLLECTION only. No ranking, generation, budget, reuse, AI or gate change.
+  pinned_by: ai/autocode/accessible-name-stability.fixture.ts
+  schema: >
+    DomNode.accessibleNameStable?: 'stable' | 'changed' | 'unknown'. Optional, so every
+    existing sidecar stays valid, and carried through redactNode ONLY beside the name it
+    describes. No before/after pair is persisted - the brief asked for the smallest
+    representation and no diagnostic need was demonstrated.
+  meaning: >
+    accessibleName is the authoritative press-time name (browser-computed via CDP when
+    available; otherwise the aria-label/title approximation, marked unverified).
+    accessibleNameStable says whether THAT authoritative name was unchanged at the settled
+    point for the SAME parked target in the SAME document.
+  timing_points: >
+    Press: measureAtPress, unchanged. Settled: takePreAction, which is the moment Codegen
+    has written its line and the entry is claimed - the pipeline's existing settled point.
+    No sleep was introduced and no new lifecycle point invented.
+  guards: >
+    classifyNameStability is pure and fails closed in order - unverified press-time name,
+    different document, slot no longer holding an attached target, missing settled name.
+    Only then does equality decide. SLOT_STILL_HOLDS_TARGET checks document, slot populated
+    and node attached; slot indices are never reused (allocate increments and NULLS the
+    slot MAX presses ago), which is what makes the slot a safe key without holding a node
+    reference across the two moments.
+  measured_live_through_production: >
+    Password field CHANGED ("Password" -> "Password Not too short! enter min 5
+    characters."); Email, Sign In, Language toggle STABLE; a released slot UNKNOWN in the
+    SAME document with EQUAL names - the guard firing on exactly the Phase 6 failure.
+  latency: >
+    One CDP name round trip isolated: mean 22 ms, max 28 ms. Press measurement (incl. the
+    first CDP call and all candidate measurement) mean 39 ms. Claim path (incl. the second
+    CDP call, the locator count and every candidate) mean 189 ms, max 225 ms. Zero
+    failures, zero timeouts across 5 interactions. The session is opened once per page and
+    reused; no session is created per measurement.
+  refactor_note: >
+    The __auraPark binding body was extracted to `recordParkedEntry` (mirror + press
+    measurement in one place) so the claim path can be driven without Codegen. `captureFor`
+    was exported for the same reason `measureAtPress` and `splitCandidates` were.
+    startLiveRecording remains the only production caller of both.
+  no_backfill: >
+    No historical recording was rewritten to populate the field. The corpus still has ZERO
+    browser-verified names, so it has zero stability values, and none were fabricated.
+
+# ------------------------------------------------------------------- 2026-09-07
+p6_accessible_name_stability:
+  status: DONE - experiment only. NO production file changed at all.
+  pinned_by: ai/autocode/accessible-name-stability.fixture.ts
+  answer: >
+    YES, stability is objectively measurable - but ONLY with a slot-identity guard.
+  method: >
+    Two points the pipeline already has: the press (where measureAtPress reads the name
+    today) and the settled point, reached by the APPLICATION'S OWN signal - the error
+    label it renders, the menu it opens, a load state - never a sleep. The CDP call was
+    reproduced in the harness rather than exported from live-recorder.ts, so this phase
+    touched no production file.
+  measured_live: >
+    Password field  "Password" -> "Password Not too short! enter min 5 characters."  CHANGED
+    Email field     "Email" -> "Email"                                               stable
+    Sign In button  "Sign In" -> "Sign In"                                            stable
+    Language toggle "English " -> "English " (expanded/collapsed)                     stable
+    Mobiles link    the press did not park - guard fired                              unknown
+    Replay in the settled state: press-time name 0, settled name 1, #password_field 1 in
+    BOTH states. Three of four Bugasura controls went through the IDENTICAL validation
+    flow and only one name moved, so the signal discriminates rather than suspecting
+    every flow.
+  the_methodological_finding: >
+    The first run reported Flipkart's Mobiles link as `stable` carrying the name "Login
+    Get access to your Orders..." - the login modal. The press had not parked an entry,
+    so the newest slot still held an EARLIER element and measuring that stale slot twice
+    produced two identical names and a confident, false `stable`. A stability signal
+    without a slot-identity guard is wrong in the safe-looking direction. With the guard
+    the same case correctly reports `unknown`.
+  population_limit: >
+    ZERO historical targets carry a browser-verified name or a proven role+name candidate
+    - every recording predates Phase 2 - so no historical evidence could be used and none
+    was fabricated. All positive evidence is live; the classifier is pinned synthetically.
+  generalisation: >
+    Only the validation-message category produced a change. Expanded/collapsed did not.
+    One category, one application, five scenarios - too narrow to call a general
+    phenomenon yet, and reported as such rather than generalised.
+  proposed_but_NOT_implemented: >
+    accessibleNameStable: 'stable' | 'changed' | 'unknown', fail-closed, with `unknown`
+    covering a missing CDP session, a released slot, a navigation mid-measurement and a
+    failed guard. Not added to the evidence schema. Ranking is untouched: role+name still
+    scores 95, stable-id still 70.
+
+# ------------------------------------------------------------------- 2026-09-07
+p5_5_locator_quality_benchmark:
+  status: DONE - benchmark only. NO production behaviour changed.
+  pinned_by: ai/autocode/locator-quality-benchmark.fixture.ts
+  headline: ZERO genuine ranking defects.
+  corpus: >
+    1026 captured graphs. 583 have at least one press-time proven candidate (56.8%);
+    226 exactly one, 357 two or more. 443 have none - 163 fall to evidence-backed
+    positional recovery and 280 are genuinely unresolved.
+  selected_vs_independently_best: >
+    Over the 357 targets with a choice to make: BEST 223 (62.5%), AMBIGUOUS 131 (36.7%),
+    weaker-provenance 3 (0.8%). All 3 are targets where a proven candidate matches a
+    declared Page Object capability and is not ranked first - and all 3 REUSE THE
+    CAPABILITY ANYWAY, because findMethodByProvenLocator walks the whole ranked list.
+    So the raw ranking never decides them and the defect count is zero.
+  the_ambiguous_band_is_a_model_limitation_not_a_finding: >
+    131 disagreements are all between `#scope .class`, scoped text and a bare class.
+    Which of those survives the next deploy is an empirical question about the
+    APPLICATION, not a property of the locator, so the benchmark refuses to order them
+    rather than inventing a preference.
+  what_actually_ships: >
+    Measured on the 63 generated specs rather than on candidates: 312 Page Object method
+    calls against 256 raw locator expressions - 54.9% reuse. Raw locators by family:
+    filter(text) 79, css 67, getByRole 63, getByText 27, getByLabel 12, [attr] 7, #id 1.
+    ZERO specs emit the raw scoped-text Sign In locator; 60 of 62 call loginPage.signIn.
+  authored_id_is_always_chosen: 210 of 210 targets where an authored id is proven.
+  the_one_measured_hazard: >
+    Bugasura's password field, measured live in both states: the error-bearing accessible
+    name matches 0 on a clean page and 1 with the error showing; "Password" matches 1 and
+    0; `#password_field` matches 1 in BOTH. So BOTH accessible names are state-dependent
+    and the id is not - yet ranking prefers role+name (95) over stable-id (70). Not a
+    shipped defect: no generated spec uses it as a locator, and a 0-match locator fails
+    the clean run so the falsification gate refuses the spec. It costs a generation, not
+    a green lie. Recommended as the smallest Phase 6 change.
+  ai_boundary: >
+    Unchanged and re-verified: `eligibility` requires press-time proof, so a model is only
+    ever asked about an element whose locator is ALREADY proven. AI is never reached in
+    place of a missing deterministic locator.
+
+# ------------------------------------------------------------------- 2026-09-07
+p5_4_sibling_evidence_experiment:
+  status: DONE - experiment only. NO production locator behaviour changed.
+  decision: KEEP CAPTURE + REDESIGN LATER (no sibling locator strategy)
+  pinned_by: ai/autocode/sibling-evidence.fixture.ts
+  the_correction: >
+    Phase 3 said sibling evidence was "consumed by nothing". That was scoped to
+    `candidateSelectorsFor` and is WRONG about the pipeline: `associatedToggle` in
+    ai/dashboard/recorder.ts reads the sibling list to prove a click on a custom toggle's
+    visible part and a state assertion are about the same control. Measured: 98 targets
+    across 60 distinct recordings have that shape (Bugasura's
+    label > span.rounded-checkbox-ui beside input.bugChecked). Deleting the capture to
+    save 199 bytes a target would break every one of them. REMOVAL IS OFF THE TABLE.
+  why_no_strategy: >
+    Of 401 form-control targets, the number immediately preceded by a <label> is ZERO -
+    the motivating shape does not occur. What follows an input here is <i> (202) and
+    <span> (185). 114 targets have an adjacent sibling that names itself; 102 of those
+    have no proven candidate; 71 of THOSE are the recorder's own overlay; 26 of the rest
+    already carry an authored id; the last 5 already generate 20-23 candidates each. The
+    number with no candidate of any kind is ZERO. Measured live with the existing proof
+    model over 7 targets: 1 sibling candidate built, 1 proven, on a target where
+    production had already proven 2. Targets where a sibling candidate would be the FIRST
+    proven locator: ZERO.
+  the_hazard_avoided: >
+    `#tooltip772416` is NOT flagged by the dynamic-identifier detector - no separator
+    before the digits, so it reads as authored. A sibling-scoped strategy would have
+    pinned a locator to one tooltip instance with nothing refusing it. Four corpus targets
+    sit beside exactly that shape.
+  storage: >
+    Sibling evidence is 204,613 bytes of 5,715,143 graph bytes (3.6%), 199 B per target.
+    Kept, because the toggle association needs it.
+
+# ------------------------------------------------------------------- 2026-09-07
+p5_3_attribute_order_and_redaction:
+  status: DONE
+  where: ai/autocode/dom-evidence.ts
+  pinned_by: ai/autocode/attribute-order-redaction.fixture.ts
+  ordering_fix: >
+    The attribute family emitted its SCOPED variants last, so an element carrying `name`
+    plus two of {aria-label, href} spent all three budget slots on unscoped shapes and
+    lost the only member of the family that disambiguates - measured on Bugasura,
+    `[name="email"]` matches 3 elements and `#loginForm input[name="email"]` matches 1.
+    Scoped variants are now emitted FIRST, nearest scope first. No budget, cap, ceiling or
+    ranking changed. At most two scopes are ever offered, so a budget of three always
+    leaves at least one slot for an unscoped candidate - that is what makes the guarantee
+    structural rather than lucky.
+  ordering_effect: >
+    Corpus unchanged in shape: 1026 graphs, 17271 raw, 16804 retained, 467 dropped by the
+    family budget, ceiling never reached. The DROP MOVED from scoped-attribute (467) to
+    attribute-pair (467) - the scoped candidate now takes the slot the unscoped pair used
+    to. All 467 graphs that generate a scoped-attribute still keep at least one.
+  redaction_fix: >
+    `redactNode` dropped a node's text whenever its id CONTAINED a credential word, so
+    `#password_field-error` - a <label> reading "Not too short! enter min 5 characters." -
+    lost its text for mentioning a password. `holdsCredentialText` replaces the substring
+    heuristic with two independent tests: the text itself looks like a secret
+    (`looksLikeSecretValue`, applied to EVERY element), or the element could hold a typed
+    value at all. The second is an ALLOW-LIST of text-only tags, so an absent tag, an
+    unknown tag and a custom element all fail closed.
+  redaction_is_strictly_stronger: >
+    The old rule read only type/name/id, so a <div> displaying a JWT was kept in full
+    because no attribute mentioned a credential. The content test now catches that. What
+    is newly KEPT is only text on elements that cannot hold a value - labels, headings,
+    paragraphs, links and buttons whose id merely mentions a password.
+  not_done: >
+    Sibling candidate strategies. The audit measured that sibling evidence is captured and
+    consumed by NOTHING; that is a Phase 4B experiment, not an assumption to act on.
+
+# ------------------------------------------------------------------- 2026-09-07
+p5_2_evidence_consumption_audit:
+  status: DONE - audit only, plus the one fixture-hygiene fix that was asked for
+  pinned_by: ai/autocode/evidence-consumption.fixture.ts
+  what_is_consumed: >
+    Measured by CALLING the generator with one field added to a bare graph: role, own text
+    (name-from-content), verified accessibleName, relative href, alt, authored id, name,
+    placeholder, title, aria-label, data-testid, own classes, parent classes and an
+    ancestor with an authored id all produce candidates.
+  deliberately_unused: >
+    generated id, ABSOLUTE href, aria idrefs, data-* other than a test id, children,
+    descendants (they only DISQUALIFY a descend shape), previous/next siblings (no sibling
+    strategy exists at all), scrollable/virtualized, and an unverified accessibleName on
+    its own. Each is a decision with a reason, now pinned so a change is visible.
+  budget: >
+    1026 captured graphs, 17271 candidates generated raw, 16804 retained (97%). The family
+    budget drops exactly ONE strategy - scoped-attribute, 467 times - and the total ceiling
+    of 28 is never reached. 369 graphs sit at the structural cap of 16, unchanged.
+  strongest_candidate_lost: >
+    NO, measured: of the 467 graphs that generate a scoped-attribute, all 467 keep at least
+    one. The drops are always the SECOND scope, never the nearest. BUT the attribute family
+    is budgeted at 3 and emits scoped variants LAST, so an element carrying `name` plus two
+    of {aria-label, href} spends every slot on unscoped shapes and loses every scoped one.
+    Zero occurrences in the corpus (no captured element has both); reachable on newly
+    recorded elements, and given a third route when href was added in P5.1. A coverage
+    risk, not a correctness defect - nothing wrong is emitted.
+  page_object_interaction: >
+    The budget cannot cost a reuse today: NO knowledge file declares an attribute-shaped
+    locator_strategy, so no declared capability is reachable only through a droppable
+    candidate. Pinned as a tripwire rather than as a rule about the application.
+  ai_boundary: >
+    AI is not a locator fallback. `eligibility` is called directly by the fixture and
+    refuses without press-time proof, with any SAFETY or STRUCTURAL refusal, with one
+    unaskable semantic question beside an askable one, and with no semantic question at
+    all. A model is only ever asked what to CALL an element whose locator is already proven.
+  two_pre_existing_artifacts_found_by_the_audit: >
+    Re-deriving candidates from a STORED sidecar loses some that were proven live, for two
+    pre-existing reasons - `redactNode` drops the text of any node whose id contains
+    "password" (so `#password_field-error`, a validation message, loses its content
+    candidates), and the documented "recorded literal beats derived text" rule changed
+    candidate text after those sidecars were written. NEITHER has production impact:
+    production reads `derivedCandidates` from the sidecar and never regenerates them.
+  fixture_hygiene_fixed: >
+    recorded-lifecycle.fixture.ts now runs inside enterIsolatedArtefactRoot, seeding the
+    temporary root with the Page Objects, knowledge and mapping it READS (copies, never
+    links). It proves the real store is unchanged by listing it before and after. The
+    global quarantine pile is exempt and cleaned by name - orchestrate.ts states it is
+    deliberately global. The bugasura recording count is now 409, not 410: the 410 included
+    the leaked TC_TEST_A.
+
+# ------------------------------------------------------------------- 2026-09-07
+p5_1_target_snapshot:
+  status: DONE
+  where: >
+    ai/autocode/dom-capture-source.ts (describe(node, isTarget): href/hrefAbsolute/alt,
+    accessibleNameSource/Verified; one appended non-qualifying ancestor),
+    ai/autocode/dom-evidence.ts (DomNode fields, redactNode allow-list, hrefCarriesSecret,
+    href + alt candidates, verified-name preference),
+    ai/dashboard/live-recorder.ts (accessibilitySession, browserAccessibleName, applied at
+    both capture sites before candidates are derived).
+  pinned_by: ai/autocode/target-snapshot.fixture.ts
+  decision: >
+    The BROWSER'S computed accessible name is authoritative when CDP is available; the
+    in-page aria-label/title value is a fallback, always marked unverified, and only a
+    verified name outranks the attribute sources in candidate generation.
+  measured: >
+    Snapshot +316 B on 2215 B (+14%) against a +232% superset probe. Flipkart Mobiles
+    1 candidate -> 6; Home the same; both now carry an href candidate measured at exactly
+    one element with identity proven. alt="Image" measured 58 and was refused, which is the
+    ambiguity case working. Bugasura Email/Sign In choose role+name on the browser's own
+    name; password_field-error is unchanged.
+  the_state_dependent_name: >
+    Bugasura's password field computes as "Password" before its validation error exists and
+    as "Password Not too short! enter min 5 characters." after. Both are correct records of
+    the instant of the press; a real recording focuses the field first and gets the former.
+    An element whose accessible name folds in transient text yields a state-dependent
+    role+name locator - the falsification gate catches it (the clean run fails) rather than
+    shipping it. Verified in both orders.
+  deliberately_not_built: >
+    Full DOM (474 KB, 214x the snapshot, 479 MB across the corpus), before/after snapshots
+    (+100% for a signal in which NONE of the target's own fields changed), page-level
+    accessibility snapshots, sibling capture changes (no strategy consumes siblings),
+    value capture, broad ancestor expansion. Two plain ancestors lost a candidate on one
+    live target; any rule that reorders or scores them lost candidates on two.
+  identity_unchanged: >
+    Across every real look-alike pair on Bugasura the richer snapshot added NO
+    distinguishing power - id already separated all of them. Identity is still
+    targets[slot] === element against the parked node.
+
+# ------------------------------------------------------------------- 2026-09-05
+p5_locator_engine:
+  status: DONE
+  where: >
+    ai/autocode/dom-evidence.ts (semanticCandidatesFor, familyOf, applyFamilyBudget,
+    implicitRole), ai/autocode/locator-quality.ts (scoreChain, scoreExpression,
+    GENERATED_CLASS), ai/dashboard/live-recorder.ts (measureExpressionCandidates,
+    READ_PARKED_TARGET, the recorded-locator measurement in takePreAction),
+    ai/autocode/abstraction/classify.ts (rankProvenCandidates),
+    ai/autocode/from-recording.ts (findMethodByProvenLocator).
+  pinned_by: ai/autocode/semantic-candidates.fixture.ts
+  measured_before: >
+    Over 1058 recorded targets (1026 with a captured graph): `identityMatched` absent on
+    ALL 1058 recorded locators; 510 recorded locators counted exactly 1 in the press's own
+    document with identity never asked; 443 targets with no press-time proven candidate,
+    137 of which carry such a recorded locator; Flipkart's Mobiles link built 0 candidates.
+  measured_after: >
+    Generation 13024 -> 16804 candidates (x1.29); targets with zero candidates 3 -> 0;
+    structural portion never exceeds MAX_CANDIDATES=16 (0 targets) and nothing exceeds
+    MAX_TOTAL_CANDIDATES=28 (0 targets); 247 previously-unproven targets now generate a
+    new-family candidate and 63 gain role+name. Ranking over the sidecars' OWN press-time
+    candidates: 357 targets have more than one proven candidate, 198 selections change,
+    166 to a higher-scoring locator, 0 to a lower-scoring one.
+  verified_live: >
+    Through the REAL press-time path - production PREACTION_HOOK, production `__auraPark`
+    binding, a real pointerdown, production `measureAtPress`/`splitCandidates`/
+    `rankProvenCandidates`. Mobiles: 0 candidates -> `getByRole("link", { name: "Mobiles",
+    exact: true })` proven. Become a Seller: positional recovery -> role+name proven (5
+    proven candidates). Home: `exact: true` resolves 1 where the non-exact recorded form
+    resolves 2. Sign In: role+name replaces `#loginForm .login-submit` filtered by text.
+    Email/Password/password_field-error: unchanged, the authored id still wins on a tie.
+    iPhone: not present on the page reached, and NOTHING was invented for it.
+  two_real_regressions_found_by_the_corpus: >
+    1. Ranking tie-broken on the STRONGEST segment put a scoped-text chain above
+    `#create_team_cancel_btn` and cost TC_LOGIN_126/127 their Page Object reuse. Fixed by
+    breaking on the simpler chain - scoping is already paid for inside the score.
+    2. `findMethodByProvenLocator` read only the top-ranked candidate. It now walks the
+    whole ranked list, with every existing refusal intact.
+    Both were caught by po-discovery.fixture.ts and abstraction.fixture.ts going red, and
+    both were fixed in the code rather than in the fixtures.
+  deliberately_not_done: >
+    Ancestor capture and DOM snapshot capture are UNCHANGED. 83 of 1026 captured graphs
+    still have zero ancestors; href, alt and the computed accessible name are still not
+    captured, so `getByAltText`, any href candidate and an input's accessible name remain
+    underivable and are refused rather than guessed. That is the next controlled phase.
+  known_pre_existing_hygiene_gap: >
+    ai/autocode/recorded-lifecycle.fixture.ts writes a synthetic TC_TEST_A through the real
+    `acceptRecording`, leaving ai/dashboard/recordings/bugasura/accepted/TC_TEST_A.spec.ts
+    behind - the directory is git-ignored and no real recording is touched, and the
+    documented count of 410 INCLUDES it (409 without). Not introduced by P5; it is the last
+    fixture still operating on the live artefact root rather than an isolated one.
 
 # ---------------------------------------------------------------- 2026-08-22..24
 # Eight phases, each approved separately. Every one verified by its own fixture and by
@@ -95,6 +1430,1388 @@ sessions_2026_08_22_24:
       recorder's own overlay. TC_DASHBOARD_023's original .bugChecked failure is now refused
       offline too.
     fixture: ai/autocode/strict-mode-locator.fixture.ts
+
+# ---------------------------------------------------------------- 2026-09-04
+# PHASE 2 - APPLICATION REGISTRY + AUTHORITATIVE SCOPE.
+# Phase 1 (registry, scope, isolation gate, knowledge layer, CRLF parser) was landed by
+# the previous session and VERIFIED here by running it, not by trusting it.
+application_isolation_phase_2:
+  state: >
+    COMPLETE for every artefact class in ScopePaths; see remaining_global for what is
+    deliberately still global and why.
+  invariant: >
+    No application-specific artefact may be resolved outside the active applicationId
+    scope unless it is explicitly declared as a shared framework capability.
+  gate: ai/projects/isolation.fixture.ts - 98 checks (was 52), 0 failures
+  behaviour_today: >
+    UNCHANGED, and that is a measurement rather than a claim. Bugasura is the sole
+    registered application, so `layoutFor` returns the flat directory for every artefact
+    class and all six ScopePaths entries resolve to the paths that existed before this
+    work. Verified three ways: every path printed and compared, the abstraction corpus
+    tally identical before and after (90 proposals - 66 NEEDS_REVIEW, 12 REUSE,
+    11 REFUSED, 1 PROPOSED), and the generated fixture import string byte-identical
+    (`./pages/notifications.panel`).
+
+  # ---- the CRLF fix was not cosmetic. Establish this before doubting anything else.
+  yaml_parser_was_a_total_breakage:
+    what: >
+      The committed knowledge YAML blobs contain CRLF (343 CR lines in
+      bugasura__apps.yaml), so the pre-fix line-oriented parser threw
+      "Unexpected indentation on line 73" on 2 of the 3 files ON EVERY PLATFORM, not
+      only on Windows. `readAllPageKnowledge` rethrows, so the generator was dead in any
+      fresh checkout.
+    verified_by: running the HEAD parser against the files on disk, both parsers side by side
+    consequence: >
+      `abstraction.fixture.ts` could not even LOAD before the fix. Its 2 red checks are
+      therefore newly VISIBLE, not newly caused - see abstraction_fixture_red.
+
+  # ---- what changed, by artefact class
+  scope_paths_final:
+    pagesDir: tests-e2e/pages -> tests-e2e/pages/<applicationId>
+    knowledgePageDir: ai/knowledge/page -> ai/knowledge/page/<applicationId>
+    recordingsDir: ai/dashboard/recordings -> ai/dashboard/recordings/<applicationId>
+    generatedDir: tests-e2e/generated -> tests-e2e/generated/<applicationId>
+    mappingFile: ai/test-mapping/mapping.json -> ai/test-mapping/<applicationId>.mapping.json
+    fixturesFile: tests-e2e/fixtures.ts -> tests-e2e/<applicationId>.fixtures.ts
+    added_this_phase: [fixturesFile, soleApplication]
+    why_fixturesFile: >
+      The fixture NAME is derived from the class name (LoginPage -> loginPage), so two
+      applications registering into one file do not conflict - the second registration
+      finds the name present, returns the source UNCHANGED, and every spec that
+      destructures `loginPage` silently gets the FIRST application's class. `verify()`
+      then passes because `index.fixtures` contains the name. A shared file makes that
+      invisible; a file per application makes it impossible.
+    file_layout_rule: >
+      `scopedFilePath` is the FILE twin of `layoutFor`: `<dir>/<applicationId>.<suffix>`
+      preferred, `<dir>/<suffix>` only while one application is registered. Same
+      migration affordance, same refusal once a second is registered.
+
+  # ---- the two defects in the Phase 1 code, both HIGH, both fixed
+  bare_catch_defeated_the_refusal:
+    where: ai/knowledge/canonical.ts activeApplicationId, ai/knowledge/page-knowledge.ts activeKnowledgePageDir
+    was: >
+      `try { resolveScope()... } catch { return LEGACY }`. With two applications
+      registered and none selected, `resolveScope` throws a ScopeError BY DESIGN - and
+      the bare catch swallowed it and answered with the flat directory / with
+      applicationSlug(BASE_URL). So the multi-application refusal was defeated, and
+      defeated in the direction that reinstates the URL derivation the registry exists
+      to abolish.
+    now: >
+      One place decides it - `activeScopePath` in scope.ts - and a ScopeError is
+      RETHROWN. Only a missing registry.json reaches the legacy path. The try block
+      holds one call and nothing else.
+
+  read_write_symmetry:
+    knowledge: SCOPED both ends (readAllPageKnowledge / canonicalFile + writer.knowledgeDir)
+    page_objects: SCOPED both ends (buildIndex(scope) / writer.pageFilePathFor)
+    fixtures_module: SCOPED both ends (buildIndex reads scope.paths.fixturesFile / writer.fixturesFile)
+    recordings: SCOPED both ends (recorder.recordingsDir; case-status and propose now import it)
+    evidence: SCOPED - verify.ts reaches it through the recorder's own evidencePath/archivedPath
+    generated_specs: SCOPED for write and for independence.ts; mapping sync still scans the whole tree
+    mapping: SCOPED both ends (activeMappingFile is the default of readMapping and writeMapping)
+    was_mixed_and_is_the_reason_this_matters: >
+      canonicalFile() named the FLAT PAGE_DIR while readAllPageKnowledge read the scoped
+      one. Not an error - the write lands, the read finds nothing, and the generator
+      concludes the screen was never explored and re-explores a page it had already
+      written down. Silent, and it costs a browser and a second drifting copy.
+
+  # ---- collision removals that were not path constants
+  other_leaks_closed:
+    - where: ai/autocode/groups.ts
+      was: "application = new URL(BASE_URL).host - identity parsed out of a URL, and it is part of the group KEY"
+      now: activeApplicationId(); `environment` stays BASE_URL, which is what a base URL genuinely is
+    - where: ai/dashboard/live-recorder.ts
+      was: LIVE_RECORDING_DIR - a THIRD hardcoded spelling, with no importer and no use
+      now: removed, with a comment saying why it must not come back
+    - where: ai/knowledge/index.ts writeIndex
+      was: one application's Page Objects written into the declared-shared framework directory
+      now: framework.yaml while sole, framework.<applicationId>.yaml afterwards
+    - where: ai/autocode/work.ts frameworkFingerprint
+      was: >
+        hashed a hardcoded flat `tests-e2e/pages`, non-recursively. Under a scoped layout
+        the scan finds nothing and returns [] - so the fingerprint SILENTLY stops covering
+        Page Objects and the attempt budget never reopens when one is fixed. Fails open.
+      now: derived from scope.paths.pagesDir, still repo-relative so the hash is unmoved
+    - where: ai/projects/registry.ts
+      was: applicationId "accepted" was admissible
+      now: >
+        RESERVED_APPLICATION_IDS. `layoutFor(recordings, 'accepted')` IS the archive
+        every other application's acceptedDir() returns - a cross-application leak
+        arriving through a NAME rather than a code path, which no downstream scoping
+        would catch.
+
+  selection_seam:
+    added: AURA_APPLICATION / AURA_ENVIRONMENT / AURA_REGISTRY_FILE
+    why: >
+      The isolation gate cannot prove anything about two applications while only one is
+      registered. These let it declare a second in a temp registry and drive the REAL
+      accessors. Unset - which is every current invocation - nothing changes.
+    not_a_bypass: an unknown id is a ScopeError, never a fallback to the other application
+
+  # ---- what is still global, deliberately, with the reason
+  remaining_global:
+    - path: tests-e2e/support/
+      why: SHARED_CAPABILITY - resilient-locator, env, steps, generic-form. No application owns it.
+    - path: ai/knowledge/framework/
+      why: declared shared; its one application-specific product (framework.yaml) is now named per application
+    - path: ai/autocode/state.json, ai/autocode/quarantine/
+      why: >
+        Keyed by bare Test Case ID and genuinely collidable, but they are the generator's
+        own bookkeeping rather than automation, and moving them changes what
+        frameworkFingerprint and the attempt budget MEAN. Scope with the budget, not with
+        the paths.
+    - path: ai/dashboard/runs/, ai/dashboard/generations/, ai/reports/*
+      why: >
+        `results` and `history` ARE application artefacts and these are unscoped. The
+        five-record generation cap is global, so one application's generations would
+        evict another's. Not touched: they are Phase 3's execution/history surface.
+    - path: ai/test-data/<workbook-basename>.data-driven.json
+      why: keyed by workbook BASENAME; two applications with same-named workbooks collide
+    - path: tests-e2e/support/env.ts BASE_URL and BUGASURA_* credential names
+      why: >
+        The registry declares environments[].baseUrl, baseUrlEnv and credentials BY NAME,
+        and env.ts reads none of it. Verified they AGREE exactly today
+        (BUGASURA_BASE_URL / BUGASURA_EMAIL / BUGASURA_PASSWORD, default
+        https://my.bugasura.io/), so this is an unwired declaration, not a conflict.
+        Runtime wiring is Phase 3 - env.ts is imported by specs and by the Playwright
+        config, and scope.ts uses node:fs at module load.
+    - path: playwright.excel.config.ts testDir + reporter output directories
+      why: one testDir, one baseURL, one results/allure/report path for every application
+    - path: ai/excel/cli.ts scanSpecs / scanDataDrivenRunners
+      why: scans the whole tests-e2e tree, so `mapping sync` would see every application's specs
+    - path: ai/dashboard/server.ts
+      why: >
+        No applicationId in the request surface, the child-process argv or any persisted
+        record; the default workbook is a hardcoded literal. `resetActiveApplication()`
+        exists FOR the dashboard and is still called by nothing but the isolation gate.
+
+  recording_migration:
+    state: "PLANNED AND DRY-RUN VERIFIED, NOT PERFORMED. Blocker below."
+    script: ai/projects/migrate-recordings.ts (--dry-run first; transactional otherwise)
+    inventory: 410 artefacts, 9.5 MB - 306 live + 104 archived under recordings/accepted/
+    target: ai/dashboard/recordings/bugasura/ (+ .../bugasura/accepted/)
+    references_found: >
+      ZERO. Nothing in mapping.json, ai/autocode/state.json, ai/dashboard/generations/,
+      ai/dashboard/runs/, ai/reports/, tests-e2e/ or the workbook names the recordings
+      path, and no artefact contains an absolute path. Recordings are reached only by
+      Test Case ID through the recorder's accessors. The one hit,
+      ai/reports/pre-rerecord-backup/MANIFEST.sha256, names its OWN backup copy.
+    no_import_problem: >
+      A recording's .spec.ts imports @playwright/test and nothing else, and the directory
+      is outside testDir, so Playwright never collects it. This is what makes recordings
+      migratable while Page Objects and generated specs are NOT - those carry relative
+      imports (`from '../fixtures'`, `from '../pages/issues.page'`,
+      `from '../support/resilient-locator'`) that one extra directory level breaks.
+    BLOCKER: >
+      32 offline fixtures name `ai/dashboard/recordings/...` as a LITERAL path
+      (abstraction, locator-quality, dom-evidence, evidence-*, proven-locator-reuse,
+      strict-mode-locator, assertion-*, parked-claim, ...). The brief's condition was
+      "if it can safely perform the migration WITHOUT BREAKING REFERENCES" - a fixture
+      is a reference, so the condition is not met and nothing was moved.
+    to_unblock: >
+      Give the fixtures one accessor for the corpus directory instead of 32 literals,
+      then run the script. It stages under a name layoutFor cannot select, sha256-verifies
+      every file, keeps a backup outside the tree, swaps, re-confirms through the real
+      accessors and the artefact count, and only then removes the originals.
+    do_not: >
+      Never `mv` this by hand. ai/dashboard/recordings/ is GIT-IGNORED - there is no
+      history to restore from - and a half-finished move is SILENT, because layoutFor
+      prefers <dir>/<applicationId>/ the moment it exists and everything left behind
+      simply stops existing.
+
+  regression:
+    fixtures: 56
+    red: 1
+    red_is: ai/autocode/abstraction.fixture.ts
+    command: "for f in $(find ai -name '*.fixture.ts' | sort); do npx tsx $f; done"
+  and_then: "find ai/dashboard/recordings/bugasura -type f | wc -l   # must be 409"   # was 410; that number included the leaked TC_TEST_A
+
+  first_real_second_application_run_2026_09_05:
+    milestone: >
+      TC_SMOKE_004 completed the whole pipeline for a NON-legacy application against the
+      live flipkart.com: recorded in the Dashboard, assembled from 4 recorded actions and
+      1 assertion, spec written to tests-e2e/generated/flipkart/, clean run PASSED, mutated
+      run FAILED, verdict ACCEPTED. accepted 1, quarantined 0, declined 0, failed 0.
+    rc6_fixture_module_bootstrap:
+      symptom: "Cannot find module '../../flipkart.fixtures' at collection"
+      cause: >
+        The seed lived inside `applyProposals`, in the loop over eligible PROPOSALS, so it
+        ran only when a Page Object was created. All five of TC_SMOKE_004's elements were
+        correctly REFUSED_NO_ADMISSIBLE_EVIDENCE, so there were zero proposals, the loop
+        body never ran, and the spec was still written importing a module guaranteed not to
+        exist. Creating a Page Object and needing somewhere to destructure it from are two
+        different facts, and only the second is what a spec depends on.
+      fix: >
+        `ensureFixturesModule()` in ai/autocode/abstraction/writer.ts, called from
+        ai/autocode/orchestrate.ts beside the existing `mkdirSync(generatedDir())` - the
+        point where the run already prepares its output destinations, and the one boundary
+        both the recorded and agent paths cross. Generation, not provisioning: provisioning
+        alone would not make the invariant true, because Flipkart was already provisioned
+        without one and a module can be deleted.
+    rc7_authoring_sidecar_scope:
+      cause: >
+        ai/dashboard/server.ts called `rememberRecordingFingerprint(savedRow)` with no
+        scope, so it fell to the AMBIENT scope - the legacy owner - whatever project was
+        selected. Measured: saving Flipkart's TC_SMOKE_004 wrote its .authoring.json into
+        ai/dashboard/recordings/bugasura while the recording went correctly to
+        recordings/flipkart. The sidecar decides whether a recording is STALE, so it was
+        answering that question for the wrong project. Same cause as the TC_SMOKE_002/003
+        sidecars found earlier.
+      fix: "the selected scope is resolved once and passed to both the sidecar write and
+        `activate()`. It was already computed two lines below for the latter."
+    evidence_trace_mobiles_iphone:
+      finding: NOT a generator defect and NOT a race.
+      measured: >
+        candidatesTried: ✕ 2, Mobiles 0, iPhone 0, Become a Seller 3. The Mobiles/iPhone
+        rows captured `{tag:'a', text:'...'}` and nothing else - no id, no surviving class,
+        no aria, no data-*, and zero ancestors - so `candidateSelectorsFor` built no shapes.
+        `pressTimeText` DID measure the one remaining signal: "Mobiles" matched 14 elements
+        with identityMatched false. The refusal is correct.
+      identified_limitation: >
+        ai/autocode/dom-capture-source.ts line ~75 records an ancestor only when it is a
+        container tag, or has a `role`, or has an `id`. A nav link wrapped in plain divs
+        therefore contributes ZERO ancestors, so container-scoped candidate shapes that
+        could disambiguate "Mobiles" from the other 13 can never be built. "Become a Seller"
+        got 2 ancestors because one is a <footer>. This is a capture limitation, not policy
+        - widening it would change evidence for the existing 410-recording corpus, so it
+        needs its own measured phase. NOT changed here.
+    fixture: "ai/projects/application-pipeline.fixture.ts - 95 checks (RC6 10, RC7 6 added)"
+
+  n_application_completion_2026_09_05:
+    incident_first: >
+      A REGRESSION RUN DESTROYED A USER'S FLIPKART RECORDINGS.
+      `ai/projects/dashboard-scope.fixture.ts` used `flipkart` as a synthetic applicationId
+      and ended with `fs.rmSync(selected.paths.recordingsDir, { recursive: true })`. The
+      registry was synthetic but `pathsFor` builds under the repository root, so the path
+      was the REAL `ai/dashboard/recordings/flipkart`. TC_SMOKE_002/003 .spec.ts and
+      .evidence.json were unrecoverable - recordings are git-ignored and only Bugasura has
+      a backup. Same shape as the earlier incident that cost Bugasura 410 artefacts.
+    recovery: >
+      Two misfiled sidecars (TC_SMOKE_002/003.authoring.json) were found in Bugasura's
+      store, written there by the pre-fix RC1 defect. Ownership was PROVEN, not inferred:
+      `recordingFingerprint` recomputed from each candidate workbook row matched only the
+      Flipkart rows. Moved to ai/dashboard/recordings/flipkart with byte-identical digests
+      (72d42aec.., 63deacb5..). Bugasura back to exactly 410, its digest unchanged.
+    fixture_filesystem_isolation:
+      problem: "a synthetic applicationId + real ScopePaths + recursive delete = real data loss"
+      fix: >
+        `AURA_ARTEFACT_ROOT` in ai/projects/scope.ts redirects EVERY application artefact
+        path at once, and ai/projects/fixture-safety.ts provides
+        `enterIsolatedArtefactRoot` / `leaveIsolatedArtefactRoot` / `removeFixtureTree` /
+        `isInsideFixtureRoot` / `assertAbsent`. Two independent barriers: isolation makes
+        the dangerous path UNNAMEABLE, and the guarded delete refuses anything outside the
+        active fixture root - including when no isolation is active, which is fail-closed.
+      mutation_tested: >
+        M1 removeFixtureTree on a real path with isolation active -> refused, 410 intact.
+        M2 removeFixtureTree with NO isolation -> refused, flipkart intact.
+        M3 isolation redirects a real resolve into the temp root and restores on leave.
+      audit: "11 fixtures resolve scope AND delete; 7 delete a scope-derived path; only
+        dashboard-scope.fixture.ts deleted a whole scoped tree, and it is now isolated."
+    rc4_closed: >
+      `credentialsFixtureName()` (ai/autocode/abstraction/writer.ts) reads the name from the
+      APPLICATION'S OWN fixtures module - the first declared fixture matching
+      /\w*[Cc]redentials/. Legacy module -> `bugasuraCredentials`, seeded module ->
+      `appCredentials`, none declared -> null and no sign-in emitted. from-recording.ts
+      (5 sites), writer.ts (the factory anchor, now matched by shape) and agent.ts (the
+      prompt) all derive it. FIXTURE_ORDER ranks a credentials fixture by SHAPE, not name.
+      No hardcoded credentials capability remains in the generation path.
+    recorded_pipeline_answer: >
+      "no Codegen artifact was kept for this case" is emitted by `generateFromRecording`
+      when `readArtifact` returns null, and `readArtifact` resolves through
+      `activeRecordingsDir()`. It was RC1: the recording was in recordings/flipkart while
+      the run was scoped to bugasura. Proven end to end in part `recorded pipeline` - the
+      owner finds its artefact, another application with the SAME id finds nothing, and
+      each looks only in its own store.
+    fixture: "ai/projects/application-pipeline.fixture.ts - 79 checks"
+    regression: "65/65, 0 failures. Recordings 410/2/411 unchanged by the run."
+    remaining_legacy_fallbacks: >
+      `layoutFor`'s flat fallback for the single DECLARED legacyLayout owner (Bugasura),
+      which is the documented migration affordance and expires per artefact class; and
+      `activeScope()`'s ambient default to that same declared owner, for pre-scope CLIs.
+      Both are declared, at most one application can hold them, and no other application
+      can reach them. No application-SPECIFIC hardcoded fallback remains.
+
+  n_application_pipeline_2026_09_05:
+    phase: >
+      End-to-end application isolation for the Record -> Generate -> Run pipeline, driven
+      by a REAL Flipkart failure rather than by fixtures.
+    reported_symptoms: >
+      Flipkart provisioned from the dashboard, a case recorded, and generation selected
+      bugasura__root.yaml / bugasura__apps.yaml / bugasura__issues-id.yaml, canonical page
+      bugasura__root, used tests-e2e/fixtures.ts, created no Flipkart directories, and said
+      "no Codegen artifact was kept for this case" about a recording that existed.
+    first_scope_loss_point: >
+      ai/autocode/orchestrate.ts `run(options)`. It receives `options.workbook` - whose
+      owner the registry declares - and never converted it into a scope. Every
+      application-owned path in the generation subsystem resolves through
+      `activeScopePath` -> `activeScope()`, which with no selection answers with the
+      AMBIENT scope: the declared legacyLayout owner. So the whole run belonged to
+      Bugasura. `ai/dashboard/server.ts` spawning the generator without AURA_APPLICATION is
+      where it becomes visible, but the CLI path (`npm run excel:autocode -- <wb>`) had the
+      identical hole, so the fix belongs at `run()`, the one boundary all entry points cross.
+    root_causes:
+      RC1: "generation never established scope from its workbook (THE first scope-loss point)"
+      RC2: >
+        a newly provisioned application has no fixtures module: `applyProposals` did
+        `fs.readFileSync(fixturesFile())` (ENOENT) and `registerFixture` needed an existing
+        Page Object import group to anchor to, which a first registration has none of. The
+        step meant to SEED a namespace was the one step that could not run.
+      RC3: "the writer wrote files without creating their directory (ENOENT on tests-e2e/pages/<app>)"
+      RC4: "the credentials fixture NAME is the literal `bugasuraCredentials` - REPORTED, NOT FIXED"
+      RC5: >
+        `ai/knowledge/canonical.ts` keeps its own `cachedApplicationId`, derived from the
+        scope and not invalidated by a scope change - so a stale memo answered with the
+        previous application, and page identity names every knowledge file.
+    fixes:
+      - "ai/projects/scope.ts: `pinActiveScope(request)` - state the application from something
+         authoritative, once, at an entry point. Plus `onScopeChange` so derived memos die with
+         the scope (scope.ts cannot import canonical.ts, which imports it)."
+      - "ai/autocode/orchestrate.ts: `pinActiveScope({ workbook: options.workbook })` at run()."
+      - "ai/knowledge/canonical.ts: registers its invalidator."
+      - "tests-e2e/support/base-fixtures.ts (NEW): the application-INDEPENDENT half of a fixtures
+         module - healing, step, trace, the require* guards, and neutral appCredentials/appEmail.
+         tests-e2e/fixtures.ts (Bugasura's, legacy) is deliberately untouched."
+      - "ai/autocode/abstraction/writer.ts: `emptyFixturesModule()` seeds a module with NO Page
+         Objects; `registerFixture` anchors on its markers when there is no import group; the
+         commit step mkdirs before writing."
+    measured_after: >
+      excel/flipkart-test-cases.xlsx now resolves applicationId=flipkart, canonical=flipkart,
+      recordings ai/dashboard/recordings/flipkart (finds TC_SMOKE_002/003), knowledge 0 files
+      in ai/knowledge/page/flipkart, pages tests-e2e/pages/flipkart, fixtures
+      tests-e2e/flipkart.fixtures.ts, generated tests-e2e/generated/flipkart, mapping
+      ai/test-mapping/flipkart.mapping.json. Bugasura resolves exactly what it always did.
+    fixture: "ai/projects/application-pipeline.fixture.ts (48 checks: RC1, RC2/RC3, RC5, A-N matrix)"
+    outstanding: >
+      RC4. `from-recording.ts` (1016, 1386, 1462, 1507-1508), `abstraction/writer.ts` (216)
+      and `agent.ts` (308) hardcode `bugasuraCredentials`. It only bites an AUTHENTICATED
+      flow for a non-legacy application; the neutral `appCredentials` already exists in
+      base-fixtures.ts, so the fix is to emit the name from the scope. Not attempted here.
+
+  exploration_credentials_scoping_2026_09_05:
+    phase: The last known shared-runtime Bugasura fallback. demoapp still NOT provisioned.
+    was: >
+      tests-e2e/support/env.ts explorationSource() resolved the GENERATION browser account
+      from three Bugasura-spelled steps and ended
+      `?? { email: 'BUGASURA_EMAIL', password: 'BUGASURA_PASSWORD' }`. Whichever application
+      was selected, the generator would have signed in with Bugasura's account, against
+      Bugasura's live product, to read a DOM it would then describe as another application.
+      All three steps were the hole, not only the literal: BUGASURA_EXPLORATION_USER set for
+      Bugasura would equally have served demoapp.
+    now: >
+      The variable-name PREFIX is derived from the active applicationId
+      (`bugasura` -> `BUGASURA_`, `demoapp` -> `DEMOAPP_`), so all three steps are scoped:
+      <APP>_EXPLORATION_PROFILE, then <APP>_EXPLORATION_USER/_PASSWORD, then the
+      application's OWN registry-declared credentials. No literal and no step past that.
+      `explorationSource()` is now nullable - null is the fail-closed answer - and
+      MISSING_EXPLORATION_CREDENTIALS_REASON became
+      `missingExplorationCredentialsReason()`, computed so it names the variables actually
+      looked at.
+    bugasura_unchanged: >
+      Because its applicationId IS `bugasura`, every variable keeps its exact spelling:
+      BUGASURA_EXPLORATION_PROFILE / _USER / _PASSWORD still work, and step 3 resolves the
+      same BUGASURA_EMAIL / BUGASURA_PASSWORD its registry entry declares. .env needs
+      nothing changed and ai/autocode/exploration-auth.fixture.ts still passes on the same
+      assertions.
+    feature_preserved: >
+      A different account for exploration is still supported - it is now named per
+      application. Proven by M9: DEMOAPP_EXPLORATION_USER gives demoapp its own exploration
+      account, and M10 shows that setting it changes nothing for Bugasura.
+    contract_change:
+      - "explorationSource(): { email, password } -> { email, password } | null"
+      - "MISSING_EXPLORATION_CREDENTIALS_REASON (const) -> missingExplorationCredentialsReason()"
+      - "consumers updated: ai/autocode/session.ts, ai/autocode/exploration-auth.fixture.ts"
+    fixture: "ai/projects/provisioning-isolation.fixture.ts part M (15 checks; 142 total)"
+    residual_bugasura_references: >
+      None are credential RESOLUTION. The notable one is ai/dashboard/recorder.ts:837,940,
+      which sweeps ['BUGASURA_PASSWORD','BUGASURA_TOKEN'] out of a recording - a REDACTION
+      list, not a resolution, so a second application's secrets would not be scrubbed from
+      its recordings. Separate concern, not touched here. The rest are fixtures, the demo
+      workbook's own content, doc/error examples of the variable-NAME format, Bugasura's own
+      spec messages, .env.example and CI secrets.
+
+  runtime_env_scoping_2026_09_05:
+    phase: >
+      The two remaining shared-runtime Bugasura fallbacks, found while auditing what
+      demoapp would need to run. demoapp itself was NOT provisioned in this step.
+    defect_1_base_url:
+      was: "tests-e2e/support/env.ts:14  BASE_URL = process.env.BUGASURA_BASE_URL ?? 'https://my.bugasura.io/'"
+      why_it_mattered: >
+        `tests-e2e/generic/generic.spec.ts` is the wildcard data-driven runner, collected
+        for EVERY application, and it navigates using BASE_URL. Measured before the fix:
+        AURA_APPLICATION=demoapp resolved https://my.bugasura.io/ while its registry entry
+        declared https://demoapp.invalid/. Worse than the workbook defect in consequence -
+        my.bugasura.io is a live product with real teams, so it pointed another project at it.
+      now: "activeScope().baseUrl, eager, and it THROWS when no application is selectable."
+      env_override_preserved: >
+        BUGASURA_BASE_URL still redirects Bugasura, because the REGISTRY declares it as
+        that environment's `baseUrlEnv` and `baseUrlFor` applies it. It cannot reach any
+        other application: the override is per environment and demoapp declares none.
+        Proven by L-D with the override set to a distinct address.
+    defect_2_credentials:
+      was: "credentials()/registeredEmail() read process.env.BUGASURA_EMAIL / _PASSWORD directly"
+      now: >
+        `ApplicationScope.credentials` carries the VARIABLE NAMES the registry declares per
+        environment; `credentialSource()` returns them (or null) and `credentials()` reads
+        `process.env[declaredName]`. An application declaring none resolves nothing - it
+        never borrows. `MISSING_CREDENTIALS_REASON` / `MISSING_EMAIL_REASON` became
+        `missingCredentialsReason()` / `missingEmailReason()`, computed so the skip names
+        the variables the SELECTED application actually uses.
+      also: >
+        `resolveInputs` in tests-e2e/support/data-driven.ts already RESOLVED through those
+        functions, but its skip diagnostic still pushed the literals 'BUGASURA_EMAIL' /
+        'BUGASURA_PASSWORD'. Now pushes the declared names.
+    proof:
+      demoapp_base_url: "https://demoapp.invalid/ (was https://my.bugasura.io/)"
+      demoapp_credentials: "none - with BUGASURA_EMAIL/PASSWORD present in the process"
+      bugasura: "unchanged; its own URL, override and credentials all still resolve"
+    fixture: "ai/projects/provisioning-isolation.fixture.ts part L (14 checks; 127 total)"
+    outstanding_bugasura_fallback: >
+      tests-e2e/support/env.ts:237 - `explorationSource()` step 3 still ends
+      `?? { email: 'BUGASURA_EMAIL', password: 'BUGASURA_PASSWORD' }`. That is the
+      GENERATION browser's account, a separate resolution path with its own order and its
+      own fixture (ai/autocode/exploration-auth.fixture.ts), and it was out of scope for
+      this step. It now prefers the application's own declaration first, so it is strictly
+      better than before, but the literal fallback remains. Safe today only because no
+      second application has ever run generation.
+    not_done: "demoapp is still not provisioned and has no reachable environment."
+
+  data_driven_workbook_scoping_2026_09_05:
+    phase: The last provisioning blocker. Found during final verification, not by design review.
+    root_cause: >
+      `tests-e2e/support/data-driven.ts` resolved the suite workbook as
+      `process.env.EXCEL_WORKBOOK ?? 'excel/login-test-cases.xlsx'` - a hardcoded FILENAME
+      as the fallback. `tests-e2e/generic/generic.spec.ts` is the shared wildcard runner,
+      is collected for EVERY application, and builds its tests from that cache at import
+      time. So `AURA_APPLICATION=demoapp` with EXCEL_WORKBOOK unset collected TWO of
+      Bugasura's data-driven rows (TC_LOGIN_017, TC_LOGIN_018) under demoapp's scope.
+      Two independent selectors could disagree and the tie went to whichever project was
+      named in the source file. globalSetup reads the same constant, so the default also
+      decided which workbook was PARSED, not only which cache was read.
+    fix: >
+      Resolution is now `active application -> registry-declared workbook -> runner`.
+      `resolveSuiteWorkbook()` reads `activeScope()` (the same AURA_APPLICATION channel
+      `playwright.excel.config.ts` already uses at config load, so nothing new was
+      introduced for collection time) and then: EXCEL_WORKBOOK set -> use it only after
+      `workbookOwner` confirms the registry gives it to the active application, otherwise
+      REFUSE; unset -> the workbook that application declares; none declared -> null, fail
+      closed, no rows and never anybody else's; several declared -> refuse and name them.
+      Nothing reads a basename, URL, hostname, page title, documentId or test-case id.
+    also_changed: >
+      `ai/autocode/verify.ts` now sends AURA_APPLICATION alongside EXCEL_WORKBOOK, matching
+      `ai/excel/cli.ts`. It sent the workbook without the application, which the new
+      ownership check would (correctly) have rejected for any scoped application.
+    measured:
+      before: "AURA_APPLICATION=demoapp, EXCEL_WORKBOOK unset -> 2 tests in 1 file (Bugasura's)"
+      after:  "AURA_APPLICATION=demoapp, EXCEL_WORKBOOK unset -> 0 tests in 0 files"
+      bugasura: "88 tests in 67 files, with or without an explicit workbook - unchanged"
+      cross: "demoapp+bugasura workbook and bugasura+demoapp workbook are both REFUSED by name"
+    fixture: "ai/projects/provisioning-isolation.fixture.ts part K (14 checks; 113 total)"
+    note_on_88_vs_79: >
+      Bugasura collects 88/67 where an earlier session measured 79/66. Not a regression and
+      not cross-project: `ai/test-data/excel-login-test-cases.data-driven.json` was
+      regenerated under the Phase-5 full-path cache name, so Bugasura's OWN data-driven
+      rows became collectable (8 from login-validation.spec.ts, 2 from generic.spec.ts).
+
+  project_provisioning_2026_09_05:
+    phase: Safe project provisioning. Bugasura + demoapp now both registered.
+    the_flat_to_scoped_defect:
+      cause: >
+        `layoutFor` fell back to the flat `<dir>/` while `soleApplication` - a fact about
+        how many applications are REGISTERED, not about who owns the directory. Measured
+        against the real repository with a two-application registry: five of Bugasura's
+        six artefact classes resolved to scoped paths that DO NOT EXIST - 7 Page Objects,
+        3 knowledge files, 62 generated specs, ai/test-mapping/mapping.json and
+        tests-e2e/fixtures.ts. Nothing errored. Recordings were unaffected because that
+        one class had already been physically migrated in Phase 2.
+      design_chosen: >
+        C - hybrid with EXPLICITLY DECLARED legacy ownership.
+        `ApplicationConfig.legacyLayout` (at most one per registry, enforced by
+        validateRegistry) names the owner of the unscoped directories, and
+        `flatFallback = legacyLayout || soleApplication` replaces the size test.
+      design_rejected: >
+        B (physical migration) was disqualified by measurement, not preference: it would
+        rewrite 62 generated specs' `../fixtures` import, 1 `../pages/issues.page`, 9
+        imports across the 7 Page Objects, 5 in fixtures.ts, 62 `testFile` entries in
+        mapping.json, and would turn red the 12+ fixtures that hardcode those literal
+        paths (apps-readiness, exploration-auth, locator-validation, attempt-budget,
+        evidence-sidecar). ZERO artefacts were moved. Scoped-if-it-exists is still
+        checked FIRST, so each class can still migrate on its own later with no registry
+        edit - which is exactly how recordings already resolve scoped.
+    three_leaks_the_fix_exposed:
+      - "ai/excel/mapping.ts: scanSpecs and scanDataDrivenRunners RECURSE, so a flat-layout
+         scan walks into `tests-e2e/generated/<other>` and claims its specs. Now skips any
+         directory named after a registered application (`registeredApplicationIds`)."
+      - "Playwright collected `testDir: './tests-e2e'` while `excel:run` and the gate select
+         with `--grep <TC_ID>` - and a TC ID is deliberately reusable across applications, so
+         a shared ID ran twice and `results.ts` (which reads the ID off the TITLE) filed the
+         wrong verdict. `tests-e2e/support/collection-scope.ts` narrows collection from the
+         registry; `ai/excel/cli.ts` passes AURA_APPLICATION from the workbook's DECLARED owner."
+      - "ai/autocode/from-recording.ts hardcoded `from '../fixtures'`, correct for the flat
+         layout only. Now derived from the two resolved paths (the pattern writer.ts already
+         used): still byte-identical `../fixtures` for Bugasura, `../../<id>.fixtures` scoped."
+    the_ambient_default: >
+      MEASURED THE HARD WAY: registering demoapp turned 60 of 64 fixtures red in one step -
+      not because anything was misfiled, but because `activeScope()` began refusing a
+      question it had always answered. Every CLI here and ~60 offline fixtures predate the
+      scope layer and were written against the UNSCOPED directories, so that is what an
+      unscoped AMBIENT caller means; `activeScope()` now falls back to the declared
+      legacyLayout owner. `resolveScope({})` is UNCHANGED and still refuses - which is what
+      keeps the dashboard demanding an explicit choice, since every one of its request paths
+      goes through resolveScope. Drop the flag after migration and the ambient question has
+      no answer again, correctly.
+    provisioning:
+      module: ai/projects/provision.ts
+      transaction: "validate whole candidate registry -> write workbook -> write registry
+        atomically -> on failure delete ONLY the workbook this call created. The registry is
+        written LAST because it is the only durable claim."
+      workbook: "excel/<applicationId>-test-cases.xlsx, ONE sheet, Module as a COLUMN. Schema
+        shared with make-demo-workbook.ts via the new ai/excel/workbook-template.ts - one
+        header list, because a drifted heading is not an error, it silently reads as empty."
+      ownership: "The registry `workbooks` array is authoritative. /api/workbooks answers from
+        it, never from a listing of excel/; an undeclared workbook is reported as `unowned`
+        and offered to NOBODY."
+      seam: "AURA_EXCEL_DIR, mirroring AURA_REGISTRY_FILE, so a fixture that exercises
+        provisioning never writes into the real excel/ directory."
+    demo_project: >
+      demoapp was provisioned through the REAL dashboard API (POST /api/projects) and is now
+      in ai/projects/registry.json with excel/demoapp-test-cases.xlsx. Bugasura: 194 cases
+      across 4 sheets, all six artefact paths resolving to their original locations. demoapp:
+      1 case, its own scoped destinations, 0 tests collected by Playwright. Crossing the two
+      workbooks is refused in BOTH directions.
+    fixture: ai/projects/provisioning-isolation.fixture.ts (99 checks, offline, no writes to real data)
+    deferred:
+      - "demoapp has no Page Objects, knowledge, fixtures module or specs yet, so it cannot
+         yet be RUN end to end. Its base URL is synthetic. Recording/generating for it is the
+         next real step."
+      - "tests-e2e/generic/generic.spec.ts is treated as shared framework and imports the flat
+         `../fixtures`. A scoped application's data-driven rows would need it to resolve the
+         ACTIVE application's fixtures module - not attempted here."
+      - "Bugasura's five flat artefact classes are still flat. Nothing forces them to move;
+         each can migrate independently by creating its scoped directory."
+
+  typescript_diagnostics_2026_09_05:
+    phase: TypeScript / VS Code diagnostic cleanup. NOT a behaviour change.
+    root_cause: >
+      The repository had NO tsconfig.json, no `typescript` in node_modules and no ESLint,
+      so VS Code fell back to an INFERRED project and guessed every compiler option.
+      Measured with tsc 5.9 over all 218 project files: guessing produced 305 diagnostics
+      against 29 under the options the repository actually executes with. 155 of the
+      difference were `esModuleInterop` alone (TS1192 + TS1259) and 124 were a guessed ES5
+      target (TS2802 / TS1501 / TS2550). None was a defect - tsx/esbuild applies exactly
+      that interop and target, which is why the same code runs green.
+    tsconfig_added: >
+      tsconfig.json at the root. It emits nothing and gates nothing (noEmit; `npm run
+      build` is still `echo OK`); it exists so an editor stops guessing. Every option
+      DESCRIBES how the repository already runs. `useDefineForClassFields: true` was
+      VERIFIED, not assumed - a class field with no initialiser over a base-constructor
+      assignment reads `undefined` under tsx both with and without the file, so define
+      semantics were already in force. `isolatedModules` was measured to add zero
+      diagnostics. Excludes are git-ignored artefact directories ONLY (120 raw codegen
+      recordings under ai/dashboard/recordings, 125 report snapshots under ai/reports),
+      plus the transient **/*.mutant.ts. No source directory and NO FIXTURE is excluded.
+    strict_null_checks: >
+      The one checking flag switched on, and it is a correction rather than a new
+      standard: WITHOUT it TypeScript strips null/undefined from every type and six pieces
+      of CORRECT production code are reported as errors, because a discriminated union
+      cannot be narrowed by its own discriminant (abstraction/semantic.ts:1021/1024/1027,
+      from-recording.ts:269). No other strictness flag was enabled.
+    production_fixed:
+      - ai/dashboard/live-recorder.ts: >
+          `(playwright as any)[options.browser]` made `engine` any, so `browser` never
+          narrowed away its null initialiser and every use of it downstream was unchecked.
+          Retyped as Record<string, typeof playwright.chromium>. This REMOVES an `any`.
+      - ai/autocode/abstraction/propose.ts: >
+          OwnerResolution.code/.candidates are optional; the member holds them as | null.
+          `?? null` (every reader already coalesces), and the group guard now witnesses
+          that parameterSource is non-null - `parameterised` already required it, so the
+          added test changes nothing at run time.
+      - ai/autocode/abstraction/lifecycle.ts: >
+          The resolved-to-a-method branch omitted the REQUIRED `diagnostic`, so that JSONL
+          record shipped without the key. Now `diagnostic: null` - nothing was blocked and
+          no batch was rolled back, and "no diagnostic" is stated rather than left missing.
+    fixtures_fixed: >
+      15, none weakened and none deleted: six identical `(t: string): void =>
+      process.stdout.write(...)` concise bodies; four synthetic TestCase helpers missing
+      TestCaseSource.workbookPath and all seven P1 authoring fields; two Proposal helpers
+      missing sightings / refusalCodes / resolvedBy / semantic / allowedOwners /
+      derivedMethod / roundTrip / accessibleNameAmbiguous; two LifecycleDecision literals
+      missing `diagnostic`; one `...{...} as never` spread. Every default is the value the
+      readers already coalesce an absent field to, so no assertion moved.
+    left_standing_deliberately:
+      - "3 x TS2307: ./dom-evidence.mutant, ../dashboard/live-recorder.mutant, ./locator-quality.mutant.
+         Written by a mutation fixture and deleted again in its finally, so the module genuinely
+         does not exist at rest. Any fix would hide the specifier from the compiler, which is a
+         suppression in spirit."
+      - "5 x TS2783 in ai/excel/mapping.ts (upsertEntry). Defaults-first-then-spread, and the
+         overwriting IS the intent: the literals give a brand-new entry a complete shape and an
+         existing entry is supposed to win. Documented in place; behaviour untouched."
+    verification:
+      command: "npx tsc --noEmit --project ."
+      before: 305
+      after: 8
+      production_remaining: 0
+      fixtures: "63/63 by exit code, 0 failures"
+      playwright: "both suites still collect - upstream 8 tests in 5 files, excel 79 tests in 66 files"
+      data: "recordings 410, premigration backup 411, 0 stray .mutant files"
+      suppressions: >
+        Zero `@ts-ignore`, `@ts-expect-error`, `eslint-disable`, `as any` or `: any` on any
+        ADDED line of the session diff; two `any` lines were removed. Pre-existing and NOT
+        from this cleanup: 15 `any` annotations typing untyped HTTP/JSON bodies in
+        ai/dashboard/project-api.fixture.ts and ai/knowledge/yaml.fixture.ts.
+    do_not: >
+      Do not "fix" the five TS2783 by reordering the spread - a first write would then be
+      incomplete. Do not add a strictness flag to this tsconfig without measuring it first.
+
+  abstraction_fixture_red:
+    checks: >
+      2 - "a second run has nothing left to write" and "the real corpus writes nothing
+      while nothing is approved"
+    cause: >
+      NOT the scope work, and not a code defect. One outstanding sound proposal:
+      TC_LOGIN_087 "click Add Issue" -> WorkspacePage.bugNewSubmit,
+      page.locator("#bug_new_submit"), matchCount 1, identityMatched true,
+      sameDocument true, measuredAt press, refusals []. It is a real element, distinct
+      from the declared WorkspacePage.newIssue, and every deterministic gate passed.
+      Both checks are SNAPSHOT assertions that the corpus has nothing outstanding.
+    proven_pre_existing: >
+      With the HEAD yaml.ts the fixture cannot load at all on this checkout, so the red
+      predates and is independent of Phase 2. The corpus tally is byte-identical before
+      and after every change in this phase.
+    decision_owner: user
+    options: [apply the proposal, or widen the snapshot check to allow a sound outstanding proposal]
+    do_not: [edit the fixture to make the regression green]
+
+  defect_found_and_fixed_in_passing:
+    where: ai/dashboard/server.ts
+    what: >
+      `recordingStatus` was imported from BOTH ./recorder (no arguments, "is a codegen
+      session live?") and ./case-status (takes a TestCase, "is this row's recording
+      stale?"). One name, two bindings - the second won, so `GET /api/record` called the
+      bookkeeper with testCase === undefined and threw on every poll of the Record screen.
+    verified_by: bundling server.ts with esbuild - only the two-argument function survived
+    now: the recorder's is imported as `recorderSessionStatus`; both survive the bundle
+    note: unrelated to scoping, found in the import block this phase had to edit, reported rather than silently fixed
+
+# ---------------------------------------------------------------- 2026-09-04 (later)
+# PHASE 3 - DASHBOARD PROJECT / ENVIRONMENT / RECORDING SCOPE.
+# Phase 2 accepted. TC_LOGIN_087 resolved and the recording store migrated first; both
+# are recorded under `phase_2_closeout` below.
+application_isolation_phase_3:
+  state: COMPLETE for selection, locking, evidence and execution; see deferred.
+  objective: >
+    Project -> Environment -> Test Case -> Record/Run, with the ApplicationScope
+    established BEFORE a browser opens, and never inferred from a URL.
+  gates:
+    - ai/projects/dashboard-scope.fixture.ts   (57 checks - selection, locking, A-F)
+    - ai/dashboard/project-api.fixture.ts      (27 checks - the REAL server over HTTP)
+    - ai/projects/isolation.fixture.ts         (98 checks - Phase 2, unchanged)
+
+  the_flow:
+    - Dashboard        project + environment selectors in the header, before the workbook
+    - Project          GET /api/projects -> applicationId (sent) + displayName (shown)
+    - Environment      only that project's; selecting one resolves environmentId + baseUrl
+    - ApplicationScope tryScopeFromSelection() in ai/dashboard/scope-request.ts, ONE door
+    - Test Case        resolved inside the selected project via its workbook
+    - Record / Run     startRecording({ scope, url?, browser, testCaseId }) / POST /api/run
+    - PageContext      Session.scope, immutable for the session's lifetime
+    - Evidence         DomEvidence.origin { applicationId, environmentId, baseUrl, testCaseId }
+    - Artefacts        ScopePaths, unchanged from Phase 2
+    - Results          per-application stores; run/generation history still global (deferred)
+
+  two_defects_the_tests_found:
+    - what: >
+        POST /api/run with NO project succeeded (202) while two applications were
+        registered. `scopeFromSelection` accepted the WORKBOOK as a second source, and
+        the registry does declare an owner per workbook - so it resolved instead of
+        refusing. A lookup, not an inference, but still a weaker rule than the flow
+        promises: the selector would have been decorative, ignored on every request,
+        and nobody would find out until two projects shared a workbook name.
+      now: >
+        The dashboard requires the CHOICE. The workbook is used only to CHECK it
+        (`assertWorkbookInScope`). The CLI still resolves a scope from a workbook,
+        which is right - a command given the file has named the project.
+      found_by: ai/dashboard/project-api.fixture.ts, over real HTTP
+    - what: >
+        `persistRecording` resolved the recordings directory from the AMBIENT scope. In
+        a dashboard serving many requests that is a different question from "which
+        application was this recording made in", so a person who selected Flipkart in a
+        process whose ambient application was Bugasura would have had their recording
+        written into Bugasura's store - correctly formed, provably measured, and filed
+        under the wrong product.
+      now: >
+        The store is resolved from the recording's own locked `origin`, and the script
+        and both sidecars share that one directory. `artifactPath`/`evidencePath`/
+        `assertionsPath` take it as a parameter; the default stays the ambient scope,
+        which is right for every reader.
+      found_by: reading the save path after the API tests passed - no test had reached it
+
+  identity_is_locked:
+    where: ai/dashboard/recorder.ts Session.scope
+    rule: >
+      Captured at startRecording, never rewritten, and there is deliberately NO setter -
+      `recordingScope()` reads, nothing writes. The URL is what the session STARTED at
+      (navigation evidence); the scope is what the session IS (identity). A recording
+      navigates through /login, /apps, an issue and settings, and a person may type any
+      address into the browser it handed them; if identity were re-derived from wherever
+      the browser ended up, one navigation could move the recording into another
+      application's namespace.
+    proven_by: >
+      dashboard-scope.fixture.ts section D drives four in-application routes AND an
+      address belonging to the other application, and asserts the resolved artefacts
+      are unchanged every time.
+
+  backward_compatibility:
+    single_application: >
+      UNCHANGED. An unscoped request resolves to the sole registered application, which
+      is exactly what every pre-Phase-3 page sent. Asserted against a LIVE server on a
+      single-application registry, not reasoned about - and the assertion deliberately
+      uses a Test Case ID the workbook does not contain, so it proves the scope check
+      passed without spawning Playwright at the live application.
+    multiple_applications: >
+      A missing applicationId is a controlled 400 carrying `choices`, never a fallback
+      to the first application and never to a URL-derived identity. Asserted for
+      /api/record/start and /api/run, including with a Bugasura URL in the body.
+
+  deferred:
+    - what: run and generation history (ai/dashboard/runs, ai/dashboard/generations)
+      why: >
+        Explicitly out of scope for this phase - "do NOT restructure unrelated global
+        run/history infrastructure". `results` and `history` ARE application artefacts
+        and these directories are unscoped; the five-record generation cap is global, so
+        one application's generations would evict another's. Phase 4 material.
+    - what: tests-e2e/support/env.ts BASE_URL and BUGASURA_* credential names
+      why: >
+        The registry declares environments[].baseUrl, baseUrlEnv and credentials BY
+        NAME and env.ts reads none of it. VERIFIED to agree exactly today, so this is an
+        unwired declaration rather than a conflict. Wiring it means importing scope.ts
+        (which uses node:fs at module load) into a module the Playwright config and
+        every spec import.
+    - what: playwright.excel.config.ts - one testDir, one baseURL, one results path
+      why: execution-side scoping, not dashboard-side; Phase 4.
+    - what: Add Project UI
+      why: >
+        The API and registry foundation are done and tested (POST /api/projects, with
+        the whole candidate validated by the same rules that guard every read). A form
+        was deliberately not built - the brief said to defer UI polish if the
+        architecture did not support it cleanly, and project creation is rare enough
+        that the endpoint is the useful half.
+
+  remaining_collision_risks:
+    - ai/dashboard/runs and ai/dashboard/generations are keyed without an applicationId
+    - ai/reports/* is a single set of files per repository, not per application
+    - "ai/test-data/<workbook-basename>.data-driven.json collides on same-named workbooks"
+    - ai/autocode/state.json and ai/autocode/quarantine are keyed by bare Test Case ID
+  remaining_risks_note: >
+    NONE of the four can currently be reached across applications by the DASHBOARD,
+    because every route resolves a scope first and refuses without one. They are
+    collisions in storage, not open paths.
+
+# ---------------------------------------------------------------- Phase 2 closeout
+phase_2_closeout:
+  tc_login_087:
+    decision: GENUINELY DISTINCT - the capability was created, the fixture was not touched.
+    evidence: >
+      The recording contains BOTH buttons. `getByRole('button', { name: 'add Add Issue' })`
+      OPENS the new-issue form and is WorkspacePage.newIssue() -> #bug_no_issue_added
+      .mdl-button; then the summary and the rich-text editor are filled; then
+      `getByRole('button', { name: 'Add Issue', exact: true })` SUBMITS it and is
+      #bug_new_submit. Different elements, different points in the flow.
+    created: >
+      WorkspacePage.bugNewSubmit() via the normal mechanism (abstraction writer, not by
+      hand). It resolves through `this.resolve()` - the cardinality chokepoint - so it
+      gets healing rather than a direct locator. Two files written: the class and
+      bugasura__apps.yaml. fixtures.ts unchanged (workspacePage was already registered),
+      verified by md5.
+    outcome: >
+      abstraction.fixture.ts green. Corpus 90 -> 88 proposals, PROPOSED 1 -> 0, and the
+      element is now REUSED by two recordings (TC_LOGIN_071 and TC_LOGIN_087) - so it
+      closed a duplicate risk across two cases, not one. 47 declared capabilities,
+      0 unimplemented, 0 duplicate declarations.
+  recording_migration:
+    state: DONE
+    moved: 410 artefacts (306 live + 104 archived) -> ai/dashboard/recordings/bugasura/
+    verification: >
+      410/410 sha256 match against the kept backup manifest, 0 mismatch, 0 missing,
+      0 files in the target the manifest does not name. Old flat directory holds 0
+      files and only the `bugasura` subdirectory. Accessors resolve to the new store.
+      0 persisted references to the old location anywhere.
+    backup: ai/reports/recordings-premigration-bugasura (git-ignored, KEPT)
+    unblocked_by: >
+      32 fixtures named the flat path literally. They were classified before being
+      touched: 3 occurrences test path BEHAVIOUR or are prose and were left alone (the
+      gate asserting verify.ts does not spell 'recordings'; the .gitignore check; the
+      fingerprint's synthetic relative path). The rest read real artefacts and now go
+      through `activeRecordingsDir()`.
+    a_real_bug_the_safeguard_caught: >
+      The first run ROLLED BACK. `activeScope()` is memoised and had been resolved
+      before the swap, when the scoped directory did not exist - so the confirmation
+      read a stale answer. The transaction refused to delete anything and restored the
+      originals. `resetActiveScope()` at the swap is the fix; the rollback worked
+      exactly as designed and is why nothing was lost.
+    accessor_now_single: >
+      `activeRecordingsDir`/`activeAcceptedDir` are DEFINED in ai/projects/scope.ts and
+      re-exported by the recorder under its existing names. Defined there because
+      recorder.ts loads .env at import and ~30 offline fixtures needed the directory;
+      importing the recorder into all of them would pull dotenv and the codegen surface
+      into gates meant to touch nothing.
+
+# ---------------------------------------------------------------- 2026-09-04 (Phase 4)
+# PHASE 4 - END-TO-END RECORDING / PAGE CONTEXT / EVIDENCE.
+# A verification phase: prove the boundary holds, audit ambient state, fix what the
+# audit finds. Phase 3 accepted and not reopened.
+application_isolation_phase_4:
+  state: COMPLETE
+  invariant: ACTIVE APPLICATION SCOPE IS IMMUTABLE FOR THE OPERATION.
+  where_enforced:
+    - "Session.scope (ai/dashboard/recorder.ts) - set before the browser opens, no setter exists"
+    - "pending.origin - carries it across the Stop/Save gap, after `session` is cleared"
+    - "persistRecording - resolves the store from the ORIGIN, never the ambient scope"
+    - "scopeForWorkbook / tryScopeFromSelection - one door, per request, in the server"
+    - "buildIndex(scope), readAllPageKnowledge(dir), recordingsDir() - scoped inputs only"
+  gate: ai/projects/lifecycle-isolation.fixture.ts (57 checks)
+
+  # ---- the audit the phase asked for
+  ambient_state_audit:
+    SAFE:
+      what: >
+        Every ambient read inside a SHORT-LIVED CLI - ai/excel/cli.ts,
+        ai/autocode/orchestrate.ts, ai/autocode/groups.ts, ai/projects/migrate-recordings.ts.
+        One process, one command, one project: the ambient scope IS the operation's
+        scope, and there is no second request to confuse it with.
+    LEGACY_COMPATIBILITY:
+      what: >
+        `applicationSlug(BASE_URL)` in ai/knowledge/canonical.ts. Reachable only when
+        there is no registry.json at all, and a ScopeError is rethrown rather than
+        swallowed - so it can never answer an ambiguous scope. Deletable once no
+        checkout predates the registry.
+    DANGEROUS_AMBIENT_STATE_FOUND_AND_REMOVED:
+      where: ai/dashboard/server.ts
+      what: >
+        SIX per-request reads went through the process-wide memo instead of the
+        request's own scope: `readMapping(activeMappingFile())` in describeWorkbook and
+        twice in activate, `writeMapping(..., activeMappingFile())`, and three
+        `recordingStatus(testCase)` calls defaulting to the ambient recordings
+        directory. In a long-lived server that asks "which application is this PROCESS
+        in" when the question is "which application is this REQUEST about" - the same
+        answer only by luck.
+      now: >
+        `describeWorkbook(workbookPath, scope)` and `activate(workbookPath, testCaseId,
+        scope)` take the scope; the routes derive it with `scopeForWorkbook`, which
+        resolves from the workbook's DECLARED owner and refuses when the request names a
+        different project. Zero `activeMappingFile()` and zero bare
+        `recordingStatus(testCase)` remain in the server.
+
+  concurrency:
+    model: >
+      The dashboard is ONE process. Two people share the ambient scope, the module-level
+      `session` and every memo, so the only thing keeping their work apart is that each
+      operation carries its own scope.
+    A: "user A records Alpha, user B selects Beta, user A saves -> lands in Alpha"
+    B: "both save from one process with the ambient on neither -> two files, two projects"
+    C: "changing or clearing the ambient application moves neither recording"
+    bounded_by: >
+      A SECOND concurrent recording is refused by design ("A recording is already in
+      progress"), so concurrency here is between a recording and other requests, not
+      between two recordings. Written down rather than assumed.
+
+  adversarial_cases_proven:
+    - two applications with the SAME Page Object class name resolve independently
+    - the SAME `#username` selector in both is not a way to cross the boundary
+    - the same Test Case ID files two recordings, two specs, two mapping entries
+    - "four navigations incl. the other application's address leave applicationId unchanged"
+    - "AI isolation: the starved project gets an EMPTY pool, never a borrowed candidate"
+  ai_boundary: >
+    A resolver is handed three things and all three are scoped by construction - the
+    Page Object index (buildIndex(scope)), page knowledge (readAllPageKnowledge over the
+    scoped directory) and the recording corpus (recordingsDir()). There is no fourth
+    input, so there is no path by which another project's candidate could be offered.
+    Nothing about AI eligibility was changed.
+
+  # ---- the incident. Recorded because the backup is the only reason it cost nothing.
+  incident_the_fixture_deleted_the_real_recordings:
+    what: >
+      The first version of lifecycle-isolation.fixture.ts used the application ids
+      `bugasura` and `flipkart`. ScopePaths is rooted at the repository, so `bugasura`
+      resolved to ai/dashboard/recordings/bugasura - the LIVE store holding the 410
+      migrated artefacts - and the fixture's own cleanup removed it.
+    recovered: >
+      Fully. 410/410 restored from ai/reports/recordings-premigration-bugasura and
+      re-verified against its sha256 manifest: 410 match, 0 mismatch, 0 missing. The
+      migration's kept backup is the only reason this cost nothing.
+    root_cause: >
+      A fixture that composes REAL paths from a scope is one rmSync away from the real
+      thing, and "clean up after yourself" is indistinguishable from "delete the
+      repository" when the paths are computed rather than owned.
+    fixed_by_two_guards:
+      - "track() records a directory only if it did NOT already exist - never delete what you did not create"
+      - "assertNothingRealAtRisk() refuses to run at all if any path the fixture would write to exists"
+      - "the test applications are now `alpha`/`beta` - ids nothing in this repository uses"
+    guard_verified: >
+      Creating tests-e2e/pages/alpha and re-running produces "refusing to run: these
+      paths already exist and are not this fixture's to write or remove".
+    rule_for_every_future_fixture: >
+      A fixture MUST NOT use a real applicationId, and MUST NOT remove a path it did not
+      create. Both are now enforced in code rather than remembered.
+
+  regression:
+    fixtures: 59
+    red: 0
+    note: >
+      Includes ai/autocode/abstraction.fixture.ts, green since TC_LOGIN_087's capability
+      was created in the Phase 2 closeout. The recordings store was re-counted at 410
+      after the whole suite ran, which is now part of the regression command.
+
+  deferred_unchanged_from_phase_3:
+    - ai/dashboard/runs and ai/dashboard/generations are unscoped (history)
+    - ai/reports/* is one set of files per repository
+    - "ai/test-data/<workbook-basename> collides on same-named workbooks"
+    - ai/autocode/state.json and ai/autocode/quarantine are keyed by bare Test Case ID
+    - tests-e2e/support/env.ts still reads BUGASURA_* rather than the registry
+    - playwright.excel.config.ts is one testDir, one baseURL, one results path
+  deferred_note: >
+    None is reachable across applications through the dashboard - every route resolves a
+    scope first and refuses without one. They are collisions in STORAGE, not open paths.
+
+# ---------------------------------------------------------------- 2026-09-04 (Phase 5)
+# PHASE 5 - GENERATION ISOLATION.
+application_isolation_phase_5:
+  state: COMPLETE
+  identity: "GENERATION IDENTITY = applicationId + testCaseId, NEVER testCaseId alone."
+  gate: ai/projects/generation-isolation.fixture.ts (48 checks)
+
+  # ---- the pipeline, and where each stage gets its application
+  pipeline_audit:
+    - "dashboard route      | request selection (tryScopeFromSelection / scopeForWorkbook) | scoped | -   | none"
+    - "recording session    | Session.scope, set before the browser opens                  | scoped | -   | none"
+    - "recording store      | origin.applicationId -> resolveScope                          | scoped | r/w | none"
+    - "evidence             | evidence.origin                                              | scoped | r/w | historical files have none (optional by design)"
+    - "knowledge            | readAllPageKnowledge -> activeKnowledgePageDir                | scoped | r   | none"
+    - "page object index    | buildIndex(scope)                                            | scoped | r   | none"
+    - "locator resolution   | pools from index + knowledge + corpus only                    | scoped | r   | none"
+    - "abstraction writer   | pagesDir / knowledgeDir / fixturesFile                        | scoped | r/w | none"
+    - "AI eligibility       | the same three pools, no fourth input                        | scoped | r   | none"
+    - "generated spec       | generatedDir()                                               | scoped | w   | none"
+    - "mapping              | scope.paths.mappingFile                                      | scoped | r/w | none"
+    - "fixtures module      | scope.paths.fixturesFile + index importFrom                  | scoped | r/w | FIXED this phase"
+    - "attempt budget/state | stateKeyFor() = applicationId/testCaseId                     | scoped | r/w | FIXED this phase"
+    - "validation (verify)  | evidencePath / archivedPath / buildIndex                     | scoped | r   | none"
+    - "test-data cache      | full workbook path                                           | unique | r/w | FIXED this phase"
+    - "generation history   | applicationId stamped on the record                          | global | w   | intentional, labelled"
+    - "reports ai/reports/* | applicationId on the run record, joined by runId              | global | w   | intentional, labelled"
+    - "quarantine           | <testCaseId>.<ISO timestamp>.spec.ts.txt                     | global | w   | no overwrite possible"
+
+  four_real_defects_fixed:
+    - what: >
+        ai/autocode/state.json was keyed by the BARE Test Case ID in one global file, so
+        two applications that both have TC_LOGIN_001 shared ONE entry - attempt count,
+        fingerprint, verdict and spec path. One project could exhaust another's budget,
+        and a row could be skipped as `accepted` on the strength of another product's
+        spec.
+      now: >
+        Keyed `applicationId/testCaseId` via `stateKeyFor()`. MAX_ATTEMPTS is unchanged
+        and stays global - how many times to retry is POLICY; the RECORD is per
+        application. Only the key moved, so every rule about when the budget resets
+        reads exactly as before.
+      migration: >
+        `readState` re-files bare keys under the SOLE registered application, in memory,
+        and the next save persists the scoped shape. Proven lossless on the real file:
+        119 -> 119 entries, verdicts identical (67 accepted / 51 quarantined / 1
+        declined), every id survives the rename. Dropping them instead would have made
+        every accepted case read as never generated and `surveyWork` would have set
+        about regenerating finished specs.
+    - what: >
+        ai/knowledge/index.ts emitted `importFrom: tests-e2e/fixtures.ts` as a LITERAL
+        while `buildIndex` reads `scope.paths.fixturesFile`. The index read one
+        application's fixtures module and told the generator to import from the flat
+        one, so under a scoped layout a generated spec would name a file that is not its
+        application's.
+      now: "emits `index.support.fixtures.file` - the path that was actually read"
+      found_by: the user, reading the framework.yaml diff
+    - what: >
+        `cachePathFor` derived the data-driven cache name from the workbook BASENAME.
+        Two applications owning two DIFFERENT workbooks with the same file name -
+        excel/bugasura/cases.xlsx and excel/flipkart/cases.xlsx - collapsed to one cache
+        file, so one project's rows executed under the other's name.
+      now: derived from the whole repo-relative path, which is unique by construction
+    - what: "RunMetrics and GenerationRecord carried a workbook but no application"
+      now: >
+        both stamp applicationId, so the deliberately GLOBAL logs can still tell two
+        projects' TC_LOGIN_001 apart. Retention semantics untouched - the generation
+        history is still the newest five records, whatever project they belong to.
+
+  determinations_made_not_changed:
+    quarantine: >
+      GLOBAL and left alone. File names are `<testCaseId>.<ISO timestamp>.spec.ts.txt`,
+      so two applications cannot overwrite each other - the timestamp differs. Nothing
+      reads the directory back programmatically. Restructuring it would break
+      locator-validation.fixture.ts for a legibility gain.
+    reports: >
+      GLOBAL by intent - one append-only log per checkout, answering "what has the
+      generator been doing here". Partitioning would turn a `tail` into a directory
+      walk. Identity is carried instead: the run record names the application and every
+      other report joins to it by runId.
+    generation_history: >
+      GLOBAL by intent, five records, unchanged. Now labelled per record so the UI can
+      distinguish two projects' TC_LOGIN_001.
+    framework_yaml: >
+      MIXED, and now handled as such. `pages` and `fixtures` are application-specific;
+      `support` is genuinely shared framework plumbing. The file is named per
+      application once more than one exists (Phase 2), and `importFrom` now names the
+      application's own fixtures module.
+
+  regression:
+    fixtures: 60
+    red: 0
+    also_verified: "recordings/bugasura = 410 artefacts; migration backup = 411 files"
+
+  remaining_risks:
+    - "tests-e2e/support/env.ts reads BUGASURA_* rather than the registry (verified to agree today)"
+    - "playwright.excel.config.ts is one testDir, one baseURL, one results path"
+    - "ai/dashboard/runs is unscoped execution history (records carry no applicationId yet)"
+  remaining_risks_note: >
+    None is reachable across applications through the dashboard or the generator - every
+    route and every generation stage resolves a scope first. They are collisions in
+    STORAGE or unwired declarations, not open paths.
+
+# ---------------------------------------------------------------- 2026-09-04 (Phase 6)
+# PHASE 6 - EXECUTION / RESULTS / HISTORY ISOLATION.
+application_isolation_phase_6:
+  state: COMPLETE
+  identity: "EXECUTION IDENTITY = applicationId + testCaseId + runId"
+  attempt_policy: GLOBAL - MAX_ATTEMPTS is a number and means the same everywhere
+  attempt_state: APPLICATION-SCOPED - the ledger entry is about one project's row
+  gates:
+    - ai/projects/execution-isolation.fixture.ts (33 checks)
+    - ai/dashboard/project-api.fixture.ts        (37 checks, real server over HTTP)
+
+  execution_pipeline_audit:
+    - "dashboard run route | request selection, refused without one | scoped | -   | none"
+    - "generated spec      | scope.paths.generatedDir               | scoped | r   | none"
+    - "fixtures module     | scope.paths.fixturesFile               | scoped | r   | none"
+    - "test data           | cachePathFor(full workbook path)       | unique | r/w | none"
+    - "environment         | applicationId + environmentId          | scoped | r   | none"
+    - "run record          | applicationId + environmentId + runId  | global store, identified | w | none"
+    - "run metrics         | applicationId on the run record        | global store, identified | w | none"
+    - "results             | per run directory under runs/<runId>   | global store, identified | w | none"
+    - "generation history  | applicationId on record and summary    | global store, identified | w | none"
+    - "reports ai/reports/*| applicationId on the run record, joined by runId | global, identified | w | none"
+    - "attempt budget      | stateKeyFor = applicationId/testCaseId | scoped key | r/w | none"
+    - "fingerprints        | held inside the scoped state entry     | scoped | r/w | none"
+    - "verdicts            | held inside the scoped state entry     | scoped | r/w | none"
+    - "quarantine          | applicationId.testCaseId.stamp         | global, identified | w | FIXED this phase"
+
+  three_defects_fixed:
+    - what: >
+        Dashboard RUN RECORDS carried no applicationId. `ai/dashboard/runs/` is a global
+        store of past executions, so two projects' TC_LOGIN_001 appeared as two
+        indistinguishable rows and no filtering was possible.
+      now: >
+        `RunRecord.applicationId` and `.environmentId`, stamped in `startRun` from the
+        scope the ROUTE already resolved - never re-derived from `request.workbook`,
+        because a record is a statement about what happened rather than a lookup to redo
+        later.
+    - what: >
+        QUARANTINE names were `<testCaseId>.<ISO stamp>.spec.ts.txt`. `copyFileSync`
+        overwrites, so two generators quarantining TC_LOGIN_001 in the same millisecond
+        lose one file silently - unlikely, not impossible, and "unlikely" is a poor
+        property for the one copy of a spec somebody wants to read. The decisive reason
+        is simpler: the name cannot be attributed to a project at all.
+      now: >
+        `<applicationId>.<testCaseId>.<stamp>.spec.ts.txt`. The directory stays GLOBAL -
+        it is a diagnostic pile, not an artefact store - and nothing parses the name
+        back, so the only cost is that the file now says whose it is.
+    - what: "run and generation LISTINGS dropped the application, so the UI could not filter"
+      now: >
+        both summaries carry it, both endpoints accept `?applicationId=`, and the page
+        sends the selected project. Retention is untouched: filtering narrows the VIEW,
+        so asking as one project never evicts another project's record.
+
+  what_stays_physically_global_and_why:
+    ai_dashboard_runs: >
+      One directory of past executions on this machine, which is the question it
+      answers. Each record now carries applicationId + environmentId + runId, and the
+      listing narrows on it.
+    ai_dashboard_generations: >
+      Global, newest FIVE, retention deliberately unchanged. The requirement was no
+      identity collision, not a directory per project - so records and summaries carry
+      the application and the view is filtered.
+    ai_reports: >
+      Append-only logs per checkout. Partitioning would turn a `tail` into a directory
+      walk. The run record names the application and every other report joins by runId.
+    quarantine: "a diagnostic pile; identity is now in the file name"
+    legacy_records: >
+      A record written before these fields has no application and is claimed by NEITHER
+      project - it appears only in the unfiltered list. Attributing it to whichever
+      project is asking would be inventing history, the same rule `readState`'s
+      migration follows for an ambiguous key.
+
+  concurrency_bounded_honestly: >
+    ONE run at a time and ONE recording at a time, both by existing design - `active`
+    and `session` are single slots, and the run comment explains why (Playwright wipes
+    test-results-excel/ at the start of every run). So two applications cannot execute
+    SIMULTANEOUSLY on one dashboard, and what Phase 6 proves is that their STATE cannot
+    mix: separate specs, fixtures, mappings, ledgers, fingerprints, verdicts, caches and
+    result records. Making execution genuinely parallel is a different piece of work and
+    would need Playwright's output directory scoped first.
+
+  decisions_recorded_not_changed:
+    playwright_config: >
+      `playwright.excel.config.ts` stays SHARED. It is framework configuration - the
+      reporters, the worker count, the capture modes, the one project `chrome` - and
+      duplicating it per application would duplicate a SHARED_CAPABILITY for symmetry.
+      What is application-specific is `testDir`, `baseURL` and the output paths, and
+      those are execution-side scoping that needs Playwright to be launched per scope.
+      Deferred with the reason, not silently.
+    env_ts: >
+      `tests-e2e/support/env.ts` keeps reading BUGASURA_* and remains LEGACY
+      SINGLE-APPLICATION COMPATIBILITY. The registry declares baseUrl, baseUrlEnv and
+      credentials BY NAME and they were verified to agree exactly. Environment variables
+      stay as the SECRET provider - that discipline is deliberate and is not being
+      removed - but they must not become project identity, and they do not: nothing
+      derives an applicationId from them.
+
+  final_verification_2026_09_04:
+    serial_execution_safety:
+      proven_by: "ai/dashboard/project-api.fixture.ts - the six `serial:` checks"
+      invariant: >
+        A run, a generation and a recording each hold ONE slot and refuse the others
+        with 409, because `test-results-excel/` is NOT application-scoped and Playwright
+        wipes it at the start of every run. Two applications therefore cannot execute
+        simultaneously - the second is refused, never queued and never scoped.
+      asserted_on: >
+        The SOURCE, not over HTTP: reaching the guards from outside needs a real run in
+        flight, and an offline gate must not launch Playwright at a live application to
+        prove a refusal. The checks pin that both guards precede `readJsonBody`, that
+        the refusal names the shared output directory as its reason, and that `active`
+        is a single slot rather than a collection - a queue or a map would be the
+        beginning of parallel execution.
+      mutation_tested: "removing the `if (active)` guard turns 3 checks red"
+      pre_existing_gap: >
+        lifecycle-isolation.fixture.ts proved only the RECORDER's mutual exclusion
+        (recorder.ts). Nothing covered the run/generator exclusion in server.ts, which
+        is the Playwright-output-state question.
+    history_api_scope:
+      proven_by: "ai/dashboard/project-api.fixture.ts - the twelve `history:` checks"
+      trace: "UI selected project -> ?applicationId= -> equality predicate against each record's OWN applicationId -> response"
+      finding: >
+        The endpoints do NOT validate the id against the registry - and they do not need
+        to, because the id is used ONLY as an equality predicate. An unknown id matches
+        no record, so the result set can only ever SHRINK: fail-closed by construction,
+        with no path by which an arbitrary value widens it. Verified with `nonexistent`,
+        `bugasura-`, `BUGASURA`, `../bugasura` and `` - all empty except the empty
+        string, which means "no filter asked for" and returns the unfiltered list.
+      exact_match_is_deliberate: >
+        applicationId is a lowercase slug the registry validates, so `BUGASURA` is not a
+        spelling of `bugasura` - it is an id nothing is filed under. No case-folding and
+        no prefix matching.
+      divergence_recorded_not_changed: >
+        Every other application-specific route (/api/record/start, /api/run,
+        /api/workbook) returns a controlled 400 for an unknown applicationId; the two
+        history endpoints return an empty list instead. Left as it is: the safety
+        property holds either way, the UI only ever sends ids from /api/projects, and
+        changing it was outside what this verification was asked to do. Worth a decision
+        later if a typo'd filter reading as "no history" is judged confusing.
+      mutation_tested: "making the filter ignore the id turns 12 checks red"
+  regression:
+    fixtures: 61
+    red: 0
+    also_verified: "recordings/bugasura = 410; migration backup = 411; no scoped strays"
+
+  remaining_risks:
+    - "playwright.excel.config.ts: one testDir, one baseURL, one results path"
+    - "tests-e2e/support/env.ts: BUGASURA_* rather than the registry (verified to agree)"
+    - "execution is serialised, so simultaneous two-project runs are not possible yet"
+  remaining_risks_note: >
+    None is a cross-project collision. Every execution store is either scoped or carries
+    its own identity, and every dashboard route resolves a scope before touching one.
+
+# ---------------------------------------------------------------- 2026-09-04 (Phase 7)
+# PHASE 7 - PRODUCTION-READINESS / END-TO-END ISOLATION AUDIT.
+# An adversarial audit, not a feature phase. One real defect found and fixed.
+application_isolation_phase_7:
+  state: COMPLETE
+  gate: ai/projects/ambient-cache.fixture.ts (22 checks)
+
+  the_one_real_defect:
+    where: ai/autocode/work.ts - cachedFingerprint
+    what: >
+      `frameworkFingerprint` hashes `generationPageObjectDir()`, which has been
+      scope-derived since Phase 2 - so its value is a fact about ONE APPLICATION'S Page
+      Objects. The memo was keyed by the repository ROOT alone. Harmless in the
+      generation CLI (one process, one application); NOT harmless in the dashboard,
+      where `surveyWork` calls it and the server calls `surveyWork` per request inside
+      `activate`. A server that had served Project A answered for Project B with A's
+      fingerprint, and `budgetExhausted` compares that value - so a row of B whose
+      framework genuinely changed read as unchanged, its attempt budget was not
+      reopened, and it stayed skipped saying "edit the row to try again".
+    fix: "the memo key is now root + applicationId. The VALUE is unchanged, so no fingerprint moves and no attempt budget reopens."
+    mutation_tested: >
+      Reverting the key to the root alone turns 2 checks red, showing beta served
+      alpha's fingerprint. The FIRST mutation attempt silently did not land (escaping in
+      a nested heredoc) and the fixture stayed green - which is exactly the failure mode
+      mutation testing exists to expose, and why the second attempt asserts the mutation
+      landed before drawing any conclusion.
+
+  audit_findings_by_section:
+    identity_derivation: >
+      ONE remaining URL-derived path: `applicationSlug(BASE_URL)` in canonical.ts,
+      reachable only from `activeApplicationId()`'s catch when the registry cannot be
+      read at all, with ScopeError rethrown. LEGACY-COMPATIBILITY, documented, deletable
+      once no checkout predates the registry. Nothing else derives identity from a URL,
+      host, title, documentId, workbook basename, testCaseId or Page Object name.
+    ambient_state: >
+      Seven module-level mutables. `session`/`pending` (recorder) are session-scoped and
+      proven in Phase 4; `active`/`autocode` (server) are the serial-execution slots
+      proven in Phase 6; `cachedApplicationId`/`cachedScope` are the documented ambient
+      memos with an explicit reset; `corpusCache` (orchestrate) is SAFE because the
+      server imports only `readState`/`surveyWork` from autocode and spawns generation
+      as a child process - verified, not assumed. `cachedFingerprint` was the defect.
+    caches_and_indexes: >
+      Knowledge and the Page Object index are rebuilt on every call - no memoisation
+      anywhere. Every other `new Map` in ai/ is a local inside a function. The only
+      module-level cache carrying application-specific state was the fingerprint memo.
+    path_traversal: >
+      An applicationId can NEVER reach the filesystem unvalidated, twice over:
+      `pathsFor` is called at exactly one site and only after `findApplication` confirms
+      the id is registered, and `validateRegistry` admits only `[a-z][a-z0-9-]*` - so a
+      registered id cannot contain a separator or a dot. Verified with `../bugasura`,
+      `..`, `alpha/../beta`, `ALPHA`, `a/b`, `a.b`, `1alpha`, `al_pha`. Surrounding
+      whitespace is trimmed and THEN validated, which is deliberate - a trailing space
+      is a spelling, not an attack, and the trimmed value still goes through
+      `findApplication`.
+    ai_isolation: >
+      `semantic.ts` is handed `buildIndex()` (scoped) and validates every answer against
+      `index.pages[owner]` - the closed set is the active application's. Knowledge and
+      corpus likewise, all rebuilt per call. No fourth input exists.
+    fail_safe: "six ScopeError throw sites, all refusals; no silent fallback to a default or first project"
+
+  what_this_phase_did_not_change:
+    - "the legacy applicationSlug fallback - safe, documented, and not cosmetic to remove"
+    - "corpusCache - per-process by construction; changing it would be refactoring without a finding"
+    - "global stores (runs, generations, reports, quarantine) - identity-carrying by Phase 6"
+    - "serialised execution - audited, not redesigned; parallel execution is not implemented"
+
+  before_parallel_execution_could_be_enabled:
+    - "test-results-excel/ is a single shared Playwright outputDir and is not scoped"
+    - "reports/playwright-html/ is rewritten wholesale by every run"
+    - "ai/reports/healing and allure-results are cleared by globalSetup unconditionally"
+    - "`active` would have to become a per-application slot AND the output paths scoped first"
+  parallel_execution_note: >
+    Listed as the prerequisites, not as a plan. Nothing in this phase claims or prepares
+    parallel execution.
+
+  regression:
+    fixtures: 62
+    red: 0
+    also_verified: "recordings/bugasura = 410; migration backup = 411; no scoped strays"
+
+# ---------------------------------------------------------------- 2026-09-04 (Phase 8)
+# PHASE 8 - FINAL PRODUCTION-READINESS, SECURITY AND DEPLOYMENT AUDIT.
+# Broader than isolation. One P0, two P1, two P2. Read the P0 first.
+production_readiness_phase_8:
+  state: COMPLETE
+  recommendation: READY WITH PREREQUISITES
+  gate: ai/projects/repository-secrets.fixture.ts (8 checks)
+
+  P0_committed_credential:
+    status: REMEDIATED IN THIS REPOSITORY; ROTATION CONFIRMED BY THE OWNER
+    what: >
+      `.env` was TRACKED by Git and carried a real BUGASURA_EMAIL and
+      BUGASURA_PASSWORD. `.gitignore` had listed `.env` since the beginning and had no
+      effect, because gitignore only applies to files Git is not ALREADY tracking - the
+      file was committed before the rule existed, so the rule read like protection while
+      providing none.
+    exposure: >
+      Committed in 1eb2fa9 and present on origin/main AND origin/develop, so the
+      credential reached the shared remote's history. Untracking does NOT remove it from
+      earlier commits.
+    done:
+      - "`git rm --cached .env` - untracked, file preserved on disk, ignore rule now effective"
+      - "the credential was rotated outside this repository by the owner"
+      - "ai/projects/repository-secrets.fixture.ts pins the invariant, mutation-tested"
+    still_required_by_policy: >
+      History cleanup (git filter-repo / BFG plus a force-push) if organizational policy
+      requires the old value gone from earlier commits. Rotation is the real fix and is
+      done; cleanup is hygiene and is an operational decision with a force-push
+      attached, so it is NOT performed from a fixture or from this session.
+    rule_from_now_on: >
+      `.env` must remain untracked. The fixture fails the whole suite if it is ever
+      added again - verified by forcing `git add -f .env`, which turns the check red
+      with the remediation command in the message and no value printed.
+
+  P1_authentication:
+    status: NOT IMPLEMENTED - deployment prerequisite, not a defect
+    what: >
+      There is no authentication, authorization, session, token or CSRF anywhere in
+      ai/dashboard. The entire security model is `BIND = '127.0.0.1'` with no host
+      option. Every mutating operation is unauthenticated: start and stop recording,
+      start generation, start a run, create a project, write the workbook, read
+      evidence, knowledge, test data and results.
+    acceptable_when: "the dashboard is what it is today - a localhost developer tool"
+    blocking_for: >
+      ANY deployment that exposes the dashboard or its API beyond loopback - Docker with
+      a published port, ECS/Fargate, a shared host, a tunnel. `EXCEL_DASHBOARD_HOST`
+      changes only the friendly NAME; the socket stays on 127.0.0.1, so exposure would
+      come from the deployment (port publishing, a proxy), not from a code change.
+    not_implemented_here: "deliberately - inventing an auth layer was out of scope and would be worse than naming the gap"
+
+  P1_run_retention:
+    status: DOCUMENTED, NOT IMPLEMENTED
+    measured: "ai/dashboard/runs holds 900 files / 98 MB today; ~3 MB per run with traces on"
+    what: >
+      `generations` is capped at five; `runs` has no retention at all and is deliberately
+      unbounded (the root CLAUDE.md says so). Fine for a developer machine where the
+      directory is disposable; on a long-lived deployment it exhausts disk.
+    why_not_fixed_here: >
+      A retention policy is a semantics decision, and the brief was explicit about not
+      introducing arbitrary limits. The measurement is recorded so the decision can be
+      made on evidence rather than on a guess.
+
+  P2_items:
+    - what: "corrupt state.json or mapping.json throws a bare JSON.parse error naming no file"
+      severity: P2
+      why_not_higher: >
+        It fails LOUDLY. Nothing produces a wrong project, a false PASS or a false
+        ACCEPTED - the run stops. `ai/projects/registry.ts` already wraps its parse with
+        the file name and the reason, and is the model to copy when this is addressed.
+    - what: "ai/reports/* is append-only and unbounded (450 files / 16 MB today)"
+      severity: P2
+      note: "intentionally global and identity-carrying since Phase 6; only the growth is unaddressed"
+
+  P3_items:
+    - "the legacy applicationSlug(BASE_URL) fallback - documented, ScopeError-guarded, reachable only with no registry at all"
+
+  clean_results:
+    command_execution: >
+      Every process is spawned with an argv array, `shell: false`, and
+      `process.execPath` or a resolved binary. BOTH occurrences of `shell: true` in the
+      repository are COMMENTS explaining why it is not used - one in agent.ts (a shell
+      would put spreadsheet prose through a command interpreter) and one in excel/cli.ts
+      (the shell would read the `|` in a --grep pattern as a pipe). The --grep pattern
+      escapes regex metacharacters from every Test Case ID.
+    logging: >
+      No credential reaches a log call. Passwords are redacted to the `[type=password]`
+      marker before anything is written, and the redaction happens at capture rather
+      than at write.
+    filesystem_inputs: >
+      Workbook paths are refused outside the repository and refused without an .xlsx
+      extension. An applicationId cannot reach a path unvalidated - see Phase 7.
+    deployment_portability: >
+      No hardcoded absolute paths in tracked source; the Windows branch in agent.ts is a
+      portability fix rather than an assumption; port 80 falls back to 4321 on EADDRINUSE
+      or EACCES; the friendly hostname is optional and prints its own instructions.
+
+  deployment_prerequisites:
+    - "rotate any credential that was ever committed (done) and keep .env untracked (pinned by fixture)"
+    - "put authentication and authorization in front of the dashboard before any non-loopback exposure"
+    - "decide a retention policy for ai/dashboard/runs and ai/reports"
+    - "provision BUGASURA_EMAIL / BUGASURA_PASSWORD as deployment secrets, never as files in the image"
+    - "install Playwright browsers in the image; the suite assumes a chromium project exists"
+    - "scope test-results-excel/ before any attempt at parallel execution (see Phase 7)"
+
+  regression:
+    fixtures: 63
+    red: 0
 
 decisions_2026_08_24:
   script_written_assertions: >

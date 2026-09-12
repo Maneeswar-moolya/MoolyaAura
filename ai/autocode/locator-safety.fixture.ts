@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Two invariants, stated once and checked everywhere they can be broken.
  *
@@ -11,7 +12,7 @@
  *
  * `#tr_637446` was refused; `#tr_637446 > .tabulator-cell > .rounded-checkbox-ui` was
  * not, because the test required the whole selector to BE an id - so a locator pinned
- * to one Bugasura issue scored as ordinary CSS and shipped. And `.first()` was
+ * to one FixturePortal issue scored as ordinary CSS and shipped. And `.first()` was
  * replaced by a proven contextual candidate where one existed, but emitted verbatim
  * where none did, so the pipeline refused to build a Page Object on a guess while
  * happily writing that guess into a spec.
@@ -34,6 +35,7 @@ import type { CandidateMeasurement, DomNode, TargetEvidence } from './dom-eviden
 import { parseRecording } from '../dashboard/recorder';
 import { mapRecording, readAssertions, readEvidence } from './from-recording';
 import { readAllPageKnowledge } from '../knowledge/page-knowledge';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -153,17 +155,16 @@ function checkPositional(): void {
       !isPositionalLocator("page.locator('.x').locator('.y')"));
 }
 
-/* ------------------------------------------------- 11-15: real recordings ---- */
+/* ------------------------------------------------- 11-15: synthetic integration ---- */
 
 function checkRecordings(): void {
-  process.stdout.write('\n== the real recordings ==\n');
+  process.stdout.write('\n== the authored synthetic recordings ==\n');
   const summary = new Map<string, { contextual: number; dynamic: number; positional: number;
     review: number; pageObject: number; }>();
 
-  for (const id of ['TC_DASHBOARD_008', 'TC_DASHBOARD_011', 'TC_LOGIN_082', 'TC_LOGIN_083']) {
-    const file = path.join(ROOT, 'ai', 'dashboard', 'recordings', `${id}.spec.ts`);
-    if (!fs.existsSync(file))
-      continue;
+  for (const id of ['TC_ROW_A', 'TC_ROW_B', 'TC_UNPROVEN_POSITION']) {
+    const file = path.join(RECORDINGS(), `${id}.spec.ts`);
+    if (!fs.existsSync(file)) throw new Error(`Missing required synthetic recording: ${id}`);
     const recording = parseRecording(fs.readFileSync(file, 'utf8'), {
       startUrl: '', browser: '', durationMs: 0,
       evidence: readEvidence(id), stateAssertions: readAssertions(id),
@@ -201,23 +202,22 @@ function checkRecordings(): void {
   }
 
   // 11 / 12: contextual resolution still works, and 011 no longer leaks.
-  for (const id of ['TC_DASHBOARD_008', 'TC_DASHBOARD_011', 'TC_LOGIN_083']) {
+  for (const id of ['TC_ROW_A', 'TC_ROW_B']) {
     const counts = summary.get(id);
-    if (!counts)
-      continue;
+    if (!counts) throw new Error(`Synthetic recording was not analysed: ${id}`);
     check(`${id}: the row is still addressed contextually (inline or via a Page Object)`,
         counts.contextual > 0, `${counts.contextual}`);
     check(`${id}: no generated id in anything emitted`, counts.dynamic === 0);
     check(`${id}: and no position either`, counts.positional === 0);
   }
   // 13: 082's positional targets are refused, not promoted.
-  const login082 = summary.get('TC_LOGIN_082');
-  check('13: TC_LOGIN_082 emits no position', !login082 || login082.positional === 0);
+  const login082 = summary.get('TC_UNPROVEN_POSITION');
+  check('13: TC_UNPROVEN_POSITION emits no position', Boolean(login082) && login082!.positional === 0);
   check('13: and its unresolvable targets go to review',
-      !login082 || login082.review > 0, `${login082?.review ?? 0} review step(s)`);
+      Boolean(login082) && login082!.review > 0, `${login082?.review ?? 0} review step(s)`);
 
   // 14 / 15: the Page Object work of the earlier phases is untouched.
-  const dashboard011 = summary.get('TC_DASHBOARD_011');
+  const dashboard011 = summary.get('TC_ROW_B');
   check('14: the parameterised method is still reused',
       (dashboard011?.pageObject ?? 0) > 0, `${dashboard011?.pageObject ?? 0} page-object step(s)`);
   const reuse = mapRecording(parseRecording([

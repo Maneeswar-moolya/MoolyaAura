@@ -7,7 +7,7 @@ truth — edit here, not in the prompt template.
 and is not already available. `CLAUDE.md` is loaded into the agent's context
 automatically by Claude Code (verified — it answers questions about it with no tool
 call), so anything CLAUDE.md already says must NOT be repeated here. That includes
-the two-suite separation, the Bugasura DOM facts, the traceability invariants, the
+the two-suite separation, the traceability invariants, the
 healing bounds, the `step` fixture example and the falsification gate. This file is
 the part `SKILL.md` used to supply: how to turn one workbook row into one spec.
 
@@ -85,7 +85,7 @@ test('TC_X_001 - the scenario exactly as the workbook words it', async ({ page, 
   await trace({ testCaseId: 'TC_X_001', module: 'Login', scenario: '...',
                 sourceWorkbook: '...', sourceWorksheet: '...', priority: 'P1' });
 
-  await step('Open the Bugasura sign-in page', () => loginPage.open());
+  await step('Open the application sign-in page', () => loginPage.open());
   await expect(await loginPage.signInButton()).toBeVisible();
 });
 ```

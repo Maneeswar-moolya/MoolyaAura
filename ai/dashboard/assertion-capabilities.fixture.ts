@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * P1 Phase 2A — the assertion model, proven without any UI.
  *

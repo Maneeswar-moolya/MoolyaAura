@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * The offline gate for Phase 5. No browser, no model, no network, no writes.
  *
@@ -26,7 +27,7 @@ import { parseWorkbook } from '../excel/parser';
 import { NEEDS_CONFIRMATION, RECORDED_INTERACTION } from '../dashboard/placeholders';
 import type { TestCase } from '../excel/types';
 
-const WORKBOOK = 'excel/login-test-cases.xlsx';
+const WORKBOOK = 'excel/fixture-cases.xlsx';
 
 let failures = 0;
 let checks = 0;
@@ -46,7 +47,7 @@ const OLD_STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'that', 'this', 'from', 'into', 'then', 'when', 'should',
   'page', 'test', 'user', 'click', 'open', 'check', 'verify', 'enter', 'select', 'displayed',
   'shown', 'able', 'must', 'will', 'have', 'has', 'are', 'was', 'not', 'button', 'field',
-  'bugasura', 'application', 'valid', 'invalid', 'correct', 'successfully', 'without',
+  'fixtureapp', 'application', 'valid', 'invalid', 'correct', 'successfully', 'without',
   'given', 'their', 'they', 'them', 'all', 'any', 'each', 'new', 'via', 'using', 'after',
   'before', 'again', 'also', 'only', 'same', 'other', 'step', 'steps', 'case', 'expected',
   'result', 'navigate', 'navigates', 'navigated', 'goes', 'sees', 'see', 'show', 'shows',
@@ -65,8 +66,11 @@ function synthetic(overrides: Partial<TestCase>): TestCase {
     preconditions: '', steps: [], testData: '', expectedResult: '', priority: 'P1' as TestCase['priority'],
     tags: [], automationStatus: 'Not Automated' as TestCase['automationStatus'], automationNotes: '',
     execute: null, expectedOutcome: '', expectedMessage: '',
+    requirementId: '', testType: '' as TestCase['testType'],
+    businessRisk: '' as TestCase['businessRisk'], environment: '', userRole: '',
+    authenticationProfile: '', testOwner: '',
     source: { workbookPath: '', workbook: 'fixture.xlsx', worksheet: 'Fixture', row: 2 },
-    extra: {}, ...overrides,
+    extra: {}, issues: [], ...overrides,
   };
 }
 
@@ -126,7 +130,7 @@ console.log('\n=== 3. Regression A: placeholder prose must not open a browser\n'
   const placeholder = synthetic({
     scenario: 'Strong',
     module: 'Login',
-    steps: ['Open the Bugasura sign in page', 'Enter the email address', 'Enter the password'],
+    steps: ['Open the sign in page', 'Enter the email address', 'Enter the password'],
     expectedResult: NEEDS_CONFIRMATION,
     tags: [],
   });
@@ -162,8 +166,8 @@ console.log('\n=== 4. Regression B: TC_RECBENCH_003 must still open a browser\n'
   const genuine = synthetic({
     testCaseId: 'TC_RECBENCH_003',
     scenario: 'Notifications bell',
-    steps: ['Sign in to Bugasura', 'Click the notifications bell in the header'],
-    expectedResult: 'The notifications bell is displayed and the notification list opens',
+    steps: ['Sign in', 'Click the notifications bell in the header'],
+    expectedResult: 'The notifications bell is displayed',
   });
   const extraction = extractRequirements(genuine);
   console.log(`      requirements: ${extraction.requirements.map(r => `${r.phrase} [${r.class}]`).join(' | ')}`);
@@ -171,13 +175,13 @@ console.log('\n=== 4. Regression B: TC_RECBENCH_003 must still open a browser\n'
       extraction.requirements.some(r => r.phrase.includes('bell') && r.class === 'ui-observable'));
 
   // THE BELL IS NO LONGER THE EXAMPLE OF AN UNCOVERED ELEMENT, because it is now
-  // covered: `bugasura__apps.yaml` declares it (WorkspacePage.notificationsBell,
+  // covered: `fixtureapp__apps.yaml` declares it (WorkspacePage.notificationsBell,
   // NotificationsPanel.panel, .settingsButton). A row about it is answered from
   // knowledge and correctly opens nothing - which is the POINT of knowledge, not a
   // regression in this gate.
   //
   // So the coverage half of this regression moves to an element nothing describes
-  // yet. The issue statistics panel is a real Bugasura element (`#issue_stats_section`,
+  // yet. The issue statistics panel is a real FixturePortal element (`#issue_stats_section`,
   // seen in the recorded evidence), is on no page object and in no knowledge file,
   // and is not one of the deliberately excluded third-party widgets. The assertions
   // below are unchanged in kind and in strength: a genuine UI requirement that
@@ -190,7 +194,7 @@ console.log('\n=== 4. Regression B: TC_RECBENCH_003 must still open a browser\n'
   const uncovered = synthetic({
     testCaseId: 'TC_RECBENCH_003',
     scenario: 'Issue statistics panel',
-    steps: ['Sign in to Bugasura', 'Open a project and view the issue statistics panel'],
+    steps: ['Sign in', 'Open a project and view the issue statistics panel'],
     expectedResult: 'The issue statistics panel is displayed and shows the issue counts',
   });
   const uncoveredExtraction = extractRequirements(uncovered);

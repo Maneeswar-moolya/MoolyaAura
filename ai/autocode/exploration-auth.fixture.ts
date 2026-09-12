@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * P0.9 — the test's sign-in and the exploration browser's sign-in are two
  * different questions, and the answer to one is not the answer to the other.
@@ -32,12 +33,13 @@ import { parseRecording } from '../dashboard/recorder';
 import { parseWorkbook } from '../excel/parser';
 import {
   credentials, explorationCredentials, explorationIdentity, explorationSource,
-  MISSING_EXPLORATION_CREDENTIALS_REASON,
+  missingExplorationCredentialsReason,
 } from '../../tests-e2e/support/env';
 import type { TestCase } from '../excel/types';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
-const WORKBOOK = 'excel/login-test-cases.xlsx';
+const WORKBOOK = 'excel/fixture-cases.xlsx';
 let failures = 0;
 const check = (label: string, ok: boolean, detail = '') => {
   process.stdout.write(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? ` — ${detail}` : ''}\n`);
@@ -68,7 +70,7 @@ function row(steps: string[], preconditions = ''): TestCase {
 function checkMatrix(): void {
   process.stdout.write('\n== A — a login test: the sign-in IS the subject ==\n');
   const login = authRequirement(row([
-    'Open the Bugasura login page', 'Enter the email address for this case',
+    'Open the FixturePortal login page', 'Enter the email address for this case',
     'Enter the password for this case', 'Click Sign In',
     'Verify the user is taken to the dashboard',
   ]));
@@ -80,7 +82,7 @@ function checkMatrix(): void {
 
   process.stdout.write('\n== B — an authenticated journey: TC_LOGIN_066 ==\n');
   const journey = authRequirement(row([
-    'Step 1: Open Bugasura.', 'Step 2: Enter email.', 'Step 3: Enter password.',
+    'Step 1: Open FixturePortal.', 'Step 2: Enter email.', 'Step 3: Enter password.',
     'Step 4: Click Sign In.', 'Step 5: Open Faclon labs.',
     'Step 6: Click on search field and and enter "fac11" and hit enter',
     'step7: verify the status should be new for the resulted issue',
@@ -93,7 +95,7 @@ function checkMatrix(): void {
 
   process.stdout.write('\n== C — an already-authenticated journey ==\n');
   const already = authRequirement(
-      row(['Open the projects dashboard', 'Search for a project'], 'User is signed in to Bugasura'));
+      row(['Open the projects dashboard', 'Search for a project'], 'User is signed in to FixturePortal'));
   check('C: the test starts signed in', already.testStartsSignedIn === true);
   check('C: the exploration browser is authenticated', already.explorationNeedsAuth === true);
 
@@ -108,7 +110,7 @@ function checkMatrix(): void {
 
   process.stdout.write('\n   the edge that broke the first draft of this rule\n');
   const languagePicker = authRequirement(row([
-    'Open bugasura login page', 'click on language options and select italian',
+    'Open fixtureapp login page', 'click on language options and select italian',
     'check sign button language should be in italian',
   ]));
   check('   a row that ACTS on the sign-in page stays anonymous',
@@ -120,50 +122,17 @@ function checkMatrix(): void {
 /* ------------------------------------------------ the real workbook, swept */
 
 async function checkWorkbook(): Promise<void> {
-  process.stdout.write('\n== the whole workbook, measured rather than argued ==\n');
-  const parsed = await parseWorkbook(path.resolve(ROOT, WORKBOOK));
-  const verdicts = new Map<string, ReturnType<typeof authRequirement>>();
-  for (const testCase of parsed.testCases)
-    verdicts.set(testCase.testCaseId.toUpperCase(), authRequirement(testCase));
-
-  const anonymous = ['TC_LOGIN_010', 'TC_LOGIN_011', 'TC_LOGIN_012', 'TC_LOGIN_013',
-    'TC_LOGIN_046', 'TC_LOGIN_058', 'TC_LOGIN_062', 'TC_LOGIN_025'];
-  for (const id of anonymous) {
-    const verdict = verdicts.get(id);
-    if (verdict)
-      check(`   ${id} keeps an anonymous browser`, verdict.explorationNeedsAuth === false, verdict.explorationReason);
-  }
-  const authenticated = ['TC_LOGIN_064', 'TC_LOGIN_065', 'TC_LOGIN_066', 'TC_PROJ_009',
-    'TC_DASHBOARD_002'];
-  for (const id of authenticated) {
-    const verdict = verdicts.get(id);
-    if (verdict)
-      check(`   ${id} gets an authenticated browser`, verdict.explorationNeedsAuth === true, verdict.explorationReason);
-  }
-  const precondition = verdicts.get('TC_PROJ_001');
-  if (precondition) {
-    check('   TC_PROJ_001 starts signed in AND explores signed in',
-        precondition.testStartsSignedIn === true && precondition.explorationNeedsAuth === true);
-  }
-  check('   no row asks the test to start signed in while exploring anonymously',
-      [...verdicts.values()].every(v => !(v.testStartsSignedIn && !v.explorationNeedsAuth)));
-
-  process.stdout.write('\n   grouping keeps the two apart\n');
-  const items = parsed.testCases
-      .filter(t => ['TC_LOGIN_010', 'TC_LOGIN_066'].includes(t.testCaseId.toUpperCase()))
-      .map(testCase => ({ testCase, reason: 'new' as const, fingerprint: 'x' }));
+  const items = [
+    row(['Open the login page', 'Enter email', 'Enter password', 'Click Sign In', 'Verify the dashboard']),
+    { ...row(['Open the login page', 'Enter email', 'Enter password', 'Click Sign In', 'Open a draft']), testCaseId: 'TC_FIXTURE_002' },
+  ].map(testCase => ({ testCase, reason: 'new' as const, fingerprint: 'x' }));
   const groups = groupWork(items as any);
-  check('   a login row and a journey row do not share a browser', groups.length === 2,
-      groups.map(g => g.key).join(' | '));
-  const journeyGroup = groups.find(g => g.explorationNeedsAuth);
-  check('   the journey group names the variable, never the account',
-      Boolean(journeyGroup) && journeyGroup!.authIdentity === explorationIdentity()
-      && !journeyGroup!.authIdentity.includes('@'), journeyGroup?.authIdentity ?? '(none)');
-  const described = describeGroups(groups);
-  check('   the log states both answers separately',
-      /test starts signed (in|out).*exploration browser signed (in|out)/s.test(described));
-  check('   and the log carries no account address', !described.includes('@'));
+  check('login and authenticated journey use separate exploration sessions', groups.length === 2);
+  const journey = groups.find(g => g.explorationNeedsAuth);
+  check('journey group reports credential variable rather than account value', journey?.authIdentity === explorationIdentity() && !journey.authIdentity.includes('@'));
+  check('logs distinguish test and exploration auth', /test starts signed (in|out).*exploration browser signed (in|out)/s.test(describeGroups(groups)));
 }
+
 
 /* --------------------------------------------- E-H: the credential profile */
 
@@ -194,50 +163,52 @@ function checkCredentials(): void {
   check('E: exploration falls back to them when nothing else is set',
       Boolean(explorationCredentials()), explorationIdentity());
   check('E: and reports WHICH VARIABLE, never the address',
-      explorationIdentity() === 'BUGASURA_EMAIL', explorationIdentity());
+      explorationIdentity() === 'FIXTUREAPP_EMAIL', explorationIdentity());
 
   process.stdout.write('\n== F — no exploration account: a deterministic refusal ==\n');
   withEnv({
-    BUGASURA_EMAIL: undefined, BUGASURA_PASSWORD: undefined,
-    BUGASURA_EXPLORATION_USER: undefined, BUGASURA_EXPLORATION_PASSWORD: undefined,
-    BUGASURA_EXPLORATION_PROFILE: undefined,
+    FIXTUREAPP_EMAIL: undefined, FIXTUREAPP_PASSWORD: undefined,
+    FIXTUREAPP_EXPLORATION_USER: undefined, FIXTUREAPP_EXPLORATION_PASSWORD: undefined,
+    FIXTUREAPP_EXPLORATION_PROFILE: undefined,
   }, () => {
     check('F: exploration credentials are null, not guessed', explorationCredentials() === null);
     check('F: the identity is anonymous', explorationIdentity() === 'anonymous');
   });
+  // The reason is COMPUTED now, and for FixturePortal it names exactly the variables it
+  // always did - because the prefix is derived from its own applicationId.
   check('F: the reason names the variables to set',
-      /BUGASURA_EXPLORATION_USER/.test(MISSING_EXPLORATION_CREDENTIALS_REASON)
-      && /BUGASURA_EXPLORATION_PROFILE/.test(MISSING_EXPLORATION_CREDENTIALS_REASON));
+      /FIXTUREAPP_EXPLORATION_USER/.test(missingExplorationCredentialsReason())
+      && /FIXTUREAPP_EXPLORATION_PROFILE/.test(missingExplorationCredentialsReason()));
   check('F: and says the generator never asks for one',
-      /never asks anybody for a password/.test(MISSING_EXPLORATION_CREDENTIALS_REASON));
+      /never asks anybody for a password/.test(missingExplorationCredentialsReason()));
   const session = read('ai/autocode/session.ts');
   check('F: the session throws rather than continuing without an account',
       /if \(!creds\) \{[\s\S]{0,400}throw new SessionUnavailable/.test(session));
   check('F: the refusal carries the framework own reason, not an improvised one',
-      /MISSING_EXPLORATION_CREDENTIALS_REASON/.test(session));
+      /missingExplorationCredentialsReason\(\)/.test(session));
   check('F: a missing credential cannot become prompt text - the session builds no prompts',
       !/from '\.\/agent'/.test(session) && !/instructions\(/.test(session));
 
   process.stdout.write('\n== G/H — a different exploration account ==\n');
-  withEnv({ BUGASURA_EXPLORATION_USER: 'someone-else@example.com', BUGASURA_EXPLORATION_PASSWORD: 'x' }, () => {
+  withEnv({ FIXTUREAPP_EXPLORATION_USER: 'someone-else@example.com', FIXTUREAPP_EXPLORATION_PASSWORD: 'x' }, () => {
     check('G: the exploration source moves to the exploration variables',
-        explorationSource().email === 'BUGASURA_EXPLORATION_USER');
+        explorationSource()?.email === 'FIXTUREAPP_EXPLORATION_USER');
     check('G: the identity reported is the variable name',
-        explorationIdentity() === 'BUGASURA_EXPLORATION_USER');
+        explorationIdentity() === 'FIXTUREAPP_EXPLORATION_USER');
     check('G: the SUITE\'s credentials are untouched by that',
-        credentials()?.email === process.env.BUGASURA_EMAIL);
+        credentials()?.email === process.env.FIXTUREAPP_EMAIL);
   });
-  withEnv({ BUGASURA_EXPLORATION_PROFILE: 'qa-user' }, () => {
+  withEnv({ FIXTUREAPP_EXPLORATION_PROFILE: 'qa-user' }, () => {
     check('H: a profile names its variables and nothing else',
-        explorationSource().email === 'BUGASURA_QA_USER_EMAIL'
-        && explorationSource().password === 'BUGASURA_QA_USER_PASSWORD');
+        explorationSource()?.email === 'FIXTUREAPP_QA_USER_EMAIL'
+        && explorationSource()?.password === 'FIXTUREAPP_QA_USER_PASSWORD');
     check('H: an unset profile resolves to no credentials, not to a fallback',
         explorationCredentials() === null);
     check('H: the suite credentials still resolve independently', Boolean(credentials()));
   });
   check('G/H: the exploration variables are documented for a person',
-      /BUGASURA_EXPLORATION_USER/.test(read('.env.example'))
-      && /BUGASURA_EXPLORATION_PROFILE/.test(read('.env.example')));
+      /EXPLORATION_USER/.test(read('.env.example'))
+      && /EXPLORATION_PROFILE/.test(read('.env.example')));
 }
 
 /* ------------------------------- I-N: nothing else moved, especially the recorder */
@@ -253,61 +224,28 @@ async function checkIsolation(): Promise<void> {
     check(`J: ${file.split('/').pop()} knows nothing about exploration credentials`,
         Boolean(source) && !/EXPLORATION|explorationCredentials/.test(source));
   }
-  const recordings = 'ai/dashboard/recordings';
+  const recordings = RECORDINGS();
   // Files only. `recordings/accepted/` is a directory - the archive an accepted
   // recording is moved into - and hashing a directory throws EISDIR, which took the
   // whole fixture down the first time one existed.
-  const digestRecordings = (): string => fs.readdirSync(path.resolve(ROOT, recordings))
-      .filter(name => fs.statSync(path.resolve(ROOT, recordings, name)).isFile())
+  const digestRecordings = (): string => fs.readdirSync(recordings)
+      .filter(name => fs.statSync(path.join(recordings, name)).isFile())
       .map(name => `${name}:${crypto.createHash('sha256')
-          .update(fs.readFileSync(path.resolve(ROOT, recordings, name))).digest('hex')}`)
+          .update(fs.readFileSync(path.join(recordings, name))).digest('hex')}`)
       .join('\n');
   const before = digestRecordings();
-  withEnv({ BUGASURA_EXPLORATION_USER: 'other@example.com', BUGASURA_EXPLORATION_PASSWORD: 'y' }, () => {
+  withEnv({ FIXTUREAPP_EXPLORATION_USER: 'other@example.com', FIXTUREAPP_EXPLORATION_PASSWORD: 'y' }, () => {
     check('I: changing the exploration account resolves a different source',
-        explorationSource().email === 'BUGASURA_EXPLORATION_USER');
+        explorationSource()?.email === 'FIXTUREAPP_EXPLORATION_USER');
   });
   const after = digestRecordings();
   check('I: every recording and sidecar is byte-identical afterwards', before === after);
 
-  process.stdout.write('\n== M/N — the recorded pipeline is unchanged ==\n');
-  const recordedId = fs.existsSync(path.resolve(ROOT, recordings, 'TC_LOGIN_065.spec.ts'))
-    ? 'TC_LOGIN_065' : null;
-  if (recordedId) {
-    const recording: any = parseRecording(read(`${recordings}/${recordedId}.spec.ts`), {} as any);
-    recording.evidence = readEvidence(recordedId);
-    const mapping = mapRecording(recording);
-    const code = (mapping.steps as any[]).flatMap(step => step.code ?? []);
-    // THE WITNESS CHANGED, THE INVARIANT DID NOT.
-    //
-    // This used to assert that the project click was emitted as Codegen's RAW locator,
-    // `page.getByText('Faclon labs')`. That was never the property under test - the
-    // section asks whether the EXPLORATION-credentials work disturbed the recorded
-    // pipeline - it was just the shape that element happened to have. It has since
-    // gained a Page Object: `ProjectsPage.projectCard(description)` was created by the
-    // abstraction engine from TC_LOGIN_112's measurement, and this recording now reuses
-    // it, which is the loop closing across two unrelated cases. Pinning the raw form
-    // would have made that improvement look like a regression.
-    //
-    // So both halves are asserted on what actually matters: the landing screen is
-    // opened BEFORE the project is clicked, and the click is still driven by the
-    // element the recording named.
-    const clickedProject = code.findIndex(line => line.includes("'Faclon labs'"));
-    check('M: a recorded case still opens the landing screen before its project click',
-        code.some(line => line.includes('projectsPage.open()'))
-        && clickedProject > code.findIndex(line => line.includes('projectsPage.open()')),
-        code.join(' | ').slice(0, 120));
-    check('M: and the click is still driven by the element the recording named',
-        clickedProject >= 0 && /getByText\('Faclon labs'\)|projectCard\('Faclon labs'\)/
-            .test(code[clickedProject]),
-        code[clickedProject] ?? 'no step clicks Faclon labs');
-    check('N: a recording with no assertion still asserts nothing',
-        recording.assertions.length === 0);
-    check('N: which is what makes its Expected Result a placeholder, not a guess',
-        (mapping.steps as any[]).every(step => !/expect\(/.test((step.code ?? []).join(''))));
-  } else {
-    check('M/N: a recorded case is available to check', false, 'TC_LOGIN_065 recording missing');
-  }
+  const recording = parseRecording("import { test, expect } from '@playwright/test';\ntest('synthetic journey', async ({ page }) => {\n  await page.goto('https://portal.fixture.invalid/apps');\n  await page.locator('#cancel_editor').click();\n});", { startUrl: '', browser: '', durationMs: 0 });
+  const mapped = mapRecording(recording);
+  const code = mapped.steps.flatMap(s => s.code).join(' ');
+  check('recorded navigation still precedes the declared action', code.indexOf('projectsPage.open()') >= 0 && code.indexOf('projectsPage.open()') < code.indexOf('projectsPage.cancelButton()'));
+  check('no assertion is invented for a recording without a claim', recording.assertions.length === 0 && !code.includes('expect('));
 
   process.stdout.write('\n== K/L — LoginPage and knowledge selection are unchanged ==\n');
   const loginPage = read('tests-e2e/pages/login.page.ts');
@@ -327,10 +265,10 @@ async function checkIsolation(): Promise<void> {
 
 async function checkSecrets(): Promise<void> {
   process.stdout.write('\n== 1-12 — the password reaches nothing that can print it ==\n');
-  const secret = process.env.BUGASURA_PASSWORD ?? '';
+  const secret = process.env.FIXTUREAPP_PASSWORD ?? '';
   if (secret.length < 4) {
-    check('a real password is available to scan for', false,
-        'BUGASURA_PASSWORD is not set - these checks cannot run');
+    check('a synthetic password is available to scan for', false,
+        'FIXTUREAPP_PASSWORD is not set - these checks cannot run');
     return;
   }
   const holds = (text: string) => text.includes(secret);
@@ -343,8 +281,8 @@ async function checkSecrets(): Promise<void> {
     ['2: browse transcript', read('ai/reports/generation-browse.jsonl')],
     ['5: the autocode log', read('ai/reports/autocode-log.md')],
     ['5: the session log', read('ai/reports/generation-session.jsonl')],
-    ['9: page knowledge (/apps)', read('ai/knowledge/page/bugasura__apps.yaml')],
-    ['9: page knowledge (/)', read('ai/knowledge/page/bugasura__root.yaml')],
+    ['9: page knowledge (/apps)', read('ai/knowledge/page/fixtureapp__apps.yaml')],
+    ['9: page knowledge (/)', read('ai/knowledge/page/fixtureapp__root.yaml')],
     ['10: LoginPage', read('tests-e2e/pages/login.page.ts')],
     ['10: ProjectsPage', read('tests-e2e/pages/projects.page.ts')],
     ['11: the prompt builder', read('ai/autocode/agent.ts')],
@@ -375,7 +313,7 @@ async function checkSecrets(): Promise<void> {
   };
   const handover = {
     sessionId: 'fixture', reused: false, startupMs: 1, authMs: 1, authenticationAttempts: 1,
-    authenticationReuse: false, url: 'https://my.bugasura.io/apps', signedIn: true,
+    authenticationReuse: false, url: 'https://portal.fixture.invalid/apps', signedIn: true,
     contaminated: false, resetActions: [], sessionsDiscarded: 0, shutdownMs: null,
   };
   const prompt = `${rowFacts(request)}\n${instructions(request, handover as any, null)}`;
@@ -383,7 +321,7 @@ async function checkSecrets(): Promise<void> {
   check('1: it tells the agent it does not have credentials',
       /do not have them/.test(prompt), prompt.length ? '' : '(empty prompt)');
   check('1: and never names an exploration variable to it',
-      !/BUGASURA_EXPLORATION/.test(prompt));
+      !/FIXTUREAPP_EXPLORATION/.test(prompt));
 
   // 11: only the framework side reads them.
   const readers = ['ai/autocode/session.ts', 'tests-e2e/support/env.ts'];

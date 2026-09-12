@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * The Test Case Workspace, grouped by sheet and collapsible.
  *
@@ -68,6 +69,13 @@ async function serve(): Promise<{ url: string; close: () => Promise<void> }> {
       response.writeHead(200, { 'content-type': 'application/json' });
       response.end(JSON.stringify(body));
     };
+    // Rendering a workbook requires an explicitly selected project. An absent
+    // project list now correctly displays onboarding instead of loading a workbook.
+    if (url.startsWith('/api/projects')) return json({
+      soleApplication: true,
+      projects: [{ applicationId: 'workspace-fixture', displayName: 'Workspace fixture',
+        defaultEnvironmentId: 'qa', environments: [{ environmentId: 'qa', baseUrl: 'https://workspace.invalid/' }] }],
+    });
     if (url.startsWith('/api/workbooks')) return json({ workbooks: [WORKBOOK.workbook] });
     if (url.startsWith('/api/workbook')) return json(WORKBOOK);
     if (url.startsWith('/api/runs')) return json({ runs: [] });

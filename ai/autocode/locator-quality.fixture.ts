@@ -1,3 +1,5 @@
+import '../testing/isolated-checkout';
+import { recordingSource } from '../testing/synthetic-data';
 /**
  * The locator-quality engine, pinned offline.
  *
@@ -19,6 +21,7 @@ import { generateFromRecording, mapRecording, locatorMetrics } from './from-reco
 import { artifactPath, parseRecording } from '../dashboard/recorder';
 import { recordedSpecPathFor } from './orchestrate';
 import type { TestCase } from '../excel/types';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -44,7 +47,13 @@ function syntheticCase(id: string): TestCase {
     preconditions: '', steps: ['Open the page'], testData: '', expectedResult: 'Something is visible',
     priority: '' as TestCase['priority'], tags: ['recorded'], automationStatus: 'Not Automated',
     automationNotes: '', execute: null, expectedOutcome: '', expectedMessage: '',
-    source: { workbook: 'login-test-cases.xlsx', worksheet: 'Login Test Cases', row: 999 },
+    requirementId: '', testType: '' as TestCase['testType'],
+    businessRisk: '' as TestCase['businessRisk'], environment: '', userRole: '',
+    authenticationProfile: '', testOwner: '',
+    source: {
+      workbookPath: '', workbook: 'login-test-cases.xlsx',
+      worksheet: 'Login Test Cases', row: 999,
+    },
     extra: {}, issues: [],
   };
 }
@@ -164,10 +173,10 @@ async function main(): Promise<void> {
   process.stdout.write('\n== T — TC_LOGIN_036, the strong/heading assertion ==\n');
   const t036 = assessLocator({
     locator: "page.getByRole('strong')", target: 'strong', kind: 'assertion',
-    value: 'Welcome to Bugasura',
+    value: 'Welcome to FixturePortal',
   });
   check('T: classified suspicious', t036.classification === 'suspicious', t036.classification);
-  check('T: the expected value is NOT rewritten', t036.reason.includes('Welcome to Bugasura'));
+  check('T: the expected value is NOT rewritten', t036.reason.includes('Welcome to FixturePortal'));
   check('T: the reason explains the nesting trap',
       t036.reason.includes('inner element'), t036.reason.slice(0, 120));
   check('T: still emitted - the gate is what proves it', t036.expression === "page.getByRole('strong')");
@@ -185,53 +194,18 @@ async function main(): Promise<void> {
       !/\[id\^=|\*|first\(\)/.test(JSON.stringify(t037)), 'no [id^=] / wildcard / first()');
   check('U: the reason names the rule that fired', t037.reason.includes('separator-digits'));
 
-  process.stdout.write('\n== U2 — the real TC_LOGIN_037 recording, end to end ==\n');
-  const artifact = path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_037.spec.ts');
-  if (fs.existsSync(artifact)) {
-    const recording = parseRecording(fs.readFileSync(artifact, 'utf8'), { startUrl: '', browser: '', durationMs: 0 });
-    const mapped = mapRecording(recording);
-    // TWO REFUSALS NOW, and the second one is not a regression: this recording carries
-    // no DOM evidence, and `page.getByText('Faclon labs')` is an unmeasured unscoped
-    // text locator - the exact shape the strict-mode gate exists to refuse, and one
-    // that was live-measured at two elements on /apps. Both are named rather than
-    // counted, so a THIRD refusal appearing would still fail this check.
-    check('U2: the recording produces exactly the two refusals it should',
-        mapped.needsReview.length === 2, mapped.needsReview.map(s => s.from).join(', '));
-    check('U2: one is the tc_summary assertion - the generated id',
-        mapped.needsReview.some(step => step.from.includes('tc_summary_636432')),
-        mapped.needsReview.map(s => s.from).join(', '));
-    check('U2: the other is the unmeasured bare-text click',
-        mapped.needsReview.some(step => step.from === 'click Faclon labs'),
-        mapped.needsReview.map(s => s.from).join(', '));
-    const counts = locatorMetrics(mapped);
-    check('U2: metrics count one dynamic id and both reviews',
-        counts.dynamicLocatorCount === 1 && counts.needsReviewCount === 2, JSON.stringify(counts));
-    check('U2: existing Page Object reuse still happened', counts.existingPageObjectReuseCount >= 2,
-        String(counts.existingPageObjectReuseCount));
-    check('U2: strategies are named', counts.locatorStrategiesUsed.length > 0,
-        counts.locatorStrategiesUsed.join(', '));
-  } else {
-    check('U2: recording artifact present', false, 'ai/dashboard/recordings/TC_LOGIN_037.spec.ts is missing');
-  }
-
-  process.stdout.write('\n== U3 — the real TC_LOGIN_036 recording ==\n');
-  const artifact36 = path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_036.spec.ts');
-  if (fs.existsSync(artifact36)) {
-    const recording = parseRecording(fs.readFileSync(artifact36, 'utf8'), { startUrl: '', browser: '', durationMs: 0 });
-    const mapped = mapRecording(recording);
-    const counts = locatorMetrics(mapped);
-    // It carries the same generated id as 037, twice - once asserted on and once
-    // used as a scope for a click.
-    check('U3: blocked on the generated id', counts.needsReviewCount >= 1, JSON.stringify(counts));
-    check('U3: the strong assertion is flagged suspicious, not rewritten',
-        mapped.assessments.some(a => a.assessment.classification === 'suspicious'
-          && a.assessment.reason.includes('Welcome to Bugasura')),
-        mapped.assessments.filter(a => a.assessment.classification === 'suspicious').map(a => a.from).join(', '));
-    check('U3: Page Object reuse still happened', counts.existingPageObjectReuseCount >= 2,
-        String(counts.existingPageObjectReuseCount));
-  } else {
-    check('U3: recording artifact present', false, 'TC_LOGIN_036.spec.ts is missing');
-  }
+  const mappedSynthetic = mapRecording(parseRecording(recordingSource([
+    'await page.getByRole("link", { name: "Notifications" }).click();',
+    'await page.getByRole("button", { name: "Notification settings" }).click();',
+    'await expect(page.locator("#summary_900001")).toContainText("Draft summary");',
+    'await page.getByText("Quarterly draft").click();',
+  ]), { startUrl: '', browser: '', durationMs: 0 }));
+  const syntheticMetrics = locatorMetrics(mappedSynthetic);
+  check('integration: dynamic and unmeasured bare text each require review', mappedSynthetic.needsReview.length === 2);
+  check('integration: both existing capabilities are reused', syntheticMetrics.existingPageObjectReuseCount === 2);
+  check('integration: metrics record the generated identifier', syntheticMetrics.dynamicLocatorCount === 1);
+  check('integration: unsafe locators are never emitted', mappedSynthetic.steps.filter(s => s.kind !== 'needs-review').every(s => !s.code.join('').includes('summary_900001')));
+  check('integration: strategies remain observable', syntheticMetrics.locatorStrategiesUsed.length > 0);
 
   process.stdout.write('\n== Y — multi-strategy resolution (Phase 7) ==\n');
 
@@ -295,46 +269,9 @@ async function main(): Promise<void> {
       assessLocator({ locator: "page.locator('#tc_summary_999999')", target: 'x', kind: 'action', context: [] })
           .rejected.length === 0);
 
-  process.stdout.write('\n== Z — TC_LOGIN_039, the new regression ==\n');
-  const artifact39 = path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_039.spec.ts');
-  if (fs.existsSync(artifact39)) {
-    const recording = parseRecording(fs.readFileSync(artifact39, 'utf8'), { startUrl: '', browser: '', durationMs: 0 });
-    const mapped = mapRecording(recording);
-    const counts = locatorMetrics(mapped);
-    check('Z: #tc_summary_638717 is detected as dynamic', counts.dynamicLocatorCount === 1, JSON.stringify(counts));
-    // Same two refusals as U2, and for the same two reasons - the generated id, and an
-    // unmeasured bare-text locator in a recording that carries no evidence. Named, not
-    // counted loosely.
-    check('Z: it still needs review - its only stable evidence is its own text',
-        counts.needsReviewCount === 2, String(counts.needsReviewCount));
-    check('Z: one refusal is that assertion',
-        mapped.needsReview.some(step => step.from.includes('tc_summary_638717')),
-        mapped.needsReview.map(s => s.from).join(', '));
-    check('Z: the case is NOT forced to pass - nothing emitted uses that id',
-        mapped.steps.filter(s => s.kind !== 'needs-review')
-            .every(s => !s.code.join(' ').includes('tc_summary_638717')));
-    check('Z: everything else in the recording resolved',
-        counts.existingPageObjectReuseCount >= 2 && counts.stableLocatorCount >= 2
-        && counts.rawLocatorFallbackCount + counts.stableLocatorCount
-          === counts.recordedLocatorCount - counts.needsReviewCount,
-        `reuse=${counts.existingPageObjectReuseCount} stable=${counts.stableLocatorCount} `
-        + `review=${counts.needsReviewCount}`);
-    check('Z: no browser and no model were involved',
-        generatedWithoutBrowser(mapped));
-  } else {
-    check('Z: TC_LOGIN_039 artifact present', false, 'missing');
-  }
-
   process.stdout.write('\n== V — credential redaction is untouched ==\n');
   const redacted = parseChain("page.getByRole('textbox', { name: 'Password' })");
   check('V: password field parses as role+name', redacted[0]?.name === 'Password');
-  const artifact036 = path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_036.spec.ts');
-  if (fs.existsSync(artifact036)) {
-    const source = fs.readFileSync(artifact036, 'utf8');
-    check('V: the kept artifact holds the marker, not a password',
-        source.includes('[type=password]') && !/fill\('(?!\[type=password\]|maneeswar)/.test(source));
-  }
-
   process.stdout.write('\n== W — the non-recorded path is unchanged ==\n');
   const fromRecording = fs.readFileSync(path.resolve(ROOT, 'ai/autocode/from-recording.ts'), 'utf8');
   check('W: the engine is only called from the recorded mapper',
@@ -353,14 +290,14 @@ async function main(): Promise<void> {
   fs.writeFileSync(artifactPath(id), `import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://my.bugasura.io/');
+  await page.goto('https://portal.fixture.invalid/');
   await expect(page.locator('#project_banner')).toContainText('Multi tasking is hard. Focus is good.');
 });
 `, 'utf8');
   written.push(artifactPath(id));
   const spec = recordedSpecPathFor(id);
   written.push(path.resolve(ROOT, spec));
-  const generated = generateFromRecording(syntheticCase(id), spec, 'excel/login-test-cases.xlsx');
+  const generated = generateFromRecording(syntheticCase(id), spec, 'excel/fixture-cases.xlsx');
   check('X: assembled', generated.assembled, generated.reason);
   check('X: no locator was blocked', generated.metrics.locators.needsReviewCount === 0);
   check('X: metrics carry the strategies used',

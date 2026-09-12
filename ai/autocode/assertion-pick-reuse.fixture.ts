@@ -1,3 +1,5 @@
+import '../testing/isolated-checkout';
+import { writeRecording } from '../testing/synthetic-data';
 /**
  * An assertion's proof may be its own PICK; an action's may not.
  *
@@ -58,7 +60,7 @@ const check = (label: string, ok: boolean, detail = ''): void => {
   if (!ok)
     failures++;
 };
-const section = (title: string): void => process.stdout.write(`\n== ${title} ==\n`);
+const section = (title: string): void => { process.stdout.write(`\n== ${title} ==\n`); };
 
 /* ------------------------------------------------------------------ builders ---- */
 
@@ -268,7 +270,7 @@ function checkSafety(): void {
       offenders.length === 0, offenders.join(', '));
 }
 
-/* ------------------------------------------- K - the two real recordings ---- */
+/* ------------------------------------------- K - the synthetic recordings ---- */
 
 function mapArchived(id: string) {
   const source = readArchivedArtifact(id);
@@ -284,108 +286,52 @@ function mapArchived(id: string) {
 }
 
 function checkCorpus(): void {
-  section('K - TC_LOGIN_123 and TC_LOGIN_122, from their own evidence files');
-
-  const one = mapArchived('TC_LOGIN_123');
-  if (!one) {
-    check('K: TC_LOGIN_123 is on disk', false, 'no archived recording');
-  } else {
-    const assertions = one.steps.filter(step => /^assert /.test(String(step.from)));
-    check('K1: all three assertions were recorded', assertions.length === 3, String(assertions.length));
-    check('K1: every one of them reuses an existing Page Object method',
-        assertions.every(step => step.kind === 'page-object'),
-        assertions.map(step => step.kind).join(','));
-    check('K1: and the method is the one that already existed',
-        assertions.every(step => /issuesPage\.issueCheckboxState\(/.test(step.code.join(' '))));
-    check('K2: the argument is the issue description the person recorded, not an index',
-        assertions.some(step => step.code.join(' ').includes("'sign in is not present in Moolya Aura IOS'"))
-        && assertions.some(step => step.code.join(' ').includes("'login is not present in moolya aura IOS'")));
-
-    const nth = one.steps.reduce((total, step) =>
-      total + (step.code.join(' ').match(/\.nth\(/g) ?? []).length, 0);
-    check('K3: the whole spec contains NO nth() at all', nth === 0, `${nth} occurrence(s)`);
-    check('K3: and nothing was left for a person',
-        one.needsReview.length === 0, `${one.needsReview.length} needs-review`);
-
-    // NO DUPLICATE CAPABILITY. The point of the fix is to REACH the existing method.
-    const reused = new Set(one.reused.map(entry => `${entry.pageObject}.${entry.method}`));
-    check('K4: issueCheckboxState is REUSED, never re-created',
-        reused.has('IssuesPage.issueCheckboxState'), [...reused].join(', '));
-    check('K4: and the clicks still reuse issueCheckbox, which never changed',
-        reused.has('IssuesPage.issueCheckbox'));
-  }
-
-  const two = mapArchived('TC_LOGIN_122');
-  if (!two) {
-    check('K: TC_LOGIN_122 is on disk', false, 'no archived recording');
-  } else {
-    // THE CONTROL, AND THE DISTINCTION THE WHOLE FIX TURNS ON. Its project has three
-    // issues whose descriptions are substrings of one another, so the identical
-    // row-scoped shape measured 3 with identity FALSE. Nothing proves it, so positional
-    // recovery is correct there and must still happen.
-    const assertion = two.steps.find(step => /^assert /.test(String(step.from)));
-    check('K5: TC_LOGIN_122 still resolves through positional recovery',
-        assertion?.kind === 'codegen-locator', String(assertion?.kind));
-    check('K5: with the index the browser measured for it',
-        /\.nth\(2\)/.test(assertion?.code.join(' ') ?? ''), assertion?.code.join(' ').slice(0, 120));
-    check('K5: and it is NOT resolved to a Page Object it cannot prove',
-        !/issueCheckboxState/.test(assertion?.code.join(' ') ?? ''));
-
-    const onDisk = path.join(ROOT, 'tests-e2e', 'generated', 'TC_LOGIN_122.spec.ts');
-    if (fs.existsSync(onDisk)) {
-      const accepted = fs.readFileSync(onDisk, 'utf8');
-      const drifted = two.steps
-          .map(step => step.code.join(' ').trim())
-          .filter(code => code && !accepted.includes(code));
-      check('K6: every mapped step still matches the accepted spec byte for byte',
-          drifted.length === 0, drifted.join(' | ').slice(0, 160));
+  section('K - authored archived assertions with unique and positional pick proof');
+  for (const [id, description, positional] of [
+    ['TC_PICK_A', 'Quarterly draft for the northern region', false],
+    ['TC_PICK_B', 'Annual draft for the southern region', false],
+    ['TC_PICK_POSITION', 'Repeated draft summary', true],
+  ] as const) {
+    const expression = `page.locator(".tabulator-row").filter({ hasText: "${description}" }).locator(".bugChecked")`;
+    const captureRef = `capture:${id}`;
+    const candidate = measurement({ expression, matchCount: positional ? 3 : 1, identityMatched: !positional,
+      ...(positional ? { positionWithinCandidate: 2 } : {}) });
+    const graph = evidence(positional ? [] : [candidate], {
+      captureRef, elementRef: `doc:${id}`, documentId: 'doc',
+      ...(positional ? { positionProvenCandidates: [candidate] } : {}),
+    });
+    writeRecording(id, [], [graph], { archived: true, assertions: [{
+      type: 'checked', expected: true, target: 'row selection', locator: 'page.locator(".bugChecked")',
+      value: null, afterActions: 0,
+      subjectProvenance: { refs: [`doc:${id}`], captureRef, locatorMatchCount: 3 },
+    }] });
+    const mapped = mapArchived(id);
+    check(`K: ${id} loads from the archive`, Boolean(mapped));
+    const assertion = mapped?.steps.find(s => s.from.startsWith('assert'));
+    if (positional) {
+      check('K: ambiguous pick retains its own measured index', assertion?.kind === 'codegen-locator' && assertion.code.join('').includes('.nth(2)'));
+      check('K: ambiguous proof cannot reuse a unique Page Object method', !assertion?.code.join('').includes('issueCheckboxState'));
+    } else {
+      check(`K: ${id} reuses the declared state capability`, assertion?.kind === 'page-object' && assertion.method === 'issueCheckboxState');
+      check(`K: ${id} preserves the recorded argument`, assertion?.code.join('').includes(description) === true);
+      check(`K: ${id} emits no positional locator`, !assertion?.code.join('').includes('.nth('));
     }
   }
 }
 
+
 /* --------------------------------- L - the abstraction engine's own join ---- */
 
 function checkProvenanceJoin(): void {
-  section('L - an assertion reaches its evidence by provenance, not by its locator');
-
-  // TC_LOGIN_122's assertion is the case: it carries `subjectProvenance` naming a pick
-  // capture, and its recorded locator (`page.locator(".bugChecked")`) matches no evidence
-  // row and no candidate expression - so the locator-string join finds nothing and the
-  // element used to be filed as "the evidence sidecar holds no measurement joinable to
-  // this element's recorded locator" while a measured capture for that very element sat
-  // in the file, reachable by captureRef.
   const corpus = analyseCorpus({ includeArchived: true });
-  const unmeasured = corpus.unmeasured.filter(entry =>
-    entry.testCaseId === 'TC_LOGIN_122' && entry.role === 'assertion');
-  check('L1: TC_LOGIN_122\'s assertion is no longer reported as having no admissible evidence',
-      unmeasured.length === 0,
-      unmeasured.map(entry => `${entry.from}: ${entry.code}`).join(' | '));
-
-  const oneTwoThree = corpus.unmeasured.filter(entry =>
-    entry.testCaseId === 'TC_LOGIN_123' && entry.role === 'assertion');
-  check('L1: nor are TC_LOGIN_123\'s three',
-      oneTwoThree.length === 0,
-      oneTwoThree.map(entry => `${entry.from}: ${entry.code}`).join(' | '));
-
-  // AND THE REFUSAL STILL WORKS WHERE IT IS TRUE. TC_DASHBOARD_023 predates the
-  // mechanism: no elementRef on any target, no subjectProvenance on its assertion. It
-  // must still be refused, and refused for that reason - repairing it would mean
-  // inventing the measurement.
-  const legacy = corpus.unmeasured.filter(entry =>
-    entry.testCaseId === 'TC_DASHBOARD_023' && entry.role === 'assertion');
-  check('L2: a recording with no provenance is still refused, not rescued',
-      legacy.length > 0 && legacy.every(entry => entry.code === 'NO_ADMISSIBLE_EVIDENCE'),
-      legacy.map(entry => entry.code).join(',') || 'none reported');
-
-  // The knowledge file must still declare the method exactly once: the fix reaches an
-  // existing capability, it does not add a second one.
-  const knowledge = path.join(ROOT, 'ai', 'knowledge', 'page', 'bugasura__issues-id.yaml');
-  if (fs.existsSync(knowledge)) {
-    const declared = (fs.readFileSync(knowledge, 'utf8')
-        .match(/page_object_method:\s*issueCheckboxState/g) ?? []).length;
-    check('L3: issueCheckboxState is declared exactly once', declared === 1, String(declared));
-  }
+  const linked = corpus.unmeasured.filter(e => ['TC_PICK_A', 'TC_PICK_B', 'TC_PICK_POSITION'].includes(e.testCaseId) && e.role === 'assertion');
+  check('L: archive assertions join their own capture instead of the recorded locator string', linked.length === 0);
+  const unlinked = corpus.unmeasured.filter(e => e.testCaseId === 'TC_UNPROVEN_ASSERTION' && e.role === 'assertion');
+  check('L: missing provenance stays a visible safety refusal', unlinked.length === 1 && unlinked[0].code === 'NO_ADMISSIBLE_EVIDENCE');
+  const yaml = fs.readFileSync(path.join(ROOT, 'ai/knowledge/page/fixtureapp__issues-id.yaml'), 'utf8');
+  check('L: no duplicate state capability was added', (yaml.match(/page_object_method:\s*issueCheckboxState/g) ?? []).length === 1);
 }
+
 
 function main(): void {
   checkPredicate();

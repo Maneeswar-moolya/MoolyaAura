@@ -33,11 +33,11 @@ import path from 'node:path';
 import { buildIndex, type FrameworkIndex, KNOWLEDGE_DIR, toYaml } from '../knowledge/index';
 import {
   assessBrowserNeed, assessSufficiency, type BrowserNeed, describeDecisions, type KnowledgeMatch,
-  PAGE_DIR, readAllPageKnowledge, selectPageKnowledge, type SufficiencyResult,
+  readAllPageKnowledge, selectPageKnowledge, type SufficiencyResult,
 } from '../knowledge/page-knowledge';
 import {
   buildPageIndex, canonicalFile, canonicalIdentity, type CanonicalIdentity, describeDuplicates,
-  type PageIndex, toPromptBlock as pageIndexBlock,
+  type PageIndex,
 } from '../knowledge/canonical';
 import { authRequirement } from './groups';
 import { isRecordedTags, wasSignedInTags } from '../dashboard/recorder';
@@ -148,7 +148,7 @@ function words(identifier: string): string[] {
 
 /** Words too common in this domain to be evidence of anything. */
 const STOPWORDS = new Set([
-  'page', 'the', 'and', 'for', 'with', 'test', 'bugasura', 'https', 'field', 'button',
+  'page', 'the', 'and', 'for', 'with', 'test', 'https', 'field', 'button',
   'open', 'click', 'check', 'verify', 'user', 'form', 'area', 'shared', 'behaviour',
   'every', 'object', 'signed', 'code', 'not', 'get', 'set', 'new', 'this', 'that',
 ]);

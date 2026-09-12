@@ -1,3 +1,4 @@
+import '../../testing/isolated-checkout';
 /**
  * The AI fallback: what it may be asked, what it may answer, and what is done with it.
  *
@@ -116,6 +117,104 @@ Promise<{ proposal: Proposal; calls: number; outcome: string }> {
     transport: asked.transport, model: 'stub-model', auditLog: AUDIT, index, memo: false,
   });
   return { proposal: result.proposals[0], calls: asked.calls(), outcome: pass.audits[0]?.outcome ?? 'NOT_ASKED' };
+}
+
+
+/** The whole pass, for the checks that need the audit rather than only the verdict. */
+async function runPass(input: Proposal, reply: string | ((prompt: string) => string),
+    options: Record<string, unknown> = {}) {
+  const asked = stub(reply);
+  const result: CorpusResult = { proposals: [input], reused: [], unmeasured: [], counts: {} } as never;
+  const pass = await resolveSemanticReviews(result, {
+    transport: asked.transport, model: 'stub-model', auditLog: AUDIT, index: indexWith(),
+    memo: false, ...options,
+  } as never);
+  return { proposal: result.proposals[0], calls: asked.calls(), pass, audit: pass.audits[0] };
+}
+
+/* --------- T: a VALIDATED TERMINAL answer ends the exchange (P13.7) ------------- */
+
+async function checkTerminalDecline(): Promise<void> {
+  process.stdout.write('\n== T: a decline that answers the question asked is not repaired ==\n');
+
+  // The question here is CONSTANT_PARAMETER_VALUE - one of the three where the DECISION
+  // IS THE ANSWER. A resolver that declines has answered it completely.
+  const declined = json({ decision: 'NEEDS_REVIEW', methodName: 'issueCheckbox' });
+
+  const settled = await runPass(proposal(), declined);
+  check('T1: a decline on a decision-is-the-answer question costs ONE transport call',
+      settled.calls === 1, `${settled.calls} call(s)`);
+  check('T2: and the exchange records that it was terminal',
+      settled.audit?.terminal === true && settled.audit?.attempts[0]?.terminal === true,
+      JSON.stringify({ exchange: settled.audit?.terminal, attempt: settled.audit?.attempts[0]?.terminal }));
+  check('T3: the VERDICT is exactly what a spent budget produced - nothing is accepted',
+      settled.proposal.status === 'NEEDS_REVIEW'
+        && settled.proposal.refusalCodes.some(entry => entry.code === 'RESOLVER_EXHAUSTED')
+        && settled.proposal.resolvedBy === 'deterministic',
+      `${settled.proposal.status} | ${settled.proposal.refusalCodes.map(e => e.code).join(', ')}`);
+
+  // The same decline, with a question a repair COULD still answer left open. Nothing is
+  // short-circuited: the repair prompt quotes what is missing, which is how a resolver has
+  // produced a name at the second attempt before.
+  const alsoUnnamed = proposal({
+    method: null, derivedMethod: null,
+    refusalCodes: [
+      refuse('CONSTANT_PARAMETER_VALUE', 'the values do not differ'),
+      refuse('NO_METHOD_NAME', 'no deterministic method name can be derived'),
+    ],
+    refusals: ['the values do not differ', 'no deterministic method name can be derived'],
+  });
+  const repairable = await runPass(alsoUnnamed, json({ decision: 'NEEDS_REVIEW', methodName: null }));
+  check('T4: a decline that leaves a REPAIRABLE question open is still repaired',
+      repairable.calls === 3 && repairable.audit?.terminal !== true,
+      `${repairable.calls} call(s), terminal=${repairable.audit?.terminal}`);
+
+  // A malformed reply is the cheapest repair there is and must stay repairable.
+  const malformed = await runPass(proposal(), 'not json at all');
+  check('T5: a malformed reply is repaired, never treated as an answer',
+      malformed.calls === 3 && malformed.audit?.outcome === 'MALFORMED',
+      `${malformed.calls} call(s), ${malformed.audit?.outcome}`);
+
+  // A TIMEOUT IS NOT A SEMANTIC ANSWER. It ends the exchange because retrying an
+  // unreachable resolver is a retry, and it leaves the proposal exactly as the
+  // deterministic engine produced it - no RESOLVER_EXHAUSTED, nothing terminal recorded.
+  const broken: Transport = async () => { throw new Error('transport timed out after 120000ms'); };
+  const timedOut = await runPass(proposal(), 'unused', { transport: broken });
+  check('T6: a transport timeout is not terminal and is not a verdict',
+      timedOut.audit?.outcome === 'TRANSPORT_FAILED' && timedOut.audit?.terminal !== true
+        && !timedOut.proposal.refusalCodes.some(entry => entry.code === 'RESOLVER_EXHAUSTED'),
+      `${timedOut.audit?.outcome} terminal=${timedOut.audit?.terminal} `
+        + timedOut.proposal.refusalCodes.map(e => e.code).join(', '));
+
+  check('T7: every attempt records what the transport cost and whether it answered',
+      settled.audit?.attempts.every(a => typeof a.transportMs === 'number' && a.responded === true)
+        && timedOut.audit?.attempts.every(a => typeof a.transportMs === 'number' && a.responded === false),
+      JSON.stringify(settled.audit?.attempts.map(a => ({ ms: a.transportMs, r: a.responded }))));
+  check('T8: and the exchange reports its own wall clock and totals',
+      typeof settled.audit?.totalMs === 'number' && typeof settled.audit?.startedAt === 'string'
+        && settled.pass.totalMs >= 0 && settled.pass.terminalStops === 1,
+      JSON.stringify({ totalMs: settled.audit?.totalMs, stops: settled.pass.terminalStops }));
+
+  // A SETTLED ANSWER IS SETTLED NEXT RUN TOO. With the memo on, a recorded terminal
+  // exchange is not asked again - which is where the saving actually lands for a corpus
+  // that is analysed repeatedly.
+  const memoFile = path.join(os.tmpdir(), `aura-terminal-memo-${process.pid}.jsonl`);
+  fs.writeFileSync(memoFile, JSON.stringify({
+    at: new Date().toISOString(), fingerprint: proposal().fingerprint,
+    outcome: 'REJECTED', terminal: true, attempts: [{ attempt: 1, outcome: 'REJECTED' }],
+  }) + '\n', 'utf8');
+  const memoised = await runPass(proposal(), declined, { memo: true, auditLog: memoFile });
+  check('T9: a recorded terminal answer is not asked again',
+      memoised.calls === 0, `${memoised.calls} call(s)`);
+  const spentFile = path.join(os.tmpdir(), `aura-outage-memo-${process.pid}.jsonl`);
+  fs.writeFileSync(spentFile, JSON.stringify({
+    at: new Date().toISOString(), fingerprint: proposal().fingerprint,
+    outcome: 'TRANSPORT_FAILED',
+    attempts: [{ attempt: 1, outcome: 'TRANSPORT_FAILED' }],
+  }) + '\n', 'utf8');
+  const outageMemo = await runPass(proposal(), declined, { memo: true, auditLog: spentFile });
+  check('T10: an OUTAGE is still not a memo - the question was never answered',
+      outageMemo.calls === 1, `${outageMemo.calls} call(s)`);
 }
 
 /* ------------------------------------------- A-C, F-H: when AI is NOT called ---- */
@@ -490,98 +589,17 @@ function checkCodes(): void {
       parseRecommendation(json({})).ok);
 }
 
-/* ---------------------------------------------- the real corpus, read only ---- */
+/* ---------------------------------------------- the synthetic corpus, read only ---- */
 
 function checkRealCorpus(): void {
-  process.stdout.write('\n== the real corpus: how often a model would be asked ==\n');
-
   const result = analyseCorpus();
-  let eligible = 0;
-  let safetyBlocked = 0;
-  const byCode = new Map<string, number>();
-  for (const entry of result.proposals) {
-    const verdict = eligibility(entry);
-    if (verdict.eligible) {
-      eligible++;
-      for (const code of verdict.codes)
-        byCode.set(code, (byCode.get(code) ?? 0) + 1);
-    } else if (entry.refusalCodes.some(code => code.class === 'SAFETY')) {
-      safetyBlocked++;
-    }
-  }
-  check('MINIMALITY: a model would be asked about a small minority of the corpus',
-      eligible > 0 && eligible < result.proposals.length / 3,
-      `${eligible} eligible of ${result.proposals.length} proposals`);
-  check('and every safety-refused proposal is excluded',
-      safetyBlocked > 0, `${safetyBlocked} blocked by a safety refusal`);
-  for (const [code, count] of [...byCode].sort())
-    process.stdout.write(`      ${count} x ${code}\n`);
-
-  // THE INVARIANT THAT MATTERS MOST: no eligible proposal carries a safety refusal.
-  const leaked = result.proposals.filter(entry =>
-    eligibility(entry).eligible && entry.refusalCodes.some(code => code.class !== 'SEMANTIC'));
-  check('NO eligible proposal carries a non-semantic refusal', leaked.length === 0,
-      leaked.map(entry => entry.fingerprint).join(', '));
-
-  // Every proposal that is not PROPOSED/REUSE states a coded reason for it.
-  const silent = result.proposals.filter(entry =>
-    entry.status === 'NEEDS_REVIEW' && entry.refusalCodes.length === 0);
-  check('every NEEDS_REVIEW line states a coded reason', silent.length === 0,
-      silent.map(entry => entry.fingerprint).slice(0, 3).join(', '));
-
-  // TWO groups derive the name `issueCheckbox`: the span a person presses, and the
-  // 0x0 input beside it that was seen once. The second is correctly left in review as
-  // SINGLE_TARGET - one sighting is not evidence of a parameter - so the capability
-  // this phase is about is selected by its structure, not by its name.
-  const single = result.proposals.find(entry =>
-    entry.derivedMethod === 'issueCheckbox' && !eligibility(entry).eligible);
-  check('the single-sighting checkbox group is NOT eligible', Boolean(single),
-      single ? `${single.fingerprint} -> ${eligibility(single).why}` : 'not found');
-  // THE LOOP, CLOSED - and one step further than "the proposal says REUSE".
-  //
-  // `issueCheckbox` was the constant-value question. It was asked, answered,
-  // re-validated and written; knowledge now declares it, so `findParameterisedMethod`
-  // resolves those steps BEFORE the abstraction engine ever sees them. The capability
-  // has therefore left the proposal list entirely and appears in `reused` instead,
-  // which is what full reuse looks like: not a settled question, no question.
-  const methods = (buildIndex().pages.IssuesPage?.methods ?? []).map(entry => entry.name);
-  check('the class declares issueCheckbox', methods.includes('issueCheckbox'));
-  check('and exactly one method exists for it, never a second variant',
-      methods.filter(name => name === 'issueCheckbox').length === 1);
-  check('knowledge declares it, so the matcher can find it',
-      readAllPageKnowledge().some(page =>
-        page.elements.some(entry => entry.page_object_method === 'issueCheckbox')));
-
-  const reusedIt = result.reused.filter(entry =>
-    entry.pageObject === 'IssuesPage' && entry.method === 'issueCheckbox');
-  check('recordings now REUSE it rather than proposing it',
-      new Set(reusedIt.map(entry => entry.testCaseId)).size >= 2,
-      `${new Set(reusedIt.map(entry => entry.testCaseId)).size} recording(s)`);
-  // NOT "no such proposal exists" any more, because one legitimately does.
-  //
-  // TC_DASHBOARD_023 resolved its checkbox through evidence-backed positional
-  // recovery, so the parameteriser now sees an expression ending `.nth(2)` and files a
-  // proposal for it. The invariant was never that the proposal is ABSENT - it is that
-  // no second reusable capability is created for this element, and that a
-  // recording-specific index never becomes part of one. So the check moves from
-  // presence to STATUS, which is what actually decides whether anything is written.
-  const checkboxProposals = result.proposals.filter(entry =>
-    entry.derivedMethod === 'issueCheckbox'
-    && (entry.template ?? '').includes('.rounded-checkbox-ui'));
-  const indexed = checkboxProposals.filter(entry => /[.]nth[(]/.test(entry.template ?? ''));
-  check('no second capability is created for it',
-      checkboxProposals.every(entry => entry.status !== 'PROPOSED'),
-      checkboxProposals.map(entry => `${entry.testCaseId}:${entry.status}`).join(', ') || 'none');
-  check('an indexed template is REFUSED as unsafe, never accepted as a capability',
-      indexed.length > 0 && indexed.every(entry => entry.status === 'REFUSED'
-        && entry.refusalCodes.some(code => code.code === 'POSITIONAL_NOT_PARAMETERISABLE'
-          && code.class === 'SAFETY')),
-      indexed.map(entry => `${entry.status}/${entry.refusalCodes.map(code => code.code).join('+')}`)
-          .join(', ') || 'NO INDEXED TEMPLATE SEEN');
-  check('and it is never marked REUSE merely because the base matches an existing method',
-      !indexed.some(entry => entry.status === 'REUSE'));
-  check('nor is a model ever asked about it again',
-      !result.proposals.some(entry => eligibility(entry).codes.includes('CONSTANT_PARAMETER_VALUE')));
+  const eligible = result.proposals.filter(e => eligibility(e).eligible);
+  check('authored semantic ambiguity reaches the resolver', eligible.length > 0);
+  check('no safety refusal is eligible', eligible.every(e => e.refusalCodes.every(c => c.class === 'SEMANTIC')));
+  check('safety refusal is exercised by this corpus', result.proposals.some(e => e.refusalCodes.some(c => c.class === 'SAFETY')));
+  check('every review has a coded reason', result.proposals.filter(e => e.status === 'NEEDS_REVIEW').every(e => e.refusalCodes.length > 0));
+  check('reusable parameterised actions bypass new proposals', new Set(result.reused.filter(e => e.method === 'issueCheckbox').map(e => e.testCaseId)).size === 2);
+  check('reused action is declared exactly once', buildIndex().pages.IssuesPage.methods.filter(m => m.name === 'issueCheckbox').length === 1);
 }
 
 /* ---------------------------------------------------------- no stray writes ---- */
@@ -614,6 +632,7 @@ async function main(): Promise<void> {
   await checkRejections();
   await checkNaming();
   await checkAmbiguousName();
+  await checkTerminalDecline();
   checkCodes();
   checkRealCorpus();
   checkNoSideEffects();

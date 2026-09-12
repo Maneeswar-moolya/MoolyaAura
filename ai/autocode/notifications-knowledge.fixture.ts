@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * The notification overlay is a component, and it is declared exactly once.
  *
@@ -8,7 +9,7 @@
  * clicked a project card first), and the URL never changes when it opens. So no
  * route owns it, and neither of those screens' page objects should claim it.
  *
- * It is declared in bugasura__apps.yaml because knowledge has no cross-route
+ * It is declared in fixtureapp__apps.yaml because knowledge has no cross-route
  * component concept yet, and matching reads every file regardless of route - which
  * is why ONE declaration serves both screens.
  *
@@ -57,7 +58,7 @@ function checkResolution(): void {
   const steps = stepsFor([
     "  await page.getByRole('link', { name: 'Notifications' }).click();",
     "  await page.getByRole('button', { name: 'Notification settings' }).click();",
-    "  await expect(page.locator('#ap_notifications_panel')).toContainText('Notification Preferences');",
+    "  await expect(page.locator('#notification_panel')).toContainText('Notification Preferences');",
   ].join('\n'));
   const code = steps.map(step => step.code).join('\n');
 
@@ -96,9 +97,9 @@ function checkOwnership(): void {
   // rank and findMethod would refuse BOTH - so this check is the reason the
   // /issues/<id> duplicate must never be added.
   check('13/16: the notification methods are declared in exactly one knowledge file',
-      mentions.length === 1 && mentions[0] === 'bugasura__apps.yaml', mentions.join(', ') || 'none');
+      mentions.length === 1 && mentions[0] === 'fixtureapp__apps.yaml', mentions.join(', ') || 'none');
 
-  const apps = fs.readFileSync(path.join(KNOWLEDGE, 'bugasura__apps.yaml'), 'utf8');
+  const apps = fs.readFileSync(path.join(KNOWLEDGE, 'fixtureapp__apps.yaml'), 'utf8');
   for (const method of ['notificationsBell', 'panel', 'settingsButton']) {
     const count = (apps.match(new RegExp(`page_object_method:\\s*${method}\\b`, 'g')) ?? []).length;
     check(`13: ${method} is declared once, not duplicated`, count === 1, `${count} declaration(s)`);
@@ -119,11 +120,11 @@ function checkOwnership(): void {
       owners.set(key, owner);
   }
   check('14: the panel is owned by NotificationsPanel, not ProjectsPage',
-      owners.get('ap_notifications_panel') === 'NotificationsPanel',
-      owners.get('ap_notifications_panel') ?? 'not declared');
+      owners.get('notification_panel') === 'NotificationsPanel',
+      owners.get('notification_panel') ?? 'not declared');
   check('14: the settings control is owned by NotificationsPanel',
-      owners.get('notification_settings_button') === 'NotificationsPanel',
-      owners.get('notification_settings_button') ?? 'not declared');
+      owners.get('notification_settings') === 'NotificationsPanel',
+      owners.get('notification_settings') ?? 'not declared');
   check('14: the bell is owned by WorkspacePage - it is chrome, not a screen',
       owners.get('notifications_bell') === 'WorkspacePage',
       owners.get('notifications_bell') ?? 'not declared');
@@ -192,9 +193,9 @@ function checkAssertionEmission(): void {
   process.stdout.write('\n== assertions keep their polarity, their text and their receiver ==\n');
 
   const positive = stepsFor(
-      "  await expect(page.locator('#ap_notifications_panel')).toContainText('Notification Preferences');");
+      "  await expect(page.locator('#notification_panel')).toContainText('Notification Preferences');");
   const negative = stepsFor(
-      "  await expect(page.locator('#ap_notifications_panel')).not.toContainText('Notification Preferences');");
+      "  await expect(page.locator('#notification_panel')).not.toContainText('Notification Preferences');");
   const positiveCode = positive[0]?.code ?? '';
   const negativeCode = negative[0]?.code ?? '';
 

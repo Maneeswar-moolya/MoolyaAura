@@ -1,0 +1,509 @@
+{
+  "date": "2026-09-12",
+  "removedFiles": 2488,
+  "removedByCategory": {
+    "application workbooks and backups": 260,
+    "application recordings and evidence": 466,
+    "application generation and execution history": 967,
+    "application reports and archived evidence": 509,
+    "application browser snapshots and logs": 108,
+    "application generated and quarantined specs": 132,
+    "application knowledge and mappings": 7,
+    "application manual suites": 4,
+    "application Page Objects": 7,
+    "obsolete application fixture, sample generator or credentials": 4,
+    "application report IDE link": 8,
+    "application data-driven caches": 16
+  },
+  "productionRegistryApplications": 0,
+  "sourceMutantsKilled": 20,
+  "postCleanupFocused": [
+    {
+      "file": "ai/projects/onboarding.fixture.ts",
+      "exit": 0,
+      "seconds": 54.3
+    },
+    {
+      "file": "ai/projects/provisioning-isolation.fixture.ts",
+      "exit": 0,
+      "seconds": 24.0
+    },
+    {
+      "file": "ai/projects/execution-isolation.fixture.ts",
+      "exit": 0,
+      "seconds": 29.3
+    },
+    {
+      "file": "ai/projects/application-pipeline.fixture.ts",
+      "exit": 0,
+      "seconds": 22.8
+    },
+    {
+      "file": "ai/projects/isolation.fixture.ts",
+      "exit": 0,
+      "seconds": 29.5
+    },
+    {
+      "file": "ai/projects/bootstrap-knowledge.fixture.ts",
+      "exit": 0,
+      "seconds": 18.2
+    },
+    {
+      "file": "ai/projects/knowledge-enrichment.fixture.ts",
+      "exit": 0,
+      "seconds": 33.6
+    },
+    {
+      "file": "ai/dashboard/workspace-accordion.fixture.ts",
+      "exit": 0,
+      "seconds": 22.8
+    },
+    {
+      "file": "ai/autocode/locator-quality-benchmark.fixture.ts",
+      "exit": 0,
+      "seconds": 13.6
+    },
+    {
+      "file": "ai/autocode/exploration-auth.fixture.ts",
+      "exit": 0,
+      "seconds": 18.1
+    },
+    {
+      "file": "ai/dashboard/secret-redaction.fixture.ts",
+      "exit": 0,
+      "seconds": 25.9
+    },
+    {
+      "file": "ai/autocode/application-neutral.fixture.ts",
+      "exit": 0,
+      "seconds": 19.0
+    },
+    {
+      "file": "ai/excel/authoring-model.fixture.ts",
+      "exit": 0,
+      "seconds": 15.2
+    }
+  ],
+  "fullRegression": {
+    "fixtures": 80,
+    "passed": 79,
+    "failed": 1,
+    "elapsedSeconds": 728.93,
+    "results": [
+      {
+        "file": "ai/autocode/abstraction/lifecycle.fixture.ts",
+        "exit": 0,
+        "seconds": 15.94
+      },
+      {
+        "file": "ai/autocode/abstraction/semantic.fixture.ts",
+        "exit": 0,
+        "seconds": 21.74
+      },
+      {
+        "file": "ai/autocode/abstraction.fixture.ts",
+        "exit": 0,
+        "seconds": 26.88
+      },
+      {
+        "file": "ai/autocode/accessible-name-stability.fixture.ts",
+        "exit": 0,
+        "seconds": 17.98
+      },
+      {
+        "file": "ai/autocode/action-locator.fixture.ts",
+        "exit": 0,
+        "seconds": 16.08
+      },
+      {
+        "file": "ai/autocode/application-neutral.fixture.ts",
+        "exit": 0,
+        "seconds": 22.61
+      },
+      {
+        "file": "ai/autocode/apps-readiness.fixture.ts",
+        "exit": 0,
+        "seconds": 17.38
+      },
+      {
+        "file": "ai/autocode/archived-evidence-gate.fixture.ts",
+        "exit": 0,
+        "seconds": 16.33
+      },
+      {
+        "file": "ai/autocode/assertion-context.fixture.ts",
+        "exit": 0,
+        "seconds": 13.39
+      },
+      {
+        "file": "ai/autocode/assertion-persistence.fixture.ts",
+        "exit": 0,
+        "seconds": 17.19
+      },
+      {
+        "file": "ai/autocode/assertion-pick-reuse.fixture.ts",
+        "exit": 0,
+        "seconds": 22.93
+      },
+      {
+        "file": "ai/autocode/assertion-provenance.fixture.ts",
+        "exit": 0,
+        "seconds": 17.48
+      },
+      {
+        "file": "ai/autocode/attempt-budget.fixture.ts",
+        "exit": 0,
+        "seconds": 19.88
+      },
+      {
+        "file": "ai/autocode/attribute-order-redaction.fixture.ts",
+        "exit": 0,
+        "seconds": 12.95
+      },
+      {
+        "file": "ai/autocode/candidate-durability.fixture.ts",
+        "exit": 0,
+        "seconds": 18.03
+      },
+      {
+        "file": "ai/autocode/clicked-target.fixture.ts",
+        "exit": 0,
+        "seconds": 14.31
+      },
+      {
+        "file": "ai/autocode/content-candidates.fixture.ts",
+        "exit": 0,
+        "seconds": 13.45
+      },
+      {
+        "file": "ai/autocode/contextual-locator.fixture.ts",
+        "exit": 0,
+        "seconds": 12.42
+      },
+      {
+        "file": "ai/autocode/dom-evidence.fixture.ts",
+        "exit": 0,
+        "seconds": 15.46
+      },
+      {
+        "file": "ai/autocode/evidence-consumption.fixture.ts",
+        "exit": 0,
+        "seconds": 18.02
+      },
+      {
+        "file": "ai/autocode/evidence-persistence.fixture.ts",
+        "exit": 0,
+        "seconds": 24.38
+      },
+      {
+        "file": "ai/autocode/evidence-sidecar.fixture.ts",
+        "exit": 0,
+        "seconds": 11.63
+      },
+      {
+        "file": "ai/autocode/evidence-timing.fixture.ts",
+        "exit": 0,
+        "seconds": 17.44
+      },
+      {
+        "file": "ai/autocode/exact-nonexact.fixture.ts",
+        "exit": 0,
+        "seconds": 18.76
+      },
+      {
+        "file": "ai/autocode/exploration-auth.fixture.ts",
+        "exit": 0,
+        "seconds": 18.0
+      },
+      {
+        "file": "ai/autocode/live-evidence.fixture.ts",
+        "exit": 0,
+        "seconds": 18.23
+      },
+      {
+        "file": "ai/autocode/locator-cardinality.fixture.ts",
+        "exit": 0,
+        "seconds": 15.71
+      },
+      {
+        "file": "ai/autocode/locator-decision-order.fixture.ts",
+        "exit": 0,
+        "seconds": 21.13
+      },
+      {
+        "file": "ai/autocode/locator-quality-benchmark.fixture.ts",
+        "exit": 0,
+        "seconds": 14.4
+      },
+      {
+        "file": "ai/autocode/locator-quality.fixture.ts",
+        "exit": 0,
+        "seconds": 12.99
+      },
+      {
+        "file": "ai/autocode/locator-safety.fixture.ts",
+        "exit": 0,
+        "seconds": 8.83
+      },
+      {
+        "file": "ai/autocode/locator-validation.fixture.ts",
+        "exit": 1,
+        "seconds": 16.99
+      },
+      {
+        "file": "ai/autocode/notifications-knowledge.fixture.ts",
+        "exit": 0,
+        "seconds": 11.88
+      },
+      {
+        "file": "ai/autocode/parameter.fixture.ts",
+        "exit": 0,
+        "seconds": 14.99
+      },
+      {
+        "file": "ai/autocode/po-discovery.fixture.ts",
+        "exit": 0,
+        "seconds": 13.46
+      },
+      {
+        "file": "ai/autocode/positional-recovery.fixture.ts",
+        "exit": 0,
+        "seconds": 12.23
+      },
+      {
+        "file": "ai/autocode/preaction-claim.fixture.ts",
+        "exit": 0,
+        "seconds": 10.4
+      },
+      {
+        "file": "ai/autocode/proven-locator-reuse.fixture.ts",
+        "exit": 0,
+        "seconds": 16.26
+      },
+      {
+        "file": "ai/autocode/recorded-lifecycle.fixture.ts",
+        "exit": 0,
+        "seconds": 17.66
+      },
+      {
+        "file": "ai/autocode/recorder-language.fixture.ts",
+        "exit": 0,
+        "seconds": 23.19
+      },
+      {
+        "file": "ai/autocode/scoped-dynamic-id.fixture.ts",
+        "exit": 0,
+        "seconds": 22.01
+      },
+      {
+        "file": "ai/autocode/semantic-candidates.fixture.ts",
+        "exit": 0,
+        "seconds": 9.15
+      },
+      {
+        "file": "ai/autocode/sibling-evidence.fixture.ts",
+        "exit": 0,
+        "seconds": 19.52
+      },
+      {
+        "file": "ai/autocode/stable-id-candidate.fixture.ts",
+        "exit": 0,
+        "seconds": 14.49
+      },
+      {
+        "file": "ai/autocode/strategy-contract.fixture.ts",
+        "exit": 0,
+        "seconds": 15.26
+      },
+      {
+        "file": "ai/autocode/strict-mode-locator.fixture.ts",
+        "exit": 0,
+        "seconds": 17.52
+      },
+      {
+        "file": "ai/autocode/target-snapshot.fixture.ts",
+        "exit": 0,
+        "seconds": 17.0
+      },
+      {
+        "file": "ai/autocode/title-identity.fixture.ts",
+        "exit": 0,
+        "seconds": 16.17
+      },
+      {
+        "file": "ai/autocode/toggle-normalisation.fixture.ts",
+        "exit": 0,
+        "seconds": 16.62
+      },
+      {
+        "file": "ai/dashboard/assertion-capabilities.fixture.ts",
+        "exit": 0,
+        "seconds": 18.73
+      },
+      {
+        "file": "ai/dashboard/assertion-picker.fixture.ts",
+        "exit": 0,
+        "seconds": 12.43
+      },
+      {
+        "file": "ai/dashboard/associated-control.fixture.ts",
+        "exit": 0,
+        "seconds": 19.05
+      },
+      {
+        "file": "ai/dashboard/draft-normalization.fixture.ts",
+        "exit": 0,
+        "seconds": 17.25
+      },
+      {
+        "file": "ai/dashboard/evidence-retention.fixture.ts",
+        "exit": 0,
+        "seconds": 20.14
+      },
+      {
+        "file": "ai/dashboard/generation-history.fixture.ts",
+        "exit": 0,
+        "seconds": 14.82
+      },
+      {
+        "file": "ai/dashboard/locator-reconstruction.fixture.ts",
+        "exit": 0,
+        "seconds": 9.33
+      },
+      {
+        "file": "ai/dashboard/negated-assertions.fixture.ts",
+        "exit": 0,
+        "seconds": 10.15
+      },
+      {
+        "file": "ai/dashboard/parked-claim.fixture.ts",
+        "exit": 0,
+        "seconds": 13.24
+      },
+      {
+        "file": "ai/dashboard/picker-panel.fixture.ts",
+        "exit": 0,
+        "seconds": 48.21
+      },
+      {
+        "file": "ai/dashboard/picker-transparency.fixture.ts",
+        "exit": 0,
+        "seconds": 16.41
+      },
+      {
+        "file": "ai/dashboard/positional-wiring.fixture.ts",
+        "exit": 0,
+        "seconds": 25.09
+      },
+      {
+        "file": "ai/dashboard/project-api.fixture.ts",
+        "exit": 0,
+        "seconds": 32.95
+      },
+      {
+        "file": "ai/dashboard/recorder.fixture.ts",
+        "exit": 0,
+        "seconds": 16.92
+      },
+      {
+        "file": "ai/dashboard/secret-redaction.fixture.ts",
+        "exit": 0,
+        "seconds": 7.36
+      },
+      {
+        "file": "ai/dashboard/workspace-accordion.fixture.ts",
+        "exit": 0,
+        "seconds": 22.64
+      },
+      {
+        "file": "ai/excel/authoring-model.fixture.ts",
+        "exit": 0,
+        "seconds": 13.39
+      },
+      {
+        "file": "ai/knowledge/requirements.fixture.ts",
+        "exit": 0,
+        "seconds": 17.32
+      },
+      {
+        "file": "ai/knowledge/yaml.fixture.ts",
+        "exit": 0,
+        "seconds": 21.55
+      },
+      {
+        "file": "ai/projects/ambient-cache.fixture.ts",
+        "exit": 0,
+        "seconds": 22.03
+      },
+      {
+        "file": "ai/projects/application-pipeline.fixture.ts",
+        "exit": 0,
+        "seconds": 13.66
+      },
+      {
+        "file": "ai/projects/bootstrap-knowledge.fixture.ts",
+        "exit": 0,
+        "seconds": 21.63
+      },
+      {
+        "file": "ai/projects/dashboard-scope.fixture.ts",
+        "exit": 0,
+        "seconds": 15.65
+      },
+      {
+        "file": "ai/projects/execution-isolation.fixture.ts",
+        "exit": 0,
+        "seconds": 17.92
+      },
+      {
+        "file": "ai/projects/generation-isolation.fixture.ts",
+        "exit": 0,
+        "seconds": 17.36
+      },
+      {
+        "file": "ai/projects/isolation.fixture.ts",
+        "exit": 0,
+        "seconds": 19.9
+      },
+      {
+        "file": "ai/projects/knowledge-enrichment.fixture.ts",
+        "exit": 0,
+        "seconds": 24.07
+      },
+      {
+        "file": "ai/projects/lifecycle-isolation.fixture.ts",
+        "exit": 0,
+        "seconds": 11.94
+      },
+      {
+        "file": "ai/projects/onboarding.fixture.ts",
+        "exit": 0,
+        "seconds": 61.82
+      },
+      {
+        "file": "ai/projects/provisioning-isolation.fixture.ts",
+        "exit": 0,
+        "seconds": 18.44
+      },
+      {
+        "file": "ai/projects/repository-secrets.fixture.ts",
+        "exit": 0,
+        "seconds": 22.05
+      }
+    ]
+  },
+  "documentationOnlyFollowup": {
+    "file": "ai/autocode/locator-validation.fixture.ts",
+    "exit": 0,
+    "seconds": 19.35,
+    "change": "ai/CLAUDE.md only: elementRef/captureRef distinction restored"
+  },
+  "regressionIntegrity": {
+    "changed": [],
+    "deleted": [],
+    "created": []
+  },
+  "interruptedPartialSweep": "Stopped before completion to correct the prompt helper export; logs retained outside the repository.",
+  "completeFullSweeps": 1,
+  "remainingKnownFailuresAfterFollowup": 0
+}

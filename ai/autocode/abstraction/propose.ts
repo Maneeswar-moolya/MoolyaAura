@@ -24,22 +24,26 @@ import * as path from 'path';
 
 import {
   evidenceFor, evidenceForAssertionSubject, isDomEvidence, looksLikeSecretValue,
-  type AssertionProvenance, type TargetEvidence,
+  provenMeasurements,
+  type AssertionProvenance, type CandidateMeasurement, type TargetEvidence,
 } from '../dom-evidence';
 import { analyseIdentifier, isPositionalLocator} from '../locator-quality';
 import { parseRecording } from '../../dashboard/recorder';
 import { mapRecording, readAssertions, readEvidence } from '../from-recording';
-import { ACCEPTED_DIR } from '../../dashboard/recorder';
+import { acceptedDir, recordingsDir } from '../../dashboard/recorder';
 import {
-  declaredSelectors, readAllPageKnowledge, selectorTokens, type PageKnowledge,
+  readAllPageKnowledge, type PageKnowledge,
 } from '../../knowledge/page-knowledge';
 import { buildIndex } from '../../knowledge/index';
+import { canonicalIdentity } from '../../knowledge/canonical';
+import { activeScope } from '../../projects/scope';
 import {
-  classify, effectiveLocator, insideRepeatedContainer, structuralSignature,
+  classify, effectiveLocator, insideRepeatedContainer, provenCandidate, structuralSignature,
 } from './classify';
 import {
   parameterisationHolds, parameterNameFor, parameterSourceOf, templateFor, validateCandidate,
 } from './validate';
+import { templateOf } from './parameter';
 import { componentClassNameFor, methodNameForTarget, parameterisedNameFor } from './naming';
 import {
   refuse, type Category, type Proposal, type ProposalStatus, type Refusal, type RefusalCode,
@@ -47,8 +51,20 @@ import {
 } from './types';
 
 const ROOT = process.cwd();
-export const RECORDINGS_DIR = path.join(ROOT, 'ai', 'dashboard', 'recordings');
+/**
+ * THE CORPUS COMES FROM THE RECORDER, both halves of it.
+ *
+ * This module used to declare a private `path.join(ROOT, 'ai','dashboard','recordings')`
+ * two lines above an `import { ACCEPTED_DIR } from '../../dashboard/recorder'` - the
+ * live directory spelled here, the archive imported from there. Scoping one and not the
+ * other would have made `analyseCorpus` read one application's live recordings beside
+ * another application's archive, so both now come from `recordingsDir()` /
+ * `acceptedDir()` and there is one convention rather than two.
+ */
+
 export const LEDGER = path.join(ROOT, 'ai', 'reports', 'abstraction-proposals.jsonl');
+/** Proven evidence about capabilities that already exist. A report, read by nothing. */
+export const ALTERNATIVES = path.join(ROOT, 'ai', 'reports', 'abstraction-alternatives.jsonl');
 
 /** Text that must never reach the ledger, whatever it is attached to. */
 const redact = (value: string | null | undefined): string | null => {
@@ -90,12 +106,281 @@ export interface OwnerResolution {
    * declares for this screen - never a superset, never a free choice.
    */
   candidates?: string[];
+  /**
+   * Present only when the FIFTH rule answered: the screen this owner was derived for.
+   *
+   * The writer needs it because a bootstrapped owner is one no knowledge file declares
+   * yet - it carries the canonical identity the file must be created under, the route
+   * it must declare, and the page name, all derived before any file existed.
+   */
+  bootstrap?: { canonicalId: string; route: string; pageName: string };
+}
+
+/**
+ * What bootstrap is allowed to know. Three facts, and not one of them is a DOM fact.
+ *
+ * `applicationId` is the locked active scope. `originApplicationId` is what the
+ * recording says it was made against - compared, never trusted as a substitute. `route`
+ * is the screen the recording itself established. Nothing here carries text, a locator,
+ * a score or a model's opinion, because none of those says which page an element is on.
+ */
+export interface BootstrapContext {
+  applicationId: string;
+  /** The recording's own `origin.applicationId`, or null where it predates origins. */
+  originApplicationId: string | null;
+  /** The route the recording established, or null when it established none. */
+  route: string | null;
+}
+
+/** What bootstrap derived, or why it refused. */
+export type BootstrapResult =
+  | { owner: string; canonicalId: string; route: string; pageName: string; why: string }
+  | { owner: null; code: RefusalCode; why: string };
+
+/** `/` -> `Home`, `/checkout` -> `Checkout`, `/team/settings` -> `TeamSettings`. */
+function pascal(slug: string): string {
+  return slug.split('-').filter(Boolean)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('');
+}
+
+/**
+ * THE FIFTH OWNER RULE, and the only one that can answer with no knowledge at all.
+ *
+ * It runs after every declared rule has refused, and it derives an owner from exactly
+ * two things: the application that is active, and the route the recording established.
+ * The identity is `canonicalIdentity`'s, unchanged - one screen, one identity, one file
+ * - so a page bootstrapped today is found by the route rule tomorrow.
+ *
+ * FAIL CLOSED, IN ORDER. Each guard answers a question that must be YES before a name
+ * means anything:
+ *
+ *   - is the recording THIS application's? A foreign origin is refused outright rather
+ *     than reinterpreted, and a recording with no origin at all is refused too: it
+ *     predates the field, so nothing states which application it belongs to and
+ *     attributing it by the directory it sits in is exactly the inference this rule
+ *     exists to avoid.
+ *   - did the recording state a route? Absence is never a route.
+ *   - does that route name a SCREEN rather than a RECORD? `/issues/636432` carries a
+ *     generated identifier, so a screen identity built from it would be one screen per
+ *     issue. Refused; normalising it to `/issues/:id` would be a guess about which
+ *     segment is the parameter.
+ *
+ * Naming is a framework convention applied to evidence, never a description of content:
+ * the route slug in PascalCase plus `Page`, and `Home` for the root route, which is what
+ * an application's entry screen is called in every repository this framework will meet.
+ * Nothing is derived from a title, the DOM, the text or the locator.
+ */
+export function bootstrapOwner(context: BootstrapContext): BootstrapResult {
+  const application = (context.applicationId ?? '').trim();
+  if (!application)
+    return { owner: null, code: 'OWNER_UNKNOWN', why: 'no application scope is active' };
+  // ONE COMPARISON, TWO REFUSALS. An absent origin and a foreign one are the same
+  // failure - the recording does not state that it belongs to the active application -
+  // and they were two guards until a mutation showed why that is worse: each masked the
+  // other, so neither could be broken on its own and the protection could not be tested.
+  // The reason still distinguishes them, because the remedies differ.
+  const origin = (context.originApplicationId ?? '').trim();
+  if (origin !== application) {
+    return { owner: null, code: 'OWNER_UNKNOWN',
+      why: origin
+        ? `the recording was made against "${origin}" and the active application is `
+          + `"${application}". Application artefacts are never resolved across scopes.`
+        : 'the recording states no application of its own, so nothing but the directory '
+          + 'it sits in attributes it - which is not evidence. Re-record it under this application.' };
+  }
+  const route = (context.route ?? '').trim();
+  if (!route) {
+    return { owner: null, code: 'BOOTSTRAP_ROUTE_UNKNOWN',
+      why: 'no knowledge declares an owner and the recording established no route, so '
+        + 'nothing says which screen this element belongs to' };
+  }
+  const dynamic = route.split('/').find(segment => segment && analyseIdentifier(segment).dynamic);
+  if (dynamic) {
+    return { owner: null, code: 'BOOTSTRAP_ROUTE_UNKNOWN',
+      why: `the route "${route}" contains "${dynamic}", which looks generated - it names `
+        + 'one record rather than one screen, so a page identity built from it would be a '
+        + 'page per record' };
+  }
+  const identity = canonicalIdentity({ route, application });
+  const slug = identity.id.slice(application.length + 2);
+  const owner = `${slug === 'root' ? 'Home' : pascal(slug)}Page`;
+  return {
+    owner,
+    canonicalId: identity.id,
+    route,
+    pageName: slug === 'root' ? `${application} entry page` : `${application} ${slug.split('-').join(' ')} page`,
+    why: `bootstrapped from ${identity.reason} - no knowledge declares an owner for this screen yet`,
+  };
+}
+
+/**
+ * Rule 4 as one call: the derived owner, or nothing.
+ *
+ * `null` means "bootstrap did not answer" and the caller falls back to the refusal it
+ * would have produced anyway - so a call site that offers no context, and one whose
+ * context cannot establish a screen, both behave exactly as they did before this rule
+ * existed. The route is the one the DOCUMENT stated at the press and never the one
+ * reconstructed from the step stream: see the call site in `analyseCorpus`.
+ */
+/**
+ * The declared answer for one route, or null when knowledge describes no such screen.
+ *
+ * Rule 3's body, extracted so the SAME lookup can be run against the route the document
+ * stated as well as the one reconstructed from the step stream. That mattered as soon as
+ * bootstrap existed: a recording whose `goto` the step walker cannot read leaves the
+ * reconstructed route at `/`, which rule 3 discards - so a screen that ALREADY has
+ * knowledge was being answered by bootstrap, deriving the same owner by a different
+ * route. Correct outcome, wrong provenance, and it would have made `Proposal.bootstrap`
+ * mean "no declared owner" only sometimes.
+ *
+ * Ambiguity is returned as ambiguity, exactly as rule 3 returns it, so a second owner
+ * cannot be sidestepped by asking with a better route.
+ */
+function declaredForRoute(knowledge: PageKnowledge[], route: string): OwnerResolution | null {
+  const page = knowledge.find(entry => routeMatches(entry.route || '/', route));
+  if (!page)
+    return null;
+  const owners = [...new Set(page.elements
+      .map(element => element.page_object)
+      .filter((owner): owner is string => Boolean(owner)))];
+  if (owners.length === 1)
+    return { owner: owners[0], kind: 'page-object', why: `the action happened on ${route} (${page.file})` };
+  return {
+    owner: null,
+    kind: null,
+    code: owners.length > 1 ? 'AMBIGUOUS_OWNERSHIP' : 'OWNER_UNKNOWN',
+    candidates: owners,
+    why: `${page.file} declares ${owners.length} owners for ${route} (${owners.join(', ')}) - `
+      + 'the route does not say which owns this element',
+  };
+}
+
+function bootstrapFrom(bootstrap: BootstrapContext | undefined): OwnerResolution | null {
+  if (!bootstrap)
+    return null;
+  const derived = bootstrapOwner(bootstrap);
+  if (!derived.owner)
+    return null;
+  return {
+    owner: derived.owner,
+    kind: 'page-object',
+    why: derived.why,
+    bootstrap: { canonicalId: derived.canonicalId, route: derived.route, pageName: derived.pageName },
+  };
+}
+
+/**
+ * The knowledge entry that declares this capability, and the locator it declares.
+ *
+ * Both halves are required. An entry naming a method with no declared strategy states no
+ * locator, so there is nothing for a later recording to differ FROM - and an observation
+ * built on an absent declaration would be an invention.
+ */
+function declaredCapability(
+  knowledge: PageKnowledge[],
+  index: ReturnType<typeof buildIndex>,
+  owner: string,
+  method: string,
+): { declared: string; file: string } | null {
+  for (const page of knowledge) {
+    for (const element of page.elements) {
+      if (element.page_object !== owner || element.page_object_method !== method)
+        continue;
+      const declared = (element.locator_strategy ?? '').trim();
+      // A DECLARED STRATEGY THAT IS NOT AN EXPRESSION STATES NO LOCATOR TO DIFFER FROM.
+      // Most entries carry free text - "#ap_notifications_panel - an authored id; its
+      // classes are state" - and comparing a proven expression against a sentence makes
+      // every recording look like new evidence. The same test `templateOf` applies.
+      if (!/^page\s*\./.test(declared))
+        continue;
+      // A PARAMETERISED CAPABILITY DECLARES A TEMPLATE, and a recording of one row proves
+      // that template with its argument supplied. `filter({ hasText: description })` and
+      // `filter({ hasText: "one row's summary" })` are the same capability being used,
+      // not a second locator for it - so there is nothing to review and nothing is
+      // recorded. Read through the repository's own template reader rather than by
+      // looking for a parameter-shaped word.
+      const indexed = index.pages[owner]?.methods.find(entry => entry.name === method);
+      if (indexed && templateOf(element, indexed))
+        return null;
+      return { declared, file: page.file };
+    }
+  }
+  return null;
+}
+
+/**
+ * A COMPARISON KEY, and only that: quotes normalised, and spacing removed where it can
+ * only be formatting. `page.locator('#x')` and `page.locator( "#x" )` are the same
+ * locator written twice, and calling the second one new evidence would fill the report
+ * with differences nobody made.
+ *
+ * The stored record keeps BOTH expressions verbatim - this key is never written down.
+ */
+function flattenExpression(value: string): string {
+  return value
+      .replace(/["']/g, '"')
+      .replace(/\s*([(){}\[\],:])\s*/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
+}
+
+/**
+ * Did this recording prove something OTHER than what knowledge declares for the
+ * capability it resolved to? If so, say so; if not, say nothing.
+ *
+ * REFUSES RATHER THAN GUESSES, in every direction: no established capability, no declared
+ * locator, no proven expression, or an expression that is the declared one - all produce
+ * nothing. Quoting differences are normalised away, because `page.locator('#x')` and
+ * `page.locator("#x")` are the same evidence written twice.
+ */
+export function alternativeEvidenceFor(input: {
+  applicationId: string | null;
+  testCaseId: string;
+  from: string;
+  role: TargetRole;
+  owner: string | null | undefined;
+  method: string | null | undefined;
+  observed: string | null | undefined;
+  knowledge: PageKnowledge[];
+  index: ReturnType<typeof buildIndex>;
+  resolvedBy: 'element-already-wrapped';
+}): AlternativeEvidence | null {
+  const owner = (input.owner ?? '').trim();
+  const method = (input.method ?? '').trim();
+  const observed = (input.observed ?? '').trim();
+  if (!owner || !method || !observed)
+    return null;
+  const declared = declaredCapability(input.knowledge, input.index, owner, method);
+  if (!declared)
+    return null;
+  if (flattenExpression(declared.declared) === flattenExpression(observed))
+    return null;
+  return {
+    applicationId: input.applicationId,
+    testCaseId: input.testCaseId,
+    from: input.from,
+    role: input.role,
+    owner,
+    method,
+    declared: declared.declared,
+    observed,
+    knowledgeFile: declared.file,
+    resolvedBy: input.resolvedBy,
+  };
 }
 
 export function resolveOwner(
   evidence: TargetEvidence,
   knowledge: PageKnowledge[],
   routes: string[],
+  /**
+   * The empty-knowledge fallback, supplied only by a caller that has an application
+   * scope and a recording origin. Omitted - which is every existing caller and every
+   * existing fixture - and the four declared rules are the whole of this function,
+   * exactly as they were.
+   */
+  bootstrap?: BootstrapContext,
 ): OwnerResolution {
   // 1. CONTAINMENT. An ancestor that knowledge already names settles it outright -
   //    the element is inside something whose owner is written down.
@@ -193,30 +478,49 @@ export function resolveOwner(
   //    it: an owner nothing declares is not an owner.
   const specific = [...new Set(routes.filter(route => route && route !== '/'))];
   if (specific.length === 1) {
-    const page = knowledge.find(entry => routeMatches(entry.route || '/', specific[0]));
-    if (!page) {
+    const declared = declaredForRoute(knowledge, specific[0]);
+    if (declared)
+      return declared;
+    {
+      // NOTHING DECLARES THIS ROUTE AT ALL, which is the empty-knowledge case rule 4 is
+      // for - so it is offered the route the step stream established rather than being
+      // refused before it can answer. Note what this does NOT reach: the two refusals
+      // below, where knowledge DOES describe the route and either names two owners or
+      // names none. Those are declared answers, and bootstrap never overrides one.
+      // NOTHING DECLARES THIS ROUTE. Ask knowledge once more with the route the DOCUMENT
+      // stated, which the step walker may not have been able to reconstruct, and only
+      // then bootstrap. See `declaredForRoute`.
+      const alsoDeclared = bootstrap?.route ? declaredForRoute(knowledge, bootstrap.route) : null;
+      if (alsoDeclared)
+        return alsoDeclared;
+      const derived = bootstrapFrom(bootstrap);
+      if (derived)
+        return derived;
       return { owner: null, kind: null, code: 'OWNER_UNKNOWN', candidates: [],
         why: `no knowledge file declares route ${specific[0]}` };
     }
+  }
 
-    // ONE ROUTE CAN HAVE TWO OWNERS, and picking the first declared is not a rule -
-    // it is the order somebody typed the file in. `bugasura__apps.yaml` describes
-    // both WorkspacePage (the tab strip, the chrome) and ProjectsPage (the list and
-    // its dialogs); a target on /apps belongs to one of them and the route alone
-    // does not say which. Refused, and the choice is put to a person.
-    const owners = [...new Set(page.elements
-        .map(element => element.page_object)
-        .filter((owner): owner is string => Boolean(owner)))];
-    if (owners.length === 1)
-      return { owner: owners[0], kind: 'page-object', why: `the action happened on ${specific[0]} (${page.file})` };
-    return {
-      owner: null,
-      kind: null,
-      code: owners.length > 1 ? 'AMBIGUOUS_OWNERSHIP' : 'OWNER_UNKNOWN',
-      candidates: owners,
-      why: `${page.file} declares ${owners.length} owners for ${specific[0]} (${owners.join(', ')}) - `
-        + 'the route does not say which owns this element',
-    };
+  // 4. NOTHING DECLARED IS LEFT. Bootstrap, if the caller offered a context.
+  //
+  //    LAST, AND ONLY HERE. Every return above is a declared answer or a declared
+  //    ambiguity, and neither may be overridden: an application that already knows who
+  //    owns a screen is never told by a route, and two owners for one route stay two
+  //    owners. Reaching this line means the repository declares nothing at all about
+  //    this screen, which is the only situation bootstrap is for.
+  if (bootstrap && specific.length <= 1) {
+    // THE DECLARED ANSWER FIRST, ALWAYS. The step walker could not offer a route here;
+    // the document did. A screen that already has knowledge is answered by that
+    // knowledge whichever route reached it.
+    const alsoDeclared = bootstrap.route ? declaredForRoute(knowledge, bootstrap.route) : null;
+    if (alsoDeclared)
+      return alsoDeclared;
+    const derived = bootstrapFrom(bootstrap);
+    if (derived)
+      return derived;
+    const refusal = bootstrapOwner(bootstrap);
+    if (refusal.owner === null)
+      return { owner: null, kind: null, code: refusal.code, candidates: [], why: refusal.why };
   }
 
   return {
@@ -258,49 +562,107 @@ export function fingerprintOf(input: {
 }
 
 /**
- * The method that already wraps THIS element, whatever it happens to be called.
+ * The one comparison key two locator expressions are compared on.
  *
- * Duplicate detection used to ask one question - is this NAME taken on this class? -
- * and that misses the duplicate that matters. `#filter-value` is already
- * `IssuesPage.searchField()`, declared under `accessible_name: Search`; a proposal
- * derived the name `filterValue` from the id instead, found no clash, and was one
- * accepted ownership answer away from putting a second method on the same element.
- * Two methods for one control is the thing this engine exists to prevent, and a name
- * comparison cannot see it.
+ * Quoting and whitespace are how the same expression is written twice, and neither is
+ * part of what a locator MEANS. This normalises those away and nothing else: no token is
+ * extracted, no segment is dropped, no shape is inferred. Two expressions that differ
+ * anywhere else are different expressions and are never treated as one.
+ */
+function sameExpression(left: string | null | undefined, right: string | null | undefined): boolean {
+  const flatten = (value: string) => value.replace(/["']/g, '"').replace(/\s+/g, ' ').trim();
+  if (!left || !right)
+    return false;
+  return flatten(left) === flatten(right);
+}
+
+/**
+ * The capability PROVEN to wrap this element - or null, which means NOT PROVEN.
  *
- * MATCHED ON THE ELEMENT, NOT THE PATH. Only the template's LAST concrete token is
- * compared - the one naming the element the method returns. Comparing every token
- * would make any row-scoped capability a duplicate of `result_rows`, which declares
- * the row container they all sit in.
+ * WHAT CHANGED IN PHASE 13.6, AND WHY. This used to tokenise the template, take the last
+ * token, and treat agreement with a declared selector as identity. Phase 13.5 measured
+ * that basis over the corpus and in a synthetic application: 9 associations, of which
+ * three were provably wrong, one was wrong on the recorded evidence, four proved nothing,
+ * and one was true and already caught by another gate. It is unsound in BOTH directions -
+ * `.mdl-button` made two different modal buttons one element, and an element recorded
+ * once by id and once by role escaped it entirely and was wrapped twice. Token overlap is
+ * not a conservative approximation of identity; it is not an approximation of it at all.
+ *
+ * THE BASIS NOW IS A MEASUREMENT. The framework may say a capability wraps the recorded
+ * element only where the browser resolved that capability's own declared locator, in the
+ * document of the interaction, and reported that the element it found IS the element that
+ * was acted on. That is `provesIdentity` over a measurement of the DECLARED expression,
+ * and there are two ways one is in hand:
+ *
+ *   - the recorder asked the question directly at the press or the pick, and the answer
+ *     carries `capability` naming who it was asked about (`measureDeclaredCapabilities`);
+ *   - the same expression was measured as an ordinary candidate and proved identity. A
+ *     capability declaring exactly that expression is proven by that measurement, because
+ *     it IS a measurement of the capability's locator - taken for another reason.
+ *
+ * A PARAMETERISED capability is matched on its template, which is the existing structural
+ * rule (`findParameterisedMethod`) rather than a second one: the instantiated expression
+ * was proven at the interaction, and a declared template equal to the one being proposed
+ * instantiates to that same expression. The template basis therefore still rests on a
+ * measurement; it is only reached for a parameterised proposal, where an instantiated row
+ * is the capability being USED and never a rival for it.
+ *
+ * NOT PROVEN IS NOT NO, AND IT IS CERTAINLY NOT YES. An unresolved locator, a locator that
+ * matched several elements, a locator described only in prose, a recording made before the
+ * measurement existed - each leaves this null, the proposal keeps whatever status its own
+ * evidence earned, and a person decides. UNKNOWN never becomes YES.
+ *
+ * TWO CLAIMANTS ARE NO CLAIMANT, as everywhere else in this framework. The old gate
+ * returned the first entry declaring the token and said nothing about the second; a
+ * corpus element had two, and which one was reported was file order. If more than one
+ * capability is proven to be this element, the repository is inconsistent and the answer
+ * is review, not a coin toss.
  *
  * The entry must name a method that really exists on its class: a knowledge entry
  * pointing at a method nobody wrote is not a capability, and treating it as one would
  * refuse a proposal in favour of something uncallable.
  */
 function existingCapability(
-  template: string | null,
+  proof: {
+    /** Every measurement of this element that satisfies `provesIdentity`. */
+    proven: readonly CandidateMeasurement[];
+    /**
+     * The template a PARAMETERISED proposal would create. Null on every other path, and
+     * the template basis is unreachable without it.
+     */
+    template?: string | null;
+  },
   knowledge: PageKnowledge[],
   index: ReturnType<typeof buildIndex>,
-): { owner: string; method: string; file: string } | null {
-  // The SAME tokeniser the knowledge side uses, so the two lists are comparable. It
-  // strips method calls first, or `.filter` and `.locator` read as class selectors and
-  // any two chained expressions "match" on one of them.
-  const tokens = selectorTokens(template ?? '');
-  const own = tokens[tokens.length - 1];
-  if (!own)
-    return null;
+): { owner: string; method: string; file: string; basis: 'measured' | 'template' } | null {
+  const found: Array<{ owner: string; method: string; file: string; basis: 'measured' | 'template' }> = [];
   for (const page of knowledge) {
     for (const element of page.elements) {
       const owner = element.page_object;
       const method = element.page_object_method;
       if (!owner || !method || !index.pages[owner]?.methods.some(entry => entry.name === method))
         continue;
-      const declared = declaredSelectors(element);
-      if (declared.includes(own))
-        return { owner, method, file: page.file };
+      const declared = (element.locator_strategy ?? '').trim();
+      // MEASURED. Either the question was asked about this very capability, or the
+      // expression it declares was itself proven against this element.
+      const measured = proof.proven.some(candidate => candidate.capability
+        ? candidate.capability.owner === owner && candidate.capability.method === method
+        : sameExpression(declared, candidate.expression));
+      if (measured) {
+        found.push({ owner, method, file: page.file, basis: 'measured' });
+        continue;
+      }
+      // TEMPLATE. Only for a parameterised proposal, and only when something was proven
+      // at the interaction: a template equal to the declared one, instantiated with the
+      // value that was recorded, IS the expression the browser measured.
+      if (proof.template && proof.proven.length && sameExpression(declared, proof.template))
+        found.push({ owner, method, file: page.file, basis: 'template' });
     }
   }
-  return null;
+  const distinct = new Set(found.map(entry => `${entry.owner}.${entry.method}`));
+  if (distinct.size !== 1)
+    return null;
+  return found[0];
 }
 
 /** The status a category earns, before idempotency is considered. */
@@ -342,6 +704,56 @@ export interface UnmeasuredTarget {
   remedy: string;
 }
 
+/**
+ * A recording proved something ELSE about a capability the repository already has.
+ *
+ * WHY THIS EXISTS AT ALL. The framework's own rule is that an established capability is
+ * append-only with respect to automated enrichment: a later recording must not replace,
+ * rename or remove it. Until now the consequence was that the later evidence simply
+ * vanished - a recording could measure a different expression for a known element, at the
+ * press, with identity proven, and nothing anywhere would say so. The capability stayed
+ * correct and the observation was lost, so the framework could neither learn from it nor
+ * put it to a person.
+ *
+ * SO IT IS RECORDED AND NOTHING ELSE HAPPENS. This is a report. No writer reads it, no
+ * proposal is derived from it, no locator is chosen by it, and the established capability
+ * is not touched. The decision it exists to support - whether a capability should ever be
+ * revised - is a person's, and the framework's job is to make that decision possible
+ * rather than to take it.
+ *
+ * WHAT IT DELIBERATELY DOES NOT CARRY: a score, a ranking, or any statement that the new
+ * expression is BETTER. Locator quality is not capability ownership, and a comparison
+ * stored here would be read as a verdict by the next person to automate against it. Both
+ * expressions are recorded verbatim; whoever reviews them can judge them with the same
+ * tools the framework uses.
+ */
+export interface AlternativeEvidence {
+  /** The application that owns both the capability and the recording. */
+  applicationId: string | null;
+  testCaseId: string;
+  /** The step's own join key, so the observation is findable per element. */
+  from: string;
+  role: TargetRole;
+  /** The capability that already exists and stays exactly as it is. */
+  owner: string;
+  method: string;
+  /** What knowledge declares for that capability. */
+  declared: string;
+  /** What THIS recording proved, at the press, against the element acted on. */
+  observed: string;
+  /** The knowledge file the capability is declared in. */
+  knowledgeFile: string;
+  /**
+   * How the framework knows this observation is about THIS capability.
+   *
+   * One value today, and it is the point rather than a placeholder: the analyser's own
+   * duplicate gate established that the recorded element is already wrapped by this
+   * method, and then the recording proved a different expression for it. A reuse the
+   * matcher resolved by NAME is deliberately not recorded - a name is not an element.
+   */
+  resolvedBy: 'element-already-wrapped';
+}
+
 export interface CorpusResult {
   proposals: Proposal[];
   /** Existing methods the matcher resolved. Counted, never re-proposed. */
@@ -354,6 +766,11 @@ export interface CorpusResult {
    * which is what lets the lifecycle answer for each element of each test.
    */
   unmeasured: UnmeasuredTarget[];
+  /**
+   * Proven evidence about capabilities that already exist. Retained for review, applied
+   * by nothing. One entry per sighting, because each is a fact about one recording.
+   */
+  alternatives: AlternativeEvidence[];
   counts: Record<string, number>;
 }
 
@@ -382,10 +799,38 @@ export interface AnalyseOptions {
 
 export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
   const knowledge = readAllPageKnowledge();
+  // THE ACTIVE APPLICATION, resolved once. Bootstrap needs it and nothing else does;
+  // a scope that cannot be resolved simply leaves bootstrap unavailable, and every
+  // declared owner rule answers exactly as it did before.
+  let applicationId: string | null = null;
+  try {
+    applicationId = activeScope().applicationId;
+  } catch {
+    applicationId = null;
+  }
   const index = buildIndex();
   const proposals: Proposal[] = [];
   const reused: CorpusResult['reused'] = [];
   const unmeasured: UnmeasuredTarget[] = [];
+  const alternatives: AlternativeEvidence[] = [];
+  /**
+   * One line per DISTINCT alternative, not per sighting.
+   *
+   * The same element touched by two steps of one recording proves the same thing twice,
+   * and a reviewer acts on the alternative rather than on how often it was seen. Keyed on
+   * the application, the capability and the expression itself - the first sighting is
+   * kept, so the record names a recording that really produced it.
+   */
+  const alternativesSeen = new Set<string>();
+  const rememberAlternative = (entry: AlternativeEvidence | null): void => {
+    if (!entry)
+      return;
+    const key = `${entry.applicationId ?? ''}|${entry.owner}.${entry.method}|${entry.observed}`;
+    if (alternativesSeen.has(key))
+      return;
+    alternativesSeen.add(key);
+    alternatives.push(entry);
+  };
   const counts: Record<string, number> = {};
   const seen = new Set<string>();
   const timestamp = new Date().toISOString();
@@ -426,30 +871,36 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
   // ONE ENTRY PER RECORDING: its id, and the directory its artefacts live in. The live
   // queue is always read; the archive only when explicitly asked for.
   const sources: Array<{ testCaseId: string; dir: string }> = [];
-  if (fs.existsSync(RECORDINGS_DIR)) {
-    for (const name of fs.readdirSync(RECORDINGS_DIR).filter(file => file.endsWith('.spec.ts')).sort())
-      sources.push({ testCaseId: path.basename(name, '.spec.ts'), dir: RECORDINGS_DIR });
+  if (fs.existsSync(recordingsDir())) {
+    for (const name of fs.readdirSync(recordingsDir()).filter(file => file.endsWith('.spec.ts')).sort())
+      sources.push({ testCaseId: path.basename(name, '.spec.ts'), dir: recordingsDir() });
   }
-  if (options.includeArchived && fs.existsSync(ACCEPTED_DIR)) {
+  if (options.includeArchived && fs.existsSync(acceptedDir())) {
     const live = new Set(sources.map(entry => entry.testCaseId));
-    for (const name of fs.readdirSync(ACCEPTED_DIR).filter(file => file.endsWith('.spec.ts')).sort()) {
+    for (const name of fs.readdirSync(acceptedDir()).filter(file => file.endsWith('.spec.ts')).sort()) {
       const testCaseId = path.basename(name, '.spec.ts');
       // A live recording always wins: it is the one waiting to be generated, and the
       // archived copy is the previous answer to the same question.
       if (!live.has(testCaseId))
-        sources.push({ testCaseId, dir: ACCEPTED_DIR });
+        sources.push({ testCaseId, dir: acceptedDir() });
     }
   }
 
   for (const source of sources) {
     const { testCaseId, dir } = source;
-    const archived = dir === ACCEPTED_DIR;
+    const archived = dir === acceptedDir();
     const recording = parseRecording(fs.readFileSync(path.join(dir, `${testCaseId}.spec.ts`), 'utf8'), {
       startUrl: '', browser: '', durationMs: 0,
       evidence: readEvidence(testCaseId, { archived }),
       stateAssertions: readAssertions(testCaseId, { archived }),
     });
     const mapping = mapRecording(recording);
+    // WHAT THE RECORDING SAYS IT IS. Compared with the active scope by `bootstrapOwner`,
+    // never used as a substitute for it, and null for every recording made before the
+    // field existed - which is what makes those recordings non-bootstrapable.
+    const originApplicationId = isDomEvidence(mapping.evidence)
+      ? (mapping.evidence.origin?.applicationId ?? null)
+      : null;
 
     // THE ROUTE IN EFFECT AT EACH STEP, read from the MAPPED steps.
     //
@@ -566,6 +1017,15 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
 
     for (const item of items) {
       // FOUND - the matcher already has a method for it. Never analysed.
+      //
+      // AND NEVER OBSERVED FROM HERE EITHER, which cost a wrong record before it was
+      // measured. The matcher resolves by NAME (`findMethod`) or by the expression itself
+      // (`findMethodByProvenLocator`). The second can only match when the declared
+      // locator IS the proven one, so it has nothing to report; the first is explicitly
+      // not element identity, and a control that merely shares an accessible name would
+      // be reported as new evidence about a capability it has nothing to do with. The
+      // duplicate gate below knows both facts - the element is already wrapped, and this
+      // recording proved something else for it - so that is where an observation is made.
       if (resolved.has(item.from))
         continue;
       const role = item.role;
@@ -651,7 +1111,21 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
       }
 
       const safety = validateCandidate(evidence, role);
-      const owner = resolveOwner(evidence, knowledge, [route]);
+      // EVERY MEASUREMENT THAT IDENTIFIED THIS ELEMENT, read once. It is what the
+      // capability gate below is entitled to reason from, and the only thing it is.
+      const identityProofs = provenMeasurements(evidence, role);
+      // THE ROUTE THE DOCUMENT ITSELF STATED AT THE PRESS, and only that.
+      //
+      // `route` above is RECONSTRUCTED from `goto` calls and declared entry points, which
+      // is the best a recording made before press-time routes existed can offer - and it
+      // is a reconstruction, not something the page said. Bootstrapping a screen from it
+      // would be enriching a historical recording with evidence it never carried, which
+      // is the one thing this phase may not do. So a recording with no `route` field is
+      // not bootstrapable, exactly like one with no `origin`: re-record it.
+      const pressRoute = typeof evidence.route === 'string' && evidence.route ? evidence.route : null;
+      const owner = resolveOwner(evidence, knowledge, [route], applicationId
+        ? { applicationId, originApplicationId, route: pressRoute }
+        : undefined);
       const wantsSuffix = Boolean((evidence.target.accessibleName ?? '').trim());
       const method = methodNameForTarget(evidence.target, role, { needsRoleSuffix: wantsSuffix });
       const effective = effectiveLocator(evidence, role);
@@ -665,14 +1139,22 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
       // collected here and decided later, once the whole corpus has been read -
       // parameterisation is the one judgement a single target cannot support.
       const signature = structuralSignature(evidence);
-      if (parameterised && signature) {
+      // `parameterised` already requires a parameter source, so the third test changes
+      // nothing at run time - it is what tells the compiler that `value` below is a
+      // string rather than `string | null`.
+      if (parameterised && signature && parameterSource) {
         members.push({
           signature, role, testCaseId, from: item.from,
           owner: owner.owner, ownerWhy: owner.why,
-          ownerCode: owner.code, ownerCandidates: owner.candidates,
+          // `OwnerResolution` leaves both optional; the member holds them as explicit
+          // nulls, and every reader already coalesces, so the two are interchangeable.
+          ownerCode: owner.code ?? null, ownerCandidates: owner.candidates ?? null,
           value: parameterSource, proven: safety.safe && effective.proven,
           node: evidence.target, strategy: safety.proof?.strategy ?? 'contextual',
           expression: effective.expression, refusals: safety.codes,
+          // Carried, not re-derived: the group decides its capability question over the
+          // whole corpus, long after this target's evidence has been released.
+          identityProofs,
         });
         continue;
       }
@@ -716,13 +1198,36 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
       // never asked about something the repository has already answered. A SAFETY
       // refusal still wins: an unproven target says nothing about the method that
       // happens to point at the same element.
+      let wrapsSameElement: { owner: string; method: string; file: string } | null = null;
       if (status !== 'REFUSED' && !refusals.some(entry => entry.class === 'SAFETY')) {
-        const already = existingCapability(safety.proof?.expression ?? null, knowledge, index);
+        const already = existingCapability({ proven: identityProofs }, knowledge, index);
+        wrapsSameElement = already;
         if (already && already.method !== method) {
           status = 'REUSE';
           refusals.push(refuse('METHOD_EXISTS',
               `${already.owner}.${already.method}() already wraps this element (${already.file})`));
         }
+      }
+
+      // THE SAME OBSERVATION, ON THE OTHER PATH. Here the matcher did not resolve the
+      // step; the analyser found THIS ELEMENT already wrapped and refused to wrap it
+      // twice. That refusal is correct and unchanged - and it is also the moment a
+      // second, proven expression for an established capability is known.
+      //
+      // ONLY THE ELEMENT GATE, NEVER THE NAME GATE. `METHOD_EXISTS` is also raised when
+      // the NAME is taken on the owning class, which says nothing about the element -
+      // two different controls can derive one name. Recording that as evidence about the
+      // existing capability describes the wrong element entirely, and the corpus caught
+      // it doing so. Read from the gate's own answer rather than from the refusal's
+      // wording, which nothing here is allowed to branch on.
+      if (wrapsSameElement) {
+        const observation = alternativeEvidenceFor({
+          applicationId, testCaseId, from: item.from, role,
+          owner: wrapsSameElement.owner, method: wrapsSameElement.method,
+          observed: safety.proof?.expression, knowledge, index,
+          resolvedBy: 'element-already-wrapped',
+        });
+        rememberAlternative(observation);
       }
 
       const identity = (evidence.target.accessibleName ?? '').trim()
@@ -756,6 +1261,7 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
         status,
         owner: owner.owner,
         ownerKind: owner.kind,
+        ...(owner.bootstrap ? { bootstrap: owner.bootstrap } : {}),
         method: status === 'PROPOSED' || status === 'REUSE' ? method : null,
         parameterised,
         parameterSource: parameterised ? redact(parameterSource) : null,
@@ -812,7 +1318,7 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
       ? parameterisationHolds(group.map(item => ({
         signature: item.signature, value: item.value, proven: item.proven,
       })))
-      : { holds: false, reason: `no member of this group is identity-proven (${excluded} set aside)` };
+      : { holds: false, code: null, reason: `no member of this group is identity-proven (${excluded} set aside)` };
     const method = first.owner ? parameterisedNameFor(first.owner, first.node, first.role) : null;
     const refusals: Refusal[] = [...group.flatMap(item => item.refusals)];
     let status: ProposalStatus = 'NEEDS_REVIEW';
@@ -898,7 +1404,8 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
 
     // The same idempotency, for a parameterised capability.
     if (status !== 'REFUSED' && !refusals.some(entry => entry.class === 'SAFETY')) {
-      const already = existingCapability(template, knowledge, index);
+      const already = existingCapability(
+          { proven: group.flatMap(item => item.identityProofs), template }, knowledge, index);
       if (already && already.method !== method) {
         status = 'REUSE';
         refusals.push(refuse('METHOD_EXISTS',
@@ -995,7 +1502,7 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
     proposal.refusals = proposal.refusalCodes.map(entry => entry.detail);
   }
 
-  return { proposals, reused, unmeasured, counts };
+  return { proposals, reused, unmeasured, alternatives, counts };
 }
 
 /**
@@ -1059,6 +1566,25 @@ export function writeLedger(result: CorpusResult, file = LEDGER): void {
   fs.writeFileSync(file, lines.length ? `${lines.join('\n')}\n` : '', 'utf8');
 }
 
+/**
+ * The alternative-evidence report: one JSON line per observation, its own file.
+ *
+ * SEPARATE FROM THE PROPOSAL LEDGER on purpose. That ledger holds one line per
+ * abstraction and every consumer reads its lines as proposals; an observation is a
+ * different kind of statement about a capability that is NOT being proposed. Rewritten
+ * from the corpus on every run rather than appended to, exactly like the ledger, so the
+ * same recordings always produce the same file.
+ */
+export function writeAlternatives(result: CorpusResult, file = ALTERNATIVES): void {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const lines = result.alternatives
+      .slice()
+      .sort((left, right) => `${left.testCaseId}|${left.owner}.${left.method}|${left.from}`
+          .localeCompare(`${right.testCaseId}|${right.owner}.${right.method}|${right.from}`))
+      .map(entry => JSON.stringify(entry));
+  fs.writeFileSync(file, lines.length ? `${lines.join('\n')}\n` : '', 'utf8');
+}
+
 function main(): void {
   const dry = process.argv.includes('--dry');
   const result = analyseCorpus();
@@ -1067,8 +1593,8 @@ function main(): void {
     byStatus[proposal.status] = (byStatus[proposal.status] ?? 0) + 1;
 
   process.stdout.write('\nabstraction engine - phase 1 (report only, no model, nothing written to source)\n\n');
-  process.stdout.write(`  recordings analysed      ${fs.existsSync(RECORDINGS_DIR)
-    ? fs.readdirSync(RECORDINGS_DIR).filter(name => name.endsWith('.spec.ts')).length : 0}\n`);
+  process.stdout.write(`  recordings analysed      ${fs.existsSync(recordingsDir())
+    ? fs.readdirSync(recordingsDir()).filter(name => name.endsWith('.spec.ts')).length : 0}\n`);
   process.stdout.write(`  existing methods reused  ${result.reused.length}\n`);
   process.stdout.write(`  distinct proposals       ${result.proposals.length}\n\n`);
   for (const [status, count] of Object.entries(byStatus).sort())
@@ -1082,6 +1608,7 @@ function main(): void {
     return;
   }
   writeLedger(result);
+  writeAlternatives(result);
   process.stdout.write(`\n  ledger: ${path.relative(ROOT, LEDGER).replace(/\\/g, '/')}\n`);
 }
 

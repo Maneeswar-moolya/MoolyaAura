@@ -21,10 +21,10 @@
  */
 
 import {
-  analyseIdentifier, chainHasDynamicIdentifier, isPositionalLocator, parseChain,
+  analyseIdentifier, chainHasDynamicIdentifier, isPositionalLocator, parseChain, scoreExpression,
 } from '../locator-quality';
 import {
-  isPositionProvenAgainstClickedTarget, isProvenAgainstClickedTarget, looksLikeStateClass,
+  isPositionProvenAgainstClickedTarget, looksLikeStateClass,
   positionalExpression, provesIdentity, type CandidateMeasurement, type DomNode,
   type TargetEvidence,
 } from '../dom-evidence';
@@ -120,7 +120,91 @@ export function provenCandidate(
   evidence: TargetEvidence,
   role: TargetRole = 'action',
 ): CandidateMeasurement | null {
-  return (evidence.derivedCandidates ?? []).find(candidate => provesIdentity(candidate, role)) ?? null;
+  return rankProvenCandidates(evidence, role)[0] ?? null;
+}
+
+/**
+ * Every candidate that proves this target, BEST FIRST.
+ *
+ * WHAT CHANGED, AND WHAT DID NOT. The filter is `provesIdentity`, unchanged and
+ * unweakened: press-time for an action, press-or-pick for an assertion, one element, the
+ * press's own document, and that element is the one acted on. Nothing reaches this
+ * ordering that would not have reached `.find()` before it. What changed is only which
+ * of the survivors is returned.
+ *
+ * WHY ORDER WAS WORTH ANYTHING. `.find()` returned the first proven candidate in
+ * GENERATION order, which is the order `candidateSelectorsFor` happens to emit shapes in
+ * - test id, id, content, container, scoped classes, bare classes. That order is a
+ * reasonable guess and it is not a judgement: measured on the sign-in button, nine
+ * candidates were proven at the press and `.find()` returned
+ * `#loginForm .login-submit` filtered by its own text, while
+ * `getByRole('button', { name: 'Sign In', exact: true })` sat proven in the same list.
+ * Both identify the button; only one of them still will after somebody renames a class.
+ *
+ * Ranked on the EXISTING model - `scoreExpression`, which is `assessLocator`'s own
+ * scorer - so a locator is worth here exactly what it is worth everywhere else. The
+ * WEAKEST segment is the rank, because a chain is only as strong as its weakest link
+ * and that is already how `classify` reads one.
+ *
+ * TIES BREAK ON THE SIMPLER CHAIN, and the first attempt got this wrong in a way the
+ * corpus caught. Breaking on the strongest segment instead put
+ * `page.locator("#create_team_invite_form").getByText("Cancel")` (weakest 70, best 85)
+ * above `page.locator("#create_team_cancel_btn")` (70, one segment) - so a chain earned
+ * its place from a segment that is not the one holding it up, and TC_LOGIN_126/127 lost
+ * the Page Object reuse they had. On a genuine tie the shorter chain is the better
+ * default: scoping is already paid for inside the score, as the +10 a narrowing segment
+ * receives. Then the shorter expression, then generation order, which is stable - so two
+ * runs over one sidecar cannot disagree.
+ *
+ * An unscoreable expression sorts last rather than being dropped: it was proven against
+ * the pressed element, and a scorer that cannot parse it is a fact about the scorer.
+ *
+ * A LOOSE TWIN NEVER OUTRANKS ITS EXACT ONE, and that rule exists because the length
+ * tie-break would otherwise settle a question no measurement has answered.
+ * `getByRole('textbox', { name: 'Password' })` and the same call with `exact: true`
+ * score identically (95/95, one segment) and differ only in being twelve characters
+ * apart, so the shorter-expression rule would silently promote the loose form for every
+ * element on which both are proven - a global preference arrived at by counting
+ * characters. Measured live, the two forms fail in OPPOSITE directions: Bugasura's
+ * password field keeps its loose locator through a validation error that takes the exact
+ * one to zero matches, while its Sign In button's loose locator matches two elements
+ * (Google's sign-in button contains the name) where the exact one matches one. Neither
+ * is generally better, so the added candidate takes the position an added candidate
+ * should: immediately after the one that already existed, changing no selection that is
+ * made today and answering only where the exact form is refused.
+ */
+/**
+ * The name matched loosely - the same evidence as its exact twin, expressed as the wider
+ * matcher. Named here rather than tested for `exact: true` in the expression, because a
+ * strategy is what the generator decided and a substring of an expression is not.
+ */
+const LOOSE_STRATEGIES = new Set(['role-name-loose', 'scoped-role-name-loose']);
+
+export function rankProvenCandidates(
+  evidence: TargetEvidence,
+  role: TargetRole = 'action',
+): CandidateMeasurement[] {
+  const proven = (evidence.derivedCandidates ?? [])
+      .map((candidate, order) => ({ candidate, order }))
+      .filter(entry => provesIdentity(entry.candidate, role));
+  return proven
+      .map(entry => {
+        const scored = scoreExpression(entry.candidate.expression);
+        return {
+          ...entry,
+          weakest: scored?.weakest ?? -1,
+          best: scored?.best ?? -1,
+          segments: parseChain(entry.candidate.expression).length,
+          loose: LOOSE_STRATEGIES.has(String(entry.candidate.strategy)) ? 1 : 0,
+        };
+      })
+      .sort((a, b) =>
+        b.weakest - a.weakest
+        || a.segments - b.segments
+        || a.loose - b.loose
+        || a.candidate.expression.length - b.candidate.expression.length
+        || a.order - b.order)
+      .map(entry => entry.candidate);
 }
 
 /** Is the element inside something that repeats? */

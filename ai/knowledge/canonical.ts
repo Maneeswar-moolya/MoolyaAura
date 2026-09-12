@@ -11,7 +11,7 @@
  * them after where they are. A route is a fact about the application; "dashboard
  * tabs" is a description of one row's interest in it.
  *
- *   application  bugasura      (from the base URL's registrable label)
+ *   application  bugasura      (declared in ai/projects/registry.json - NOT the URL)
  *   route        /apps
  *   identity     bugasura__apps
  *
@@ -42,17 +42,34 @@
 import path from 'node:path';
 
 import { BASE_URL } from '../../tests-e2e/support/env';
-import { PAGE_DIR, type PageKnowledge } from './page-knowledge';
+import { activeKnowledgePageDir, type PageKnowledge } from './page-knowledge';
+import { activeScope, onScopeChange, resetActiveScope, ScopeError } from '../projects/scope';
 
 const ROOT = process.cwd();
 
 /**
- * The application's short name, from the base URL.
+ * LEGACY. The application's short name, guessed from the base URL.
  *
- * `my.bugasura.io` -> `bugasura`: the label before the public suffix, which is the
- * part a person would call the application. Deliberately simple - it is a label in
- * an identifier, not a security boundary - and it degrades to the whole host if the
- * shape is unexpected rather than throwing.
+ * `my.bugasura.io` -> `bugasura`: the label before the public suffix.
+ *
+ * THIS IS NO LONGER THE AUTHORITATIVE APPLICATION IDENTITY. It was, and that was a
+ * category error: a base URL is CONFIGURATION. It changes between environments, so a
+ * staging host on a different domain silently renamed the namespace and orphaned
+ * every artefact filed under the old name; and two applications behind one host or
+ * one reverse proxy collapsed into a single identity, which is the cross-application
+ * contamination the whole scope model exists to prevent.
+ *
+ * Identity is now DECLARED in `ai/projects/registry.json` and selected by a person.
+ * See `activeApplicationId()` below.
+ *
+ * WHERE THE FALLBACK IS STILL USED, AND FOR HOW LONG
+ *
+ * Exactly one place: `activeApplicationId()`, and only when the registry cannot be
+ * read at all - a checkout with no `ai/projects/registry.json`. It exists so that
+ * cloning this repository at an older commit, or before the registry lands, does not
+ * break page identity outright. It is temporary. Once every caller threads a scope,
+ * this function and that catch block should both be deleted; nothing else may call
+ * it, and nothing does.
  */
 export function applicationSlug(baseUrl: string = BASE_URL): string {
   let host: string;
@@ -69,6 +86,60 @@ export function applicationSlug(baseUrl: string = BASE_URL): string {
 
 function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+/**
+ * The application component of a canonical identity, for a caller that did not
+ * supply one.
+ *
+ * Resolution order, and it is not a search:
+ *
+ *   1. the active ApplicationScope's applicationId   declared, authoritative
+ *   2. applicationSlug(BASE_URL)                     LEGACY, registry missing only
+ *
+ * A caller that knows its scope passes `source.application` and never reaches here.
+ * This default serves the callers that have not been threaded yet - `mapping sync`,
+ * the knowledge CLI - all of which run against the sole registered application, so
+ * step 1 answers correctly for them today.
+ *
+ * Cached because `canonicalIdentity` is called per element while building a page
+ * index, and re-reading the registry each time would be pure waste. `resetActiveApplication`
+ * exists for the dashboard, which is one long-lived process that can switch projects.
+ */
+let cachedApplicationId: string | null = null;
+
+// DIE WITH THE SCOPE. This memo is derived from `activeScope().applicationId`, so a scope
+// change without this leaves it answering with the previous application - and page
+// identity names every knowledge file, so the next one written would be filed under the
+// wrong application. Registered rather than called by name because `scope.ts` cannot
+// import this module: this one imports it.
+onScopeChange(() => { cachedApplicationId = null; });
+
+export function activeApplicationId(): string {
+  if (cachedApplicationId)
+    return cachedApplicationId;
+  try {
+    cachedApplicationId = activeScope().applicationId;
+  } catch (error) {
+    // A ScopeError IS NEVER SWALLOWED. It means "more than one application is
+    // registered and nobody said which" or "no application called that" - the two
+    // questions the registry exists to REFUSE. Falling back here would answer them
+    // by deriving the identity from the URL, which is the derivation this whole
+    // module was rewritten to abolish, and it would do it silently: every page
+    // identity, and so every knowledge file, would be filed under a name nobody
+    // chose. Only a missing registry reaches the legacy path.
+    if (error instanceof ScopeError)
+      throw error;
+    // LEGACY: no registry in this checkout. See applicationSlug's header.
+    cachedApplicationId = applicationSlug();
+  }
+  return cachedApplicationId;
+}
+
+/** Drop the memo - the dashboard switches projects inside one process. */
+export function resetActiveApplication(): void {
+  cachedApplicationId = null;
+  resetActiveScope();
 }
 
 /**
@@ -99,7 +170,7 @@ export function canonicalIdentity(source: {
   pageObject?: string;
   application?: string;
 }): CanonicalIdentity {
-  const application = source.application ?? applicationSlug();
+  const application = source.application ?? activeApplicationId();
 
   const route = source.route?.trim();
   if (route) {
@@ -127,9 +198,21 @@ export function canonicalIdentity(source: {
   return { id: `${application}__unknown`, from: 'page-object', reason: 'nothing identified the screen' };
 }
 
-/** Repo-relative path of the one file a canonical identity may live in. */
+/**
+ * Repo-relative path of the one file a canonical identity may live in.
+ *
+ * READ/WRITE SYMMETRY. This names where knowledge is WRITTEN, and
+ * `readAllPageKnowledge` decides where knowledge is READ. They must be the same
+ * directory or the generator writes a file it will never see again: the write lands
+ * in the flat `ai/knowledge/page/`, the read looks in the active application's
+ * directory, finds nothing for the screen, and concludes it has to explore from
+ * scratch - re-exploring a screen it had already written down, which is the exact
+ * failure this module exists to prevent. So both go through the active scope, and
+ * `PAGE_DIR` is reached only as the no-registry legacy fallback inside
+ * `activeKnowledgePageDir`.
+ */
 export function canonicalFile(id: string): string {
-  return path.relative(ROOT, path.join(PAGE_DIR, `${id}.yaml`)).replace(/\\/g, '/');
+  return path.relative(ROOT, path.join(activeKnowledgePageDir(), `${id}.yaml`)).replace(/\\/g, '/');
 }
 
 export interface PageIndexEntry {

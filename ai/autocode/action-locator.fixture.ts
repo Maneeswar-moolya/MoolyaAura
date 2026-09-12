@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * What locator a recorded ACTION gets, and when a dynamic scope may be dropped.
  *
@@ -25,8 +26,8 @@ import path from 'node:path';
 import { sanitiseEvidence, type TargetEvidence } from './dom-evidence';
 import { mapRecording } from './from-recording';
 import { parseRecording } from '../dashboard/recorder';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
-const ROOT = process.cwd();
 let failures = 0;
 const check = (label: string, ok: boolean, detail = '') => {
   process.stdout.write(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? ` — ${detail}` : ''}\n`);
@@ -34,7 +35,7 @@ const check = (label: string, ok: boolean, detail = '') => {
     failures++;
 };
 
-const SIGN_IN = `  await page.goto('https://my.bugasura.io/');
+const SIGN_IN = `  await page.goto('https://portal.fixture.invalid/');
   await page.getByRole('textbox', { name: 'Email' }).fill('someone@moolya.com');
   await page.getByRole('textbox', { name: 'Password' }).fill('[type=password]');
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
@@ -63,7 +64,7 @@ const DYNAMIC_CLICK = wrap(
     `  await page.locator('#tc_summary_638717').getByText('Line Chart | Time Config Page').click();\n`);
 
 /**
- * The graph as MEASURED live on Bugasura during the TC_LOGIN_042 diagnosis.
+ * The graph as MEASURED live on FixturePortal during the TC_LOGIN_042 diagnosis.
  *
  * The target is an unclassed <span>; what distinguishes the desktop copy from the
  * mobile one is its PARENT's responsive classes, inside `#bugReport-table`. The unique
@@ -197,15 +198,9 @@ function main(): void {
   check('7: a dynamic assertion with no evidence needs review',
       dynamicAssertion.needsReview.some(step => step.from.includes('tc_summary_638717')));
 
-  process.stdout.write('\n== CASE 8 — the three real recordings, offline ==\n');
-  for (const id of ['TC_LOGIN_041', 'TC_LOGIN_042', 'TC_LOGIN_043']) {
-    const file = path.resolve(ROOT, `ai/dashboard/recordings/${id}.spec.ts`);
-    if (!fs.existsSync(file)) {
-      check(`8: ${id} artifact present`, false, 'missing');
-      continue;
-    }
-    const result = mapRecording(parseRecording(fs.readFileSync(file, 'utf8'),
-        { startUrl: '', browser: '', durationMs: 0 }));
+  process.stdout.write('\n== CASE 8 — three synthetic dynamic scopes, offline ==\n');
+  for (const id of ['tc_summary_900001', 'tc_summary_900002', 'tc_summary_900003']) {
+    const result = mapped(wrap(`  await page.locator('#${id}').getByText('Line Chart').click();\n`));
     const code = result.steps.filter(step => step.kind !== 'needs-review')
         .map(step => step.code.join(' ')).join('\n');
     check(`8: ${id} emits no tc_summary id`, !/tc_summary_\d+/.test(code),

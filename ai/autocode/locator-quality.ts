@@ -30,7 +30,7 @@
 import {
   isPositionProvenAgainstClickedTarget, isPositionProvenAtPick,
   isProvenAgainstClickedTarget, positionalExpression, provesIdentity,
-  type TargetEvidence,
+  type CandidateMeasurement, type TargetEvidence,
 } from './dom-evidence';
 
 /** What should happen with this element. */
@@ -328,8 +328,27 @@ const BASE: Record<string, number> = {
 
 /** A CSS selector that leans on where a thing sits rather than what it is. */
 const POSITIONAL_CSS = /:nth-(child|of-type)\(|>\s*\*|\[\d+\]/;
-/** Class names a bundler produced: `css-1x2y3z`, `Button_root__aB3xQ`. */
-const GENERATED_CLASS = /\.(css-[a-z0-9]{5,}|[A-Za-z]+_[A-Za-z]+__[A-Za-z0-9]{4,}|[a-z]+-[a-z0-9]{6,}\b)/;
+/**
+ * Class names a bundler produced: `css-1x2y3z`, `Button_root__aB3xQ`, `header-a1b2c3d4`.
+ *
+ * THE THIRD ARM USED TO MATCH ORDINARY AUTHORED CLASSES, and it was measured doing so:
+ * `[a-z]+-[a-z0-9]{6,}` treats any hyphenated name whose tail is six characters or more
+ * as bundler output, so `.login-submit`, `.js-password-input`, `.error-container` and
+ * `.mdl-button` all took a -25 penalty for being "generated". Every one of those is a
+ * name somebody typed.
+ *
+ * What actually distinguishes a generated suffix is that it is a HASH - it carries at
+ * least one digit. `submit`, `container`, `button` and `input` are words; `a1b2c3d4` and
+ * `1x2y3z` are not. The lookahead adds exactly that requirement and nothing else, so
+ * `header-a1b2c3d4` is still penalised and the four names above are not.
+ *
+ * This was inert while nothing ranked - the penalty changed a score no consumer read.
+ * It stops being inert the moment `provenCandidate` ranks, which is why it is fixed
+ * first: ranking on a scale that calls `.login-submit` generated would prefer the wrong
+ * locator systematically, on every Bugasura sign-in target in the corpus.
+ */
+const GENERATED_CLASS =
+  /\.(css-[a-z0-9]{5,}|[A-Za-z]+_[A-Za-z]+__[A-Za-z0-9]{4,}|[a-z]+-(?=[a-z0-9]*[0-9])[a-z0-9]{6,}\b)/;
 
 /** One recorded step, as context for resolving a different step's locator. */
 export interface RecordedStep {
@@ -1292,6 +1311,147 @@ function isScopedStrategy(strategy: string): boolean {
  * strategy somebody's browser actually resolved. Nothing is synthesised from the
  * element's name, its text or its role unless the recording wrote it down.
  */
+/** What scoring one parsed chain produced. */
+export interface ChainScore {
+  /** One entry per segment that scored, in chain order. */
+  candidates: LocatorCandidate[];
+  /** The generated identifier the chain leans on, when it does. */
+  dynamic: DynamicIdentifier | null;
+  /** More than one locating segment - a scoped chain. */
+  scoped: boolean;
+  /** The chain needed first()/last()/nth(): Codegen matched several elements. */
+  ambiguous: boolean;
+}
+
+/**
+ * Score every segment of a parsed chain. THE scoring model, in one place.
+ *
+ * Extracted verbatim from `assessLocator`, which is still its only behavioural
+ * consumer and still calls it with exactly the same segments. It is separate now
+ * because ranking needs the same numbers for an expression that is not a recorded
+ * step: `provenCandidate` ranks measured candidates, and giving it a second scale
+ * would let a candidate score one way here and another way there. One table, one
+ * set of penalties, both callers.
+ */
+export function scoreChain(segments: ChainSegment[]): ChainScore {
+  const scoped = segments.filter(s => s.call === 'locator' || s.call.startsWith('getBy')).length > 1;
+  const ambiguous = segments.some(s => ['first', 'last', 'nth'].includes(s.call));
+  const candidates: LocatorCandidate[] = [];
+  let dynamic: DynamicIdentifier | null = null;
+
+  for (const segment of segments) {
+    const penalties: Array<{ reason: string; points: number }> = [];
+    let strategy: string | null = null;
+
+    if (segment.call === 'getByRole') {
+      if (segment.name) {
+        strategy = 'role-name';
+      } else {
+        strategy = 'role-generic';
+        penalties.push({ reason: `role "${segment.arg}" carries no accessible name`, points: -10 });
+        if (GENERIC_ROLES.has(segment.arg.toLowerCase()))
+          penalties.push({ reason: `"${segment.arg}" is a generic role - it names a shape of content, not a thing`, points: -10 });
+      }
+    } else if (segment.call === 'getByLabel') {
+      strategy = 'label';
+    } else if (segment.call === 'getByPlaceholder') {
+      strategy = 'placeholder';
+    } else if (segment.call === 'getByTestId') {
+      strategy = 'test-id';
+    } else if (segment.call === 'getByText') {
+      strategy = 'text';
+      if (segment.arg.trim().length < 3)
+        penalties.push({ reason: 'the text is too short to identify anything', points: -30 });
+    } else if (segment.call === 'getByTitle') {
+      strategy = 'title';
+    } else if (segment.call === 'getByAltText') {
+      strategy = 'alt-text';
+    } else if (segment.call === 'locator') {
+      const selector = segment.arg;
+      // A leading slash is XPath, and it is a SINGLE slash that makes it absolute -
+      // `/html/body/div[2]` is the shape Codegen falls back to when an element has
+      // nothing else to identify it. Matching only `//` sent exactly that string to
+      // the CSS branch, where it scored as an ordinary selector.
+      if (/^xpath=|^\.?\//.test(selector)) {
+        const body = selector.replace(/^xpath=/, '');
+        strategy = /^\/(?!\/)/.test(body) ? 'xpath-absolute' : 'xpath-relational';
+        if (/\[\d+\]/.test(selector))
+          penalties.push({ reason: 'positional XPath - it depends on sibling order', points: -30 });
+        if (strategy === 'xpath-absolute')
+          penalties.push({ reason: 'absolute XPath from the document root', points: -40 });
+      } else if (dynamicIdentifiersIn(selector).length) {
+        // A GENERATED ID ANYWHERE IN THE SELECTOR, not only as the whole of it.
+        //
+        // `#tr_637446` was caught here; `#tr_637446 > .tabulator-cell > .rounded-checkbox-ui`
+        // was not, because the test below requires the selector to BE an id. The compound
+        // form therefore scored as ordinary CSS and was emitted verbatim - a locator pinned
+        // to one Bugasura issue, live in TC_DASHBOARD_011's generated step.
+        //
+        // Both shapes are the same fact and now take the same branch. What may replace the
+        // id is unchanged: a candidate the browser measured at exactly one element, at the
+        // press, and confirmed to be the element acted on. Nothing is promoted by being
+        // reclassified here - a target with no such candidate becomes NEEDS_REVIEW, which
+        // is what it always should have been.
+        const identifier = analyseIdentifier(dynamicIdentifiersIn(selector)[0]);
+        dynamic = identifier;
+        strategy = 'normalized-dynamic-id';
+        penalties.push({ reason: `the selector is built on "${identifier.value}", which looks generated (${identifier.signals.join(', ')}); it identifies one record, not one element`, points: -20 });
+      } else if (/^#[^\s.>:[]+$/.test(selector)) {
+        const identifier = analyseIdentifier(selector);
+        if (identifier.dynamic) {
+          dynamic = identifier;
+          strategy = 'normalized-dynamic-id';
+          penalties.push({ reason: `id looks generated (${identifier.signals.join(', ')}); it identifies one record, not one element`, points: -20 });
+        } else {
+          strategy = 'stable-id';
+          if (CONTAINER_IDS.test(selector.slice(1)))
+            penalties.push({ reason: `"${selector}" names a layout container, not a thing to assert about`, points: -25 });
+        }
+      } else if (/^\[data-[^\]]+\]/.test(selector)) {
+        strategy = 'data-attribute';
+      } else {
+        strategy = 'css';
+        if (POSITIONAL_CSS.test(selector))
+          penalties.push({ reason: 'positional CSS', points: -25 });
+        if (GENERATED_CLASS.test(selector))
+          penalties.push({ reason: 'generated class name', points: -25 });
+        if (selector.split(/\s+/).length > 3)
+          penalties.push({ reason: 'deep descendant chain', points: -15 });
+      }
+    }
+
+    if (!strategy)
+      continue;
+    if (ambiguous)
+      penalties.push({ reason: 'the recording needed first()/nth() - Codegen matched several elements', points: -30 });
+
+    const score = Math.max(0, penalties.reduce((total, p) => total + p.points, BASE[strategy] ?? 10)
+      + (scoped && segment !== segments[0] ? 10 : 0));
+    candidates.push({ strategy, expression: segment.raw, score, penalties, scoped });
+  }
+  return { candidates, dynamic, scoped, ambiguous };
+}
+
+/**
+ * The score of a bare expression - the weakest segment, and the strongest.
+ *
+ * A chain is only as good as its weakest link (`assessLocator` classifies on exactly
+ * that), so `weakest` is the number to rank on and `best` is the tie-breaker. An
+ * expression that parses into no scored segment is not scoreable and comes back null,
+ * never as a zero: zero is a score, absence is not.
+ */
+export function scoreExpression(expression: string): { weakest: number; best: number; strategy: string } | null {
+  const { candidates } = scoreChain(parseChain(expression));
+  if (!candidates.length)
+    return null;
+  const sorted = [...candidates].sort((a, b) => a.score - b.score);
+  return {
+    weakest: sorted[0].score,
+    best: sorted[sorted.length - 1].score,
+    strategy: sorted[sorted.length - 1].strategy,
+  };
+}
+
 /**
  * The last resort, reached only after every better mechanism has declined.
  *
@@ -1406,101 +1566,10 @@ export function assessLocator(input: AssessInput): LocatorAssessment {
   }
 
   const segments = parseChain(input.locator);
-  const scoped = segments.filter(s => s.call === 'locator' || s.call.startsWith('getBy')).length > 1;
-  const ambiguous = segments.some(s => ['first', 'last', 'nth'].includes(s.call));
-  const candidates: LocatorCandidate[] = [];
-  let dynamic: DynamicIdentifier | null = null;
-
-  for (const segment of segments) {
-    const penalties: Array<{ reason: string; points: number }> = [];
-    let strategy: string | null = null;
-
-    if (segment.call === 'getByRole') {
-      if (segment.name) {
-        strategy = 'role-name';
-      } else {
-        strategy = 'role-generic';
-        penalties.push({ reason: `role "${segment.arg}" carries no accessible name`, points: -10 });
-        if (GENERIC_ROLES.has(segment.arg.toLowerCase()))
-          penalties.push({ reason: `"${segment.arg}" is a generic role - it names a shape of content, not a thing`, points: -10 });
-      }
-    } else if (segment.call === 'getByLabel') {
-      strategy = 'label';
-    } else if (segment.call === 'getByPlaceholder') {
-      strategy = 'placeholder';
-    } else if (segment.call === 'getByTestId') {
-      strategy = 'test-id';
-    } else if (segment.call === 'getByText') {
-      strategy = 'text';
-      if (segment.arg.trim().length < 3)
-        penalties.push({ reason: 'the text is too short to identify anything', points: -30 });
-    } else if (segment.call === 'getByTitle') {
-      strategy = 'title';
-    } else if (segment.call === 'getByAltText') {
-      strategy = 'alt-text';
-    } else if (segment.call === 'locator') {
-      const selector = segment.arg;
-      // A leading slash is XPath, and it is a SINGLE slash that makes it absolute -
-      // `/html/body/div[2]` is the shape Codegen falls back to when an element has
-      // nothing else to identify it. Matching only `//` sent exactly that string to
-      // the CSS branch, where it scored as an ordinary selector.
-      if (/^xpath=|^\.?\//.test(selector)) {
-        const body = selector.replace(/^xpath=/, '');
-        strategy = /^\/(?!\/)/.test(body) ? 'xpath-absolute' : 'xpath-relational';
-        if (/\[\d+\]/.test(selector))
-          penalties.push({ reason: 'positional XPath - it depends on sibling order', points: -30 });
-        if (strategy === 'xpath-absolute')
-          penalties.push({ reason: 'absolute XPath from the document root', points: -40 });
-      } else if (dynamicIdentifiersIn(selector).length) {
-        // A GENERATED ID ANYWHERE IN THE SELECTOR, not only as the whole of it.
-        //
-        // `#tr_637446` was caught here; `#tr_637446 > .tabulator-cell > .rounded-checkbox-ui`
-        // was not, because the test below requires the selector to BE an id. The compound
-        // form therefore scored as ordinary CSS and was emitted verbatim - a locator pinned
-        // to one Bugasura issue, live in TC_DASHBOARD_011's generated step.
-        //
-        // Both shapes are the same fact and now take the same branch. What may replace the
-        // id is unchanged: a candidate the browser measured at exactly one element, at the
-        // press, and confirmed to be the element acted on. Nothing is promoted by being
-        // reclassified here - a target with no such candidate becomes NEEDS_REVIEW, which
-        // is what it always should have been.
-        const identifier = analyseIdentifier(dynamicIdentifiersIn(selector)[0]);
-        dynamic = identifier;
-        strategy = 'normalized-dynamic-id';
-        penalties.push({ reason: `the selector is built on "${identifier.value}", which looks generated (${identifier.signals.join(', ')}); it identifies one record, not one element`, points: -20 });
-      } else if (/^#[^\s.>:[]+$/.test(selector)) {
-        const identifier = analyseIdentifier(selector);
-        if (identifier.dynamic) {
-          dynamic = identifier;
-          strategy = 'normalized-dynamic-id';
-          penalties.push({ reason: `id looks generated (${identifier.signals.join(', ')}); it identifies one record, not one element`, points: -20 });
-        } else {
-          strategy = 'stable-id';
-          if (CONTAINER_IDS.test(selector.slice(1)))
-            penalties.push({ reason: `"${selector}" names a layout container, not a thing to assert about`, points: -25 });
-        }
-      } else if (/^\[data-[^\]]+\]/.test(selector)) {
-        strategy = 'data-attribute';
-      } else {
-        strategy = 'css';
-        if (POSITIONAL_CSS.test(selector))
-          penalties.push({ reason: 'positional CSS', points: -25 });
-        if (GENERATED_CLASS.test(selector))
-          penalties.push({ reason: 'generated class name', points: -25 });
-        if (selector.split(/\s+/).length > 3)
-          penalties.push({ reason: 'deep descendant chain', points: -15 });
-      }
-    }
-
-    if (!strategy)
-      continue;
-    if (ambiguous)
-      penalties.push({ reason: 'the recording needed first()/nth() - Codegen matched several elements', points: -30 });
-
-    const score = Math.max(0, penalties.reduce((total, p) => total + p.points, BASE[strategy] ?? 10)
-      + (scoped && segment !== segments[0] ? 10 : 0));
-    candidates.push({ strategy, expression: segment.raw, score, penalties, scoped });
-  }
+  // `scoped` is consumed inside the scorer (it is the +10 for a narrowing segment)
+  // and has never been read out here.
+  const { candidates, dynamic: chainDynamic, ambiguous } = scoreChain(segments);
+  let dynamic: DynamicIdentifier | null = chainDynamic;
 
   if (!candidates.length) {
     return {

@@ -15,11 +15,13 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { workbookOwner } from '../projects/registry';
+
 import { applyFilter, summarize, toList } from './filter';
 import { writeExecutionReport, type ReportSummary } from './execution-report';
 import { UserFacingError, writeResultsIntoWorkbook } from './writeback';
-import { buildCache, cachePathFor, writeCache } from './data-driven';
-import { MAPPING_FILE, readMapping, runnerFor, scanDataDrivenRunners, scanSpecs, testTitleFor, unautomated, upsertEntry, writeMapping } from './mapping';
+import { buildCache, writeCache } from './data-driven';
+import { activeMappingFile, mappingFileFor, readMapping, runnerFor, scanDataDrivenRunners, scanSpecs, testTitleFor, unautomated, upsertEntry, writeMapping } from './mapping';
 import { isAutomatable, parseWorkbook } from './parser';
 import { analyzeQuality, needsReview, renderQualityReport } from './quality';
 import { readHealingLog, parseResults, HEALING_LOG } from './results';
@@ -211,7 +213,7 @@ async function commandQuality(args: Args): Promise<void> {
 
 async function commandMapping(args: Args): Promise<void> {
   const subcommand = args.positionals[0] ?? 'list';
-  const mappingFile = path.resolve(flagValue(args, 'mapping') ?? MAPPING_FILE);
+  const mappingFile = path.resolve(flagValue(args, 'mapping') ?? activeMappingFile());
   const mapping = readMapping(mappingFile);
 
   if (subcommand === 'list') {
@@ -425,7 +427,11 @@ function promoteFromResults(mapping: ReturnType<typeof readMapping>, records: Re
 async function commandRun(args: Args): Promise<void> {
   const workbookPath = requireWorkbook(args);
   const parsed = await parseWorkbook(workbookPath);
-  const mappingFile = path.resolve(flagValue(args, 'mapping') ?? MAPPING_FILE);
+  // THE WORKBOOK'S OWNER DECIDES THE MAPPING, not the ambient scope. `activeMappingFile()`
+  // falls back to the declared legacyLayout owner, so running a second project's workbook
+  // read and wrote the FIRST project's mapping - and the mapping is keyed by bare Test
+  // Case ID, so a shared TC_LOGIN_001 would overwrite the real owner's entry in place.
+  const mappingFile = path.resolve(flagValue(args, 'mapping') ?? mappingFileFor(parsed.workbookPath));
   const mapping = readMapping(mappingFile);
 
   const hasRunColumn = parsed.worksheets.some(sheet => sheet.bindings.some(binding => binding.field === 'execute'));
@@ -538,9 +544,20 @@ async function commandRun(args: Args): Promise<void> {
       {
         stdio: 'inherit',
         shell: false,
-        // The data-driven runner reads the cache for THIS workbook, not the
-        // default one, so a second workbook's rows never leak into the run.
-        env: { ...process.env, EXCEL_WORKBOOK: path.relative(process.cwd(), parsed.workbookPath) },
+        env: {
+          ...process.env,
+          // The data-driven runner reads the cache for THIS workbook, not the
+          // default one, so a second workbook's rows never leak into the run.
+          EXCEL_WORKBOOK: path.relative(process.cwd(), parsed.workbookPath),
+          // WHICH APPLICATION THIS RUN IS, passed to the child so Playwright can narrow
+          // COLLECTION before `--grep` is applied. A Test Case ID is unique within an
+          // application and deliberately reusable across them, so without this a
+          // `--grep TC_LOGIN_001` collects every project's TC_LOGIN_001, runs them all,
+          // and `results.ts` - which recovers the ID from the test title - files the
+          // wrong verdict against this workbook's row. Taken from the workbook's
+          // DECLARED owner, never from its file name.
+          AURA_APPLICATION: workbookOwner(parsed.workbookPath),
+        },
       });
 
   if (!fs.existsSync(resultsPath))
@@ -555,7 +572,7 @@ async function commandRun(args: Args): Promise<void> {
 
   const records = parseResults(resultsPath);
   const { promoted, demoted } = promoteFromResults(mapping, records);
-  writeMapping(mapping, path.resolve(flagValue(args, 'mapping') ?? MAPPING_FILE));
+  writeMapping(mapping, path.resolve(flagValue(args, 'mapping') ?? mappingFileFor(parsed.workbookPath)));
 
   const healingLog = readHealingLog(path.resolve(flagValue(args, 'healing') ?? HEALING_LOG));
   const outputPath = path.resolve(flagValue(args, 'out') ?? defaultExecutionReport(workbookPath));
@@ -599,7 +616,9 @@ async function commandRun(args: Args): Promise<void> {
 async function commandReport(args: Args): Promise<void> {
   const workbookPath = requireWorkbook(args);
   const parsed = await parseWorkbook(workbookPath);
-  const mapping = readMapping(path.resolve(flagValue(args, 'mapping') ?? MAPPING_FILE));
+  // Same rule as `commandRun`: the report is ABOUT this workbook, so it reads the
+  // mapping of the application the registry says owns it.
+  const mapping = readMapping(path.resolve(flagValue(args, 'mapping') ?? mappingFileFor(parsed.workbookPath)));
 
   const resultsArg = flagValue(args, 'results');
   const resultsPath = resultsArg ? path.resolve(resultsArg) : null;

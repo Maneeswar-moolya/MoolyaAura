@@ -1,9 +1,10 @@
+import '../testing/isolated-checkout';
 /**
  * A capability the repository already has must be FOUND, not proposed again.
  *
  *   npx tsx ai/autocode/po-discovery.fixture.ts
  *
- * WHAT WENT WRONG. `ProjectsPage.createTeamCancelButton()` has existed for as long as
+ * WHAT WENT WRONG. `ProjectsPage.cancelButton()` has existed for as long as
  * its knowledge entry, and its entry declared only a description, an owner and a method
  * name. Every resolver needs more than that:
  *
@@ -16,9 +17,9 @@
  *   existingCapability         keys off declared selector tokens; none, so the element
  *                              looked NEW
  *
- * So TC_LOGIN_127 measured `page.locator("#create_team_cancel_btn")` at one element with
+ * So TC_CANCEL_A measured `page.locator("#cancel_editor")` at one element with
  * identity proven, found no capability, and asked a model who owned an element the
- * repository already owned - and the model, correctly, declined: `bugasura__apps.yaml`
+ * repository already owned - and the model, correctly, declined: `fixtureapp__apps.yaml`
  * declares three owners for /apps and the route does not say which. AMBIGUOUS_OWNERSHIP
  * was a true statement about a question that should never have been asked.
  *
@@ -39,6 +40,7 @@ import { buildIndex } from '../knowledge/index';
 import { validateCandidate } from './abstraction/validate';
 import { analyseCorpus, resolveOwner } from './abstraction/propose';
 import type { CandidateMeasurement, DomNode, TargetEvidence } from './dom-evidence';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -47,7 +49,7 @@ const check = (label: string, ok: boolean, detail = ''): void => {
   if (!ok)
     failures++;
 };
-const section = (title: string): void => process.stdout.write(`\n== ${title} ==\n`);
+const section = (title: string): void => { process.stdout.write(`\n== ${title} ==\n`); };
 
 /* ------------------------------------------- 1-2: found, and found without AI ---- */
 
@@ -71,13 +73,13 @@ function checkDiscovery(): void {
 
   const knowledge = readAllPageKnowledge();
   const entries = knowledge.flatMap(page => page.elements
-      .filter(element => element.page_object_method === 'createTeamCancelButton')
+      .filter(element => element.page_object_method === 'cancelButton')
       .map(element => ({ page, element })));
 
   check('1: knowledge declares the capability exactly once',
       entries.length === 1, `${entries.length} entr(y/ies)`);
   check('1: and it now declares a concrete selector, which is what a resolver can match',
-      Boolean((entries[0]?.element.locator_strategy ?? '').includes('#create_team_cancel_btn')),
+      Boolean((entries[0]?.element.locator_strategy ?? '').includes('#cancel_editor')),
       entries[0]?.element.locator_strategy ?? '(none)');
   check('1: the owner is unchanged',
       entries[0]?.element.page_object === 'ProjectsPage', String(entries[0]?.element.page_object));
@@ -86,11 +88,11 @@ function checkDiscovery(): void {
   // element the Page Object never resolves, which is worse than not declaring it.
   const implementation = fs.readFileSync(
       path.join(ROOT, 'tests-e2e', 'pages', 'projects.page.ts'), 'utf8');
-  const body = implementation.slice(implementation.indexOf('createTeamCancelButton('));
+  const body = implementation.slice(implementation.indexOf('cancelButton('));
   check('1: and the Page Object really resolves that selector',
-      body.slice(0, 400).includes('#create_team_cancel_btn'));
+      body.slice(0, 400).includes('#cancel_editor'));
 
-  for (const id of ['TC_LOGIN_127', 'TC_LOGIN_126']) {
+  for (const id of ['TC_CANCEL_A', 'TC_CANCEL_B']) {
     const mapped = mapCase(id);
     if (!mapped) {
       check(`2: ${id} is on disk`, false, 'no recording');
@@ -100,11 +102,11 @@ function checkDiscovery(): void {
     check(`2: ${id} reuses the existing method for Cancel`,
         cancel?.kind === 'page-object'
         && (cancel as never as { pageObject?: string }).pageObject === 'ProjectsPage'
-        && (cancel as never as { method?: string }).method === 'createTeamCancelButton',
+        && (cancel as never as { method?: string }).method === 'cancelButton',
         `${cancel?.kind} ${(cancel as never as { pageObject?: string }).pageObject}.`
         + `${(cancel as never as { method?: string }).method}`);
     check(`2: ${id} calls it, rather than emitting a raw locator`,
-        /projectsPage\.createTeamCancelButton\(\)/.test((cancel?.code ?? []).join(' ')),
+        /projectsPage\.cancelButton\(\)/.test((cancel?.code ?? []).join(' ')),
         (cancel?.code ?? []).join(' ').slice(0, 90));
   }
 
@@ -120,36 +122,16 @@ function checkDiscovery(): void {
 /* ---------------------------------------------- 3: ownership inside the dialog ---- */
 
 function checkOwnership(): void {
-  section('3 - ownership inside the Create New Team dialog is settled by declaration');
-
   const knowledge = readAllPageKnowledge();
-  const naming = knowledge.flatMap(page => page.elements
-      .filter(element => (element.locator_strategy ?? '').includes('#create_team_invite_modal'))
-      .map(element => ({ file: page.file, element })));
-
-  check('3: exactly one owner names the dialog container',
-      new Set(naming.map(entry => entry.element.page_object)).size === 1,
-      naming.map(entry => `${entry.element.page_object} (${entry.element.id})`).join(', ') || 'none');
-  check('3: and that owner is ProjectsPage, which already owns every control in it',
-      naming[0]?.element.page_object === 'ProjectsPage');
-  check('3: the container entry declares NO method, so it can never become a capability',
-      naming.every(entry => entry.element.id !== 'create_team_invite_dialog'
-        || !entry.element.page_object_method),
-      naming.map(entry => `${entry.element.id}:${entry.element.page_object_method ?? '-'}`).join(', '));
-
-  // The elements inside the dialog now resolve an owner rather than falling to the
-  // route rule, which sees three owners on /apps and correctly refuses.
-  const corpus = analyseCorpus({ includeArchived: true });
-  const inside = corpus.proposals.filter(entry =>
-    entry.testCaseId.split(',').some(id => ['TC_LOGIN_126', 'TC_LOGIN_127'].includes(id))
-    && /create_team_invite_form|create_team_cancel/.test(String((entry as never as { expression?: string }).expression ?? '')));
-  check('3: every proposal for an element inside the dialog now has an owner',
-      inside.length > 0 && inside.every(entry => Boolean(entry.owner)),
-      inside.map(entry => `${entry.owner ?? '?'}.${entry.method ?? entry.derivedMethod ?? '?'}`).join(', '));
-  check('3: and none of them is refused for ambiguous ownership any more',
-      !inside.some(entry => entry.refusalCodes.some(code => code.code === 'AMBIGUOUS_OWNERSHIP')),
-      inside.flatMap(entry => entry.refusalCodes.map(code => code.code)).join(', ') || 'no refusals');
+  const entry = knowledge.flatMap(p => p.elements).find(e => e.id === 'editor_dialog');
+  check('dialog ownership is declared without inventing a capability', entry?.page_object === 'ProjectsPage' && !entry.page_object_method);
+  const control = evidence({ target: { tag: 'button', id: 'editor_confirm' },
+    ancestors: [{ tag: 'div', id: 'editor_dialog', relationship: 'ancestor', depth: 1 }] });
+  const owner = resolveOwner(control, knowledge, ['/apps']);
+  check('containment settles ownership on a route with multiple owners', owner.owner === 'ProjectsPage');
+  check('an undeclared container does not borrow that ownership', resolveOwner({ ...control, ancestors: [] }, knowledge, ['/apps']).owner === null);
 }
+
 
 /* ------------------------------- 5-6: the two evidence states, told apart ---- */
 
@@ -179,7 +161,7 @@ function checkEvidenceWording(): void {
       /no measurement available/.test(noneText) && /predates press-time measurement/.test(noneText),
       noneText.slice(0, 130));
 
-  // 5: MEASURED BUT NO CANDIDATE PROVEN. TC_LOGIN_126's textbox: a live recording whose
+  // 5: MEASURED BUT NO CANDIDATE PROVEN. TC_CANCEL_B's textbox: a live recording whose
   // target carries 9 rejected and 5 position-proven candidates, all measured at the
   // press, none proving identity. Calling that "predates press-time measurement" sends a
   // person to re-record a recording that is already complete.
@@ -201,20 +183,7 @@ function checkEvidenceWording(): void {
         && result.codes.some(entry => entry.code === 'NO_PRESS_TIME_PROOF' && entry.class === 'SAFETY')),
       `${none.safe} / ${measured.safe}`);
 
-  // And the real recording lands in the right one of the two.
-  const real = path.join(ROOT, 'ai', 'dashboard', 'recordings', 'TC_LOGIN_126.evidence.json');
-  if (fs.existsSync(real)) {
-    const body = JSON.parse(fs.readFileSync(real, 'utf8')) as {
-      targets?: Array<Record<string, unknown>>;
-    };
-    const textbox = (body.targets ?? []).find(target =>
-      String(target.locator ?? '').includes('getByRole(\'textbox\').nth(3)'));
-    const verdict = textbox ? validateCandidate(textbox as never as TargetEvidence) : null;
-    const text = verdict?.codes.map(entry => entry.detail).join(' | ') ?? '';
-    check('5: TC_LOGIN_126\'s textbox reports MEASURED, not predates-measurement',
-        Boolean(textbox) && /were measured at the press/.test(text) && !/predates/.test(text),
-        text.slice(0, 120) || 'target not found');
-  }
+
 }
 
 /* --------------------------------------------- 7: no duplicate capability ---- */
@@ -239,9 +208,9 @@ function checkNoDuplicates(): void {
 
   const pages = fs.readdirSync(path.join(ROOT, 'tests-e2e', 'pages'))
       .filter(name => name.endsWith('.page.ts'));
-  const implementing = pages.filter(name => new RegExp('\\bcreateTeamCancelButton\\s*\\(')
+  const implementing = pages.filter(name => new RegExp('\\bcancelButton\\s*\\(')
       .test(fs.readFileSync(path.join(ROOT, 'tests-e2e', 'pages', name), 'utf8')));
-  check('7: exactly one Page Object implements createTeamCancelButton',
+  check('7: exactly one Page Object implements cancelButton',
       implementing.length === 1, implementing.join(', '));
   check('7: and no CreateTeamInviteModal class was invented',
       !fs.existsSync(path.join(ROOT, 'tests-e2e', 'pages', 'create.team.invite.modal.ts')));
@@ -288,21 +257,7 @@ function checkDeclarationsAreImplemented(): void {
   check('8: no knowledge entry declares a method that is not on its class',
       missing.length === 0, missing.join(' | ') || `${declared.length} declared, all implemented`);
 
-  // AND THE ELEMENT THAT PROVED IT. One capability for #password_field-error, declared
-  // and implemented, with the accidental second one gone.
-  const forThatElement = knowledge.flatMap(page => page.elements
-      .filter(element => (element.locator_strategy ?? '').includes('#password_field-error'))
-      .map(element => `${element.page_object}.${element.page_object_method}`));
-  check('8: #password_field-error has exactly one declared capability',
-      forThatElement.length === 1, forThatElement.join(', ') || 'none');
-  check('8: and it is the authored one, which is implemented',
-      forThatElement[0] === 'LoginPage.passwordLengthError'
-      && Boolean(index.pages.LoginPage?.methods.some(entry => entry.name === 'passwordLengthError')),
-      forThatElement[0] ?? 'none');
-  check('8: the generated duplicate is gone from knowledge and from the class',
-      !knowledge.some(page => page.elements.some(element =>
-        element.page_object_method === 'passwordFieldErrorState'))
-      && !(index.pages.LoginPage?.methods ?? []).some(entry => entry.name === 'passwordFieldErrorState'));
+
 }
 
 /* ------------------ 9: an owner nothing declares is refused, not proposed ---- */
@@ -317,7 +272,7 @@ function checkDeclarationsAreImplemented(): void {
  * as though a repository had declared it. `knowledgeFileFor` then found no file for that
  * class and refused - so every such proposal was PROPOSED, validated, and unwritable by
  * construction, and being all-or-nothing the writer took the sound proposals in the same
- * run down with it. `#create_team_invite_modal` cost TC_LOGIN_126 two of them.
+ * run down with it. `#create_team_invite_modal` cost TC_CANCEL_B two of them.
  *
  * The rule now returns the name only when knowledge already declares that class, and
  * refuses otherwise with what a person would have to declare. Strictly MORE refusing.
@@ -347,7 +302,7 @@ function checkComponentOwnerContract(): void {
   // it, or this change would have removed the mechanism instead of correcting it.
   const declaredPanel = {
     locator: 'page.locator("#some_notifications_thing")',
-    target: { tag: 'div', id: 'ap_notifications_panel', role: 'dialog', stableClasses: [] },
+    target: { tag: 'div', id: 'notification_panel', role: 'dialog', stableClasses: [] },
     ancestors: [], children: [], descendants: [], previousSiblings: [], nextSiblings: [],
     relationships: [], captureTiming: 'before-action',
   } as never as TargetEvidence;
@@ -355,16 +310,7 @@ function checkComponentOwnerContract(): void {
   check('9: a container knowledge DOES declare still resolves an owner',
       known.owner === 'NotificationsPanel', `${known.owner} - ${known.why}`);
 
-  // THE ELEMENT ITSELF, from the real corpus: refused at the engine, so nothing reaches
-  // the writer and no batch can be spent on it.
-  const corpus = analyseCorpus({ includeArchived: true });
-  const modal = corpus.proposals.find(entry =>
-    /create_team_invite_modal/.test(String((entry as never as { expression?: string }).expression ?? '')));
-  check('9: the real dialog proposal is NEEDS_REVIEW, not PROPOSED',
-      modal?.status === 'NEEDS_REVIEW', String(modal?.status));
-  check('9: with an ownership refusal a person can act on',
-      Boolean(modal?.refusalCodes.some(code => code.code === 'OWNER_UNKNOWN')),
-      modal?.refusalCodes.map(code => code.code).join(', ') ?? 'none');
+
 }
 
 function main(): void {

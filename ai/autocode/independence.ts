@@ -32,17 +32,28 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { authRequirement } from './groups';
-import { MAPPING_FILE, readMapping } from '../excel/mapping';
+import { readMapping } from '../excel/mapping';
 import { parseWorkbook } from '../excel/parser';
+import { generatedDir } from './work';
 
 const ROOT = process.cwd();
-const GENERATED = path.resolve(ROOT, 'tests-e2e', 'generated');
+
+/**
+ * The specs this checks, from the active application's scope.
+ *
+ * It was a private `path.resolve(ROOT,'tests-e2e','generated')` - a fourth spelling of
+ * a directory `work.ts` already owns. The check itself is a SHARED framework property
+ * ("no generated spec depends on the generation browser, and one that runs signed in
+ * signs in for itself"), but the specs it reads are application-owned, so it has to be
+ * asked of one application's specs at a time. Scanning every application's would
+ * report a failure against a suite the run was not about.
+ */
+const generatedSpecsDir = (): string => generatedDir();
 
 /** Ways a spec can legitimately authenticate, all of them through the fixtures. */
 const SIGN_IN_PATTERNS = [
   /requireCredentials\s*\(/,
   /\bsignIn\s*\(/,
-  /bugasuraCredentials/,
   /storageState/,
 ];
 
@@ -121,18 +132,18 @@ export async function checkIndependence(workbook?: string): Promise<Independence
   } else {
     // Without a workbook, fall back to the mapping's record of which rows exist.
     // Less precise about authentication, so only the leak check applies to those.
-    const mapping = readMapping(MAPPING_FILE);
+    const mapping = readMapping();
     void mapping;
   }
 
-  const specs = fs.existsSync(GENERATED)
-    ? fs.readdirSync(GENERATED).filter(name => name.endsWith('.spec.ts'))
+  const specs = fs.existsSync(generatedSpecsDir())
+    ? fs.readdirSync(generatedSpecsDir()).filter(name => name.endsWith('.spec.ts'))
     : [];
 
   let authRowsChecked = 0;
   for (const name of specs) {
     const file = `tests-e2e/generated/${name}`;
-    const source = fs.readFileSync(path.join(GENERATED, name), 'utf8');
+    const source = fs.readFileSync(path.join(generatedSpecsDir(), name), 'utf8');
 
     for (const leak of GENERATION_LEAKS) {
       const found = leak.exec(source);

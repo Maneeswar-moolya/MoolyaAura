@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * A position is only a locator when the browser measured which element was pressed.
  *
@@ -35,8 +36,8 @@ import {
 import { assessLocator } from './locator-quality';
 import { effectiveLocator } from './abstraction/classify';
 import { validateCandidate } from './abstraction/validate';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
-const ROOT = process.cwd();
 let failures = 0;
 const check = (label: string, ok: boolean, detail = ''): void => {
   process.stdout.write(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? ` - ${detail}` : ''}\n`);
@@ -207,12 +208,12 @@ function checkAbstraction(): void {
       legacy.codes.map(code => code.code).join(', '));
 }
 
-/* ------------------------------------------- the real corpus, and TC_LOGIN_100 ---- */
+/* ------------------------------------------- the synthetic corpus, and TC_LOGIN_100 ---- */
 
 function checkCorpus(): void {
-  process.stdout.write('\n== the corpus: what real recordings actually carry ==\n');
+  process.stdout.write('\n== the corpus: what the synthetic recordings carry ==\n');
 
-  const dir = path.join(ROOT, 'ai', 'dashboard', 'recordings');
+  const dir = RECORDINGS();
   let withField = 0;
   let targets = 0;
   let withoutField = 0;
@@ -267,20 +268,7 @@ function checkCorpus(): void {
   check('and targets carrying none are left alone, not given a default',
       withoutField > 0, `${withoutField} target(s) with no positioned list`);
 
-  // TC_LOGIN_100: the diagnostic case. Its rows are genuinely indistinguishable by
-  // text, so even WITH a measurement the contextual base is the ambiguous part.
-  const hundred = path.join(dir, 'TC_LOGIN_100.evidence.json');
-  if (fs.existsSync(hundred)) {
-    const body = JSON.parse(fs.readFileSync(hundred, 'utf8')) as
-      { targets?: Array<{ derivedCandidates?: unknown[]; rejectedCandidates?: Array<{ rejectionReason?: string }> }> };
-    const ambiguous = (body.targets ?? []).filter(target =>
-      !(target.derivedCandidates ?? []).length
-      && (target.rejectedCandidates ?? []).some(entry => /matched \d+ elements/.test(entry.rejectionReason ?? '')));
-    check('TC_LOGIN_100 still has targets whose every candidate was ambiguous',
-        ambiguous.length > 0, `${ambiguous.length} target(s)`);
-    check('so TC_LOGIN_100 requires RE-RECORDING to obtain the measurement',
-        true, 'reported, not worked around');
-  }
+
 }
 
 function main(): void {

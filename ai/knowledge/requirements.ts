@@ -233,7 +233,7 @@ const FUNCTION_WORDS = new Set([
   'you', 'your', 'yours', 'we', 'us', 'our', 'me', 'my', 'mine', 'him', 'she', 'he',
   'there', 'here', 'up', 'down', 'out', 'off', 'over', 'under', 'user', 'users',
   'test', 'case', 'step', 'steps', 'expected', 'result', 'application', 'app',
-  'bugasura', 'system', 'successfully', 'properly', 'correctly', 'able',
+  'system', 'successfully', 'properly', 'correctly', 'able',
 ]);
 
 /**

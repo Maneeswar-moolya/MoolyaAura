@@ -12,8 +12,8 @@ A framework for turning **test cases written in Excel** into **executable Playwr
 TypeScript**, with a live browser recorder for authoring them by demonstration.
 
 It is for QA engineers and developers automating a web application against a real environment.
-The reference application used throughout the docs and the sample workbook is Bugasura; the
-framework itself is not tied to it, but the Page Objects and the sample data are.
+The repository starts with no installed applications. Add projects through the dashboard;
+configuration and application artifacts remain isolated by applicationId.
 
 | Piece | Role |
 | --- | --- |
@@ -116,7 +116,7 @@ For a test author who would rather write the case than perform it.
 3. Generate:
 
 ```bash
-npm run excel:autocode -- excel/login-test-cases.xlsx --ids TC_LOGIN_050
+npm run excel:autocode -- excel/<applicationId>-test-cases.xlsx --ids TC_LOGIN_050
 ```
 
 4. Run it:
@@ -173,7 +173,7 @@ cp .env.example .env          # fill in the placeholders; .env is git-ignored
 Verify the install without touching the application:
 
 ```bash
-npm run excel:list -- excel/login-test-cases.xlsx
+npm run excel:list -- excel/<applicationId>-test-cases.xlsx
 ```
 
 Then pick your entry point:
@@ -181,7 +181,7 @@ Then pick your entry point:
 ```bash
 npm run excel:dashboard                     # the UI: browse, record, run, read results
 npm run excel:test                          # run the Excel-sourced suite
-npm run excel:run -- excel/login-test-cases.xlsx   # workbook drives it, results written back
+npm run excel:run -- excel/<applicationId>-test-cases.xlsx   # workbook drives it, results written back
 npm run excel -- help                       # full toolkit reference
 ```
 

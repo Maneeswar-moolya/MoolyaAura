@@ -49,21 +49,23 @@ import {
   type LocatorAssessment, type RecordedStep,
 } from './locator-quality';
 import { resolveParameterisedReuse } from './abstraction/parameter';
-import { provenCandidate } from './abstraction/classify';
+import { provenCandidate, rankProvenCandidates } from './abstraction/classify';
 import {
   evidenceFor, evidenceForAssertionSubject, evidenceUnavailable, isDomEvidence,
   provesIdentity, readAssertionProvenance,
-  type RecordingEvidence, type TargetEvidence,
+  type CandidateMeasurement, type RecordingEvidence, type TargetEvidence,
 } from './dom-evidence';
 import {
   declaredSelectors, type PageElement, type PageKnowledge, readAllPageKnowledge,
 } from '../knowledge/page-knowledge';
 import {
   archiveArtifact, archivedPath, assertionPhrase, assertionsPath, evidencePath, parseRecording,
-  readArchivedArtifact, readArtifact,
+   readArtifact,
   type RecordedAction, type RecordedAssertion, type Recording,
 } from '../dashboard/recorder';
 import { deriveScenarioTitle, unstableTitleReason } from './scenario-title';
+import { activeScopePath } from '../projects/scope';
+import { credentialsFixtureName } from './abstraction/writer';
 import type { TestCase } from '../excel/types';
 
 const ROOT = process.cwd();
@@ -644,10 +646,36 @@ export function findMethodByProvenLocator(
   if (!evidence)
     return null;
 
-  // THE PROOF IS THE ONLY EXPRESSION THAT MAY BE READ. No press-time proof, no reuse -
-  // the same bar as everywhere else, and the reason rules 8-10 need no separate code.
-  const proven = provenCandidate(evidence, role);
-  if (!proven || !provesIdentity(proven, role))
+  // EVERY PROVEN EXPRESSION IS TRIED, BEST FIRST - not only the top-ranked one.
+  //
+  // This used to read `provenCandidate` alone, which was harmless while that returned
+  // the first candidate in generation order and generation put the authored id first.
+  // Ranking changed which one comes back, and TC_LOGIN_126/127 immediately lost the
+  // reuse of `ProjectsPage.createTeamCancelButton()`: the ranked pick was a scoped text
+  // chain, knowledge declares `#create_team_cancel_btn`, and a resolver that sees one
+  // expression cannot notice that another proven candidate names the very method it is
+  // looking for.
+  //
+  // NOTHING IS RELAXED. Each candidate still has to pass `provesIdentity` for this role,
+  // still may not be positional or built on a generated id, and still has to resolve to
+  // exactly ONE declared method - two claimants are refused here as they always were.
+  // What changed is only how many proven expressions get to ask the question.
+  for (const proven of rankProvenCandidates(evidence, role)) {
+    const match = declaredMethodFor(proven, knowledge, index, role);
+    if (match)
+      return match;
+  }
+  return null;
+}
+
+/** One proven expression against the declared methods. See `findMethodByProvenLocator`. */
+function declaredMethodFor(
+  proven: CandidateMeasurement,
+  knowledge: PageKnowledge[],
+  index: FrameworkIndex,
+  role: 'action' | 'assertion',
+): ElementMatch | null {
+  if (!provesIdentity(proven, role))
     return null;
   const expression = (proven.expression ?? '').trim();
   if (!expression || isPositionalLocator(expression) || chainHasDynamicIdentifier(expression))
@@ -1010,13 +1038,19 @@ export function mapRecording(recording: Recording): MappingResult {
       const opener = openerFor(recording.startUrl, knowledge, index);
       const loginObject = opener?.pageObject === 'LoginPage' ? 'LoginPage' : 'LoginPage';
       const signIn = methodIsDeliverable(index, loginObject, 'signIn');
-      if (signIn) {
+      // THE CREDENTIALS FIXTURE IS THIS APPLICATION'S OWN. Hardcoding
+      // `bugasuraCredentials` emitted one application's capability name into every
+      // application's specs, so an authenticated case for a new project destructured a
+      // fixture its module does not declare and Playwright refused the whole file.
+      // `credentialsFixtureName()` reads the name from the fixtures module itself.
+      const credentialsFixture = credentialsFixtureName();
+      if (signIn && credentialsFixture) {
         fixtures.add(fixtureFor(loginObject));
-        fixtures.add('bugasuraCredentials');
+        fixtures.add(credentialsFixture);
         steps.push({
           kind: 'authenticate',
           label: 'Sign in',
-          code: [`await ${fixtureFor(loginObject)}.signIn(bugasuraCredentials.email, bugasuraCredentials.password);`],
+          code: [`await ${fixtureFor(loginObject)}.signIn(${credentialsFixture}.email, ${credentialsFixture}.password);`],
           pageObject: loginObject,
           method: 'signIn',
           why: 'the recording contains a sign-in; the credentials come from the existing fixture, never from the recording',
@@ -1382,11 +1416,26 @@ export function mapRecording(recording: Recording): MappingResult {
 /* ---------------------------------------------------------------- assembly */
 
 /** Fixture order the existing specs use, so a generated file reads like a written one. */
-const FIXTURE_ORDER = ['page', 'loginPage', 'projectsPage', 'workspacePage', 'bugasuraCredentials', 'step'];
+// Ordering only, so a generated destructure reads consistently. `page` first and `step`
+// last are framework; the Page Object names between them are Bugasura's and are simply
+// absent for any other application, which leaves its own fixtures in discovery order.
+// A credentials fixture sorts just before `step` whatever it is called - matched by SHAPE
+// rather than by name, because the name belongs to the application.
+const FIXTURE_ORDER = ['page', 'loginPage', 'projectsPage', 'workspacePage', 'step'];
+
+function fixtureRank(name: string): number {
+  if (/[Cc]redentials$/.test(name))
+    return FIXTURE_ORDER.length - 1.5;
+  const at = FIXTURE_ORDER.indexOf(name);
+  return at === -1 ? FIXTURE_ORDER.length - 0.5 : at;
+}
 
 function orderedFixtures(fixtures: Set<string>): string[] {
-  const known = FIXTURE_ORDER.filter(name => fixtures.has(name));
-  const rest = [...fixtures].filter(name => !FIXTURE_ORDER.includes(name)).sort();
+  // Ranked rather than partitioned, so a credentials fixture lands in the same slot
+  // whatever the application calls it.
+  const ordered = [...fixtures].sort((a, b) => fixtureRank(a) - fixtureRank(b) || a.localeCompare(b));
+  const known = ordered.filter(name => fixtureRank(name) < FIXTURE_ORDER.length - 0.5);
+  const rest = ordered.filter(name => fixtureRank(name) >= FIXTURE_ORDER.length - 0.5);
   return [...known, ...rest];
 }
 
@@ -1405,6 +1454,36 @@ export interface AssembledSpec {
  * assertions, and a spec that looked different would be a second dialect nobody
  * asked for.
  */
+/**
+ * The module specifier a generated spec imports its fixtures from.
+ *
+ * DERIVED FROM THE TWO REAL PATHS, never spelled `../fixtures`, for exactly the reason
+ * `registerFixture` in `abstraction/writer.ts` derives its Page Object imports: the
+ * generated directory and the fixtures module move INDEPENDENTLY under a scoped layout.
+ * Bugasura owns the flat pair (`tests-e2e/generated/x.spec.ts` -> `tests-e2e/fixtures.ts`,
+ * which really is `../fixtures`); a scoped application has
+ * `tests-e2e/generated/<app>/x.spec.ts` -> `tests-e2e/<app>.fixtures.ts`, which is
+ * `../../<app>.fixtures`. The hardcoded string was right for one application and
+ * resolves to the WRONG application's fixtures module for the next one - and Playwright
+ * answers that with `Test has unknown parameter`, refusing the whole file, which
+ * `ai/CLAUDE.md` already records as how ten specs were lost once.
+ *
+ * `path.relative` between the two is the only expression correct in both layouts.
+ * POSIX separators because this is a module specifier, not a filesystem path.
+ */
+function fixturesSpecifier(): string {
+  // Resolved through the scope layer directly rather than through `work.ts` /
+  // `abstraction/writer.ts`, which export the same two paths: this module is loaded by
+  // roughly a dozen offline fixtures, and importing either of those would pull the
+  // survey and the Page Object writer into gates that are meant to touch nothing.
+  const from = activeScopePath('generatedDir', path.resolve(ROOT, 'tests-e2e', 'generated'));
+  const to = activeScopePath('fixturesFile', path.resolve(ROOT, 'tests-e2e', 'fixtures.ts'));
+  const specifier = path.relative(from, to)
+      .split(path.sep).join('/')
+      .replace(/\.ts$/, '');
+  return specifier.startsWith('.') ? specifier : `./${specifier}`;
+}
+
 export function assembleSpec(testCase: TestCase, mapping: MappingResult, workbook: string): string {
   const fixtures = orderedFixtures(mapping.fixtures);
   const lines: string[] = [];
@@ -1428,9 +1507,10 @@ export function assembleSpec(testCase: TestCase, mapping: MappingResult, workboo
   lines.push('');
 
   const imports = ['expect', 'test', 'trace'];
-  if (mapping.fixtures.has('bugasuraCredentials'))
+  const credentialsFixture = credentialsFixtureName();
+  if (credentialsFixture && mapping.fixtures.has(credentialsFixture))
     imports.splice(1, 0, 'requireCredentials');
-  lines.push(`import { ${imports.join(', ')} } from '../fixtures';`);
+  lines.push(`import { ${imports.join(', ')} } from '${fixturesSpecifier()}';`);
   lines.push('');
 
   const describe = testCase.module.trim() || testCase.source.worksheet.trim() || 'Recorded';
@@ -1473,8 +1553,8 @@ export function assembleSpec(testCase: TestCase, mapping: MappingResult, workboo
   // `literal()` on both halves, where the title used to escape only the single quote:
   // a scenario carrying a backslash produced a valid trace line and an invalid title.
   lines.push(`  test(${literal(`${testCase.testCaseId} - ${scenario}`)}, async ({ ${fixtures.join(', ')} }) => {`);
-  if (mapping.fixtures.has('bugasuraCredentials'))
-    lines.push('    requireCredentials(bugasuraCredentials);');
+  if (credentialsFixture && mapping.fixtures.has(credentialsFixture))
+    lines.push(`    requireCredentials(${credentialsFixture});`);
   lines.push('');
   lines.push('    await trace({');
   lines.push(`      testCaseId: ${literal(testCase.testCaseId)},`);

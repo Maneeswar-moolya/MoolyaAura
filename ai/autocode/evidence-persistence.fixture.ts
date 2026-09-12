@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Does SAVING a recording actually write its evidence to disk?
  *
@@ -16,6 +17,7 @@
  * Offline: no browser, no model, no network.
  */
 
+import { recordingSource, writeFixtureFile } from '../testing/synthetic-data';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -26,6 +28,7 @@ import { locatorMetrics, mapRecording, readEvidence } from './from-recording';
 import {
   artifactPath, discardArtifact, evidencePath, parseRecording, persistRecording,
 } from '../dashboard/recorder';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 const CASE_ID = 'TC_EVID_PERSIST';
@@ -42,7 +45,7 @@ const check = (label: string, ok: boolean, detail = '') => {
 const SCRIPT = `import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://my.bugasura.io/');
+  await page.goto('https://portal.fixture.invalid/');
   await page.getByText('Faclon labs').click();
   await expect(page.locator('#tc_summary_639978')).toContainText('Line Chart : Getting flat');
   await page.locator('#tc_summary_639978').getByText('Line Chart : Getting flat').click();
@@ -51,7 +54,7 @@ test('test', async ({ page }) => {
 /**
  * A graph shaped like the live capture produces, for the TC_LOGIN_055 targets.
  *
- * The values are the ones measured live on Bugasura during the TC_LOGIN_042
+ * The values are the ones represented by synthetic input for the historical TC_LOGIN_042
  * investigation - an unclassed span whose PARENT carries the responsive classes,
  * inside `#bugReport-table`. TC_LOGIN_055 itself is only a reference here; it is never
  * written to, regenerated or modified.
@@ -100,7 +103,8 @@ function main(): void {
     check('A: *** the sidecar was written by the production save ***',
         fs.existsSync(evidencePath(CASE_ID)), evidencePath(CASE_ID));
     check('A: it returns the .spec.ts path, as before',
-        returned === `ai/dashboard/recordings/${CASE_ID}.spec.ts`, String(returned));
+        returned === path.relative(ROOT, artifactPath(CASE_ID)).split(path.sep).join('/'),
+        String(returned));
     check('A: the sidecar sits beside the script under the same ID',
         path.dirname(evidencePath(CASE_ID)) === path.dirname(artifactPath(CASE_ID))
         && path.basename(evidencePath(CASE_ID)) === `${CASE_ID}.evidence.json`);
@@ -123,7 +127,7 @@ function main(): void {
     check('C: beforeActionCount recorded', persisted.recording?.beforeActionCount === 2);
     check('C: failures recorded', persisted.recording?.failures === 0);
     check('C: no new telemetry file was created',
-        !fs.existsSync(path.join(ROOT, 'ai', 'dashboard', 'recordings', `${CASE_ID}.telemetry.json`)));
+        !fs.existsSync(path.join(RECORDINGS(), `${CASE_ID}.telemetry.json`)));
 
     process.stdout.write('\n== D — the read side loads exactly this ==\n');
     const loaded = readEvidence(CASE_ID);
@@ -214,7 +218,18 @@ function main(): void {
     check('H: it passes the HELD evidence, not a fresh object',
         /held\.recording\.evidence/.test(keepBody));
     check('H: persistRecording uses the existing evidencePath helper',
-        /const sidecar = evidencePath\(testCaseId\)/.test(source));
+        /const sidecar = evidencePath\(testCaseId[,)]/.test(source));
+    // Phase 3: the helper now takes the directory, because the SESSION's application
+    // and the process's ambient one are different questions in a dashboard serving
+    // many requests. Both sidecars and the script must resolve against the same one,
+    // or a save would split a recording across two projects' stores.
+    check('H: and the script and both sidecars share one resolved directory',
+        /const file = artifactPath\(testCaseId, dir\)/.test(source)
+        && /const assertions = assertionsPath\(testCaseId, dir\)/.test(source)
+        && /const sidecar = evidencePath\(testCaseId, dir\)/.test(source));
+    check('H: and that directory comes from the recording\'s own locked origin',
+        /origin\s*\?\s*resolveScope\(\{ applicationId: origin\.applicationId \}\)\.paths\.recordingsDir/
+            .test(source));
     check('H: the stale removal comes before the availability check',
         source.indexOf('fs.rmSync(sidecar, { force: true })')
           < source.indexOf('if (evidence.available)'));
@@ -222,8 +237,14 @@ function main(): void {
         (source.match(/\.evidence\.json/g) ?? []).length === 1,
         `${(source.match(/\.evidence\.json/g) ?? []).length} literal(s)`);
 
-    process.stdout.write('\n== I — TC_LOGIN_055 as a reference, never modified ==\n');
-    const real = path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_055.spec.ts');
+    process.stdout.write('\n== I — an independent synthetic reference remains untouched ==\n');
+    const referenceSource = recordingSource([
+      "await expect(page.locator('#tc_summary_639978')).toContainText('Summary');",
+      "await expect(page.locator('#fixture_heading')).toBeVisible();",
+      "await expect(page.locator('#fixture_notice')).toContainText('Ready');",
+      "await page.locator('#tc_summary_639978').getByText('Line Chart : Getting flat').click();",
+    ]);
+    const real = writeFixtureFile('ai/dashboard/recordings/fixtureapp/TC_REFERENCE.spec.ts', referenceSource);
     if (fs.existsSync(real)) {
       const realScript = fs.readFileSync(real, 'utf8');
       const parsed = parseRecording(realScript, { startUrl: '', browser: '', durationMs: 0 });
@@ -240,7 +261,7 @@ function main(): void {
           !withEvidence.needsReview.some(step => /tc_summary|contains/.test(step.from)),
           withEvidence.needsReview.map(step => step.from).join(', ') || '(none)');
       check('I: TC_LOGIN_055 files untouched by this fixture',
-          fs.existsSync(real) && !fs.existsSync(evidencePath('TC_LOGIN_055')));
+          fs.readFileSync(real, 'utf8') === referenceSource && !fs.existsSync(evidencePath('TC_REFERENCE')));
     } else {
       check('I: TC_LOGIN_055 artifact present', false, 'missing');
     }

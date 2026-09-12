@@ -168,7 +168,7 @@ async function main(): Promise<void> {
   if (skipped.length) {
     write(`\n${skipped.length} skipped, so nothing was proved either way ` +
       `(${skipped.map(entry => entry.target.testCaseId).join(', ')}).\n` +
-      '  Usually a missing credential or an opt-in like BUGASURA_ALLOW_DATA_MUTATION. Not a ' +
+      '  Usually a missing credential or an application-specific mutation opt-in. Not a ' +
       'false positive - a skip reports as a skip - but it is not coverage either.\n');
   }
   if (red.length) {

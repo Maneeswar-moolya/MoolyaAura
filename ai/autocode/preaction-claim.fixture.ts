@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * P0.6 — parking evidence is not enough; it has to be CLAIMED.
  *
@@ -34,9 +35,10 @@ import { PREACTION_HOOK } from './dom-capture-source';
 import { claimParkedEntry, implicitRole, literalsIn } from '../dashboard/live-recorder';
 import { assessLocator } from './locator-quality';
 import {
-  evidenceFor, isProvenAgainstClickedTarget,
+   isProvenAgainstClickedTarget,
   type CandidateMeasurement, type TargetEvidence,
 } from './dom-evidence';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 const MUTATE = process.argv.includes('--mutate');
@@ -171,7 +173,7 @@ function checkAmbiguity(): void {
  * A two-letter literal must not match a fragment of a longer word.
  *
  * P1.2c: `getByRole('button', { name: 'ON', exact: true })` claimed a parked press
- * of Bugasura's sign-in button, because `satisfiedBy` was a substring test and
+ * of FixturePortal's sign-in button, because `satisfiedBy` was a substring test and
  * "on" is inside "buttON" - and inside "mdl-button" too. The evidence for
  * TC_LOGIN_075 therefore described the ON control as `<button name="login">Sign
  * In</button>`. P0.7's document check refused to report a count for it, so the
@@ -304,38 +306,14 @@ function checkUnchanged(): void {
 }
 
 function checkRealArtifacts(): void {
-  process.stdout.write('\n== the real recordings — would each locator claim its own graph? ==\n');
-  for (const id of ['TC_LOGIN_059', 'TC_LOGIN_060']) {
-    const file = path.resolve(ROOT, `ai/dashboard/recordings/${id}.evidence.json`);
-    if (!fs.existsSync(file)) {
-      check(`${id} sidecar present`, false);
-      continue;
-    }
-    const record = JSON.parse(fs.readFileSync(file, 'utf8'));
-    process.stdout.write(`\n  ${id} (beforeActionCount=${record.recording?.beforeActionCount})\n`);
-    for (const entry of record.targets) {
-      if (entry.target?.tag === '(not found)')
-        continue;
-      // Rebuild a parked entry from the captured graph: same target, parent, ancestors.
-      const asParked = parked(
-          { tag: entry.target.tag, id: entry.target.id, type: entry.target.type,
-            role: entry.target.role, name: entry.target.name,
-            text: entry.target.text, classes: entry.target.stableClasses ?? [] },
-          entry.parent, entry.ancestors ?? []);
-      const hit = Boolean(claim([asParked], entry.locator));
-      const ambiguous = typeof entry.matchCount === 'number' && entry.matchCount > 1;
-      process.stdout.write(`    ${hit ? 'claim OK ' : 'no claim '} matchCount=${String(entry.matchCount).padEnd(4)}`
-        + `${ambiguous ? ' (ambiguous — never resolves the action) ' : ' '}${entry.locator}\n`);
-      if (entry.locator.includes('tc_summary_638717') && entry.locator.includes('getByText'))
-        check(`  ${id}: the summary click claims its graph`, hit);
-      if (entry.locator.includes("getByText('Faclon labs')")) {
-        check(`  ${id}: Faclon labs claims its graph (diagnostics only)`, hit);
-        check(`  ${id}: and its recorded locator is ambiguous, so it cannot resolve`, ambiguous,
-            `matchCount=${entry.matchCount}`);
-      }
-    }
-  }
+  const own = parked({ tag: 'span', text: 'Draft summary', classes: [] },
+      { tag: 'div', id: 'summary_900001' }, [{ tag: 'div', id: 'summary_900001' }]);
+  check('integration: scoped text claims the graph with that scope',
+      Boolean(claim([own], "page.locator('#summary_900001').getByText('Draft summary')")));
+  check('integration: a different scope cannot claim the same text',
+      !claim([own], "page.locator('#summary_900002').getByText('Draft summary')"));
 }
+
 
 /* ------------------------------------------------------------------ mutation */
 

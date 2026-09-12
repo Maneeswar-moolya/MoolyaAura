@@ -22,7 +22,7 @@
 import path from 'node:path';
 
 import { scanDataDrivenRunners } from '../../ai/excel/mapping';
-import { expect, test, trace } from '../fixtures';
+import { expect, baseTest as test, trace } from '../support/base-fixtures';
 import { describeMatcher, loadDataDriven, messageMatches, resolveInputs } from '../support/data-driven';
 import { BASE_URL } from '../support/env';
 import {

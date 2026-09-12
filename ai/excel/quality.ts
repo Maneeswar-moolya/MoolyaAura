@@ -8,7 +8,7 @@
  * workflow in .claude/skills/excel-automation.md, which reads this report first.
  */
 
-import { normalizeOutcome, parseInputs } from './data-driven';
+import { literalValueOf, normalizeOutcome, parseInputs } from './data-driven';
 import { contractGap } from './intent';
 import type { ParseResult, TestCase } from './types';
 
@@ -125,7 +125,7 @@ export function analyzeQuality(parsed: ParseResult): Finding[] {
           outcome,
           inputNames: Object.keys(inputs),
           steps: testCase.steps,
-          submit: inputs.submit?.value,
+          submit: literalValueOf(inputs.submit),
         })
         : null;
       if (gap) {

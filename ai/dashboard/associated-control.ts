@@ -92,6 +92,12 @@ export interface AssociationCandidate {
   node: DomNode;
   state?: LiveState;
   via?: AssociationVia | null;
+  /**
+   * The parked-target slot this candidate was registered under, when the picker
+   * registered one. Supplied by the in-page picker (`assertion-picker-source.ts`)
+   * and read by `registrySlotFor`; the type had simply never declared it.
+   */
+  targetIndex?: number | null;
 }
 
 export interface ResolvedSubject {

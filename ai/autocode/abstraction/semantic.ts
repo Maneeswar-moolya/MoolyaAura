@@ -460,6 +460,17 @@ export function nameProblem(name: string | null): string | null {
   return null;
 }
 
+/**
+ * The questions whose ANSWER IS THE DECISION ITSELF.
+ *
+ * One list, read by the decline rule and by the terminality test, because they are the same
+ * judgement asked twice: for these codes "NEEDS_REVIEW" is not an incomplete reply that a
+ * repair could complete - it is the reply.
+ */
+const DECIDABLE_BY_DECISION = [
+  'UNCLASSIFIED_TARGET', 'CONTAINER_OR_CAPABILITY', 'CONSTANT_PARAMETER_VALUE',
+] as const;
+
 export interface Revalidation {
   accepted: boolean;
   status: Proposal['status'];
@@ -485,6 +496,14 @@ export interface Revalidation {
   };
   /** A one-clause description for the knowledge entry, sanitised. Null to keep the derived one. */
   description?: string | null;
+  /**
+   * REPAIR CANNOT IMPROVE THIS ANSWER, and the validator is what established that.
+   *
+   * Not "the answer was rejected" - most rejections ARE repairable and stay so. This says
+   * the resolver answered the question that was asked, completely, and the answer is that
+   * it declines. Asking again is asking the same thing.
+   */
+  terminal?: boolean;
 }
 
 /**
@@ -549,13 +568,28 @@ export function revalidate(
   // So a decline is terminal only where the DECISION IS ITSELF THE ANSWER - is this a
   // capability, is this worth a parameter - and elsewhere it is out-of-scope commentary
   // on a question nobody asked, exactly like an unsolicited method name.
-  const decisionIsTheAnswer = asked('UNCLASSIFIED_TARGET') || asked('CONTAINER_OR_CAPABILITY')
-    || asked('CONSTANT_PARAMETER_VALUE');
+  const decisionIsTheAnswer = DECIDABLE_BY_DECISION.some(code => asked(code));
   const unanswered = clearedCodes.filter(code => !answers(code, recommendation));
   if (recommendation.decision === 'NEEDS_REVIEW' && (decisionIsTheAnswer || unanswered.length)) {
-    return review(unanswered.length
-      ? `the resolver declined and left ${unanswered.join(', ')} unanswered, which is a correct answer`
-      : 'the resolver declined to settle it, which is a correct answer');
+    // TERMINAL, AND ONLY WHERE IT IS PROVABLY TERMINAL.
+    //
+    // A decline is the COMPLETE answer when every question still open is one whose answer
+    // IS the decision - is this a capability, is this a container, is that value worth a
+    // parameter. Repairing such an answer asks the identical question again, which is what
+    // spent two further transport calls per exchange and up to 120 s each.
+    //
+    // It is NOT terminal when something else is still open. `NO_METHOD_NAME` left
+    // unanswered beside a decline is repairable: the repair prompt quotes what is missing
+    // and a resolver has produced a name at the second attempt before. So the test is not
+    // "did it decline" but "is there anything left that a repair could answer".
+    const terminal = decisionIsTheAnswer
+      && unanswered.every(code => (DECIDABLE_BY_DECISION as readonly string[]).includes(code));
+    return {
+      ...review(unanswered.length
+        ? `the resolver declined and left ${unanswered.join(', ')} unanswered, which is a correct answer`
+        : 'the resolver declined to settle it, which is a correct answer'),
+      terminal,
+    };
   }
   if (unanswered.length)
     return review(`the resolver did not answer ${unanswered.join(', ')}`);
@@ -865,6 +899,10 @@ export interface SemanticOutcome {
   repaired: number;
   /** Total transport calls, which is what the run actually costs. */
   calls: number;
+  /** Wall clock across every exchange - the number the metrics could not report. */
+  totalMs: number;
+  /** Exchanges that ended on a validated terminal answer rather than a spent budget. */
+  terminalStops: number;
   audits: SemanticAudit[];
 }
 
@@ -904,6 +942,13 @@ export function exhaustedBefore(fingerprint: string, file = AUDIT_LOG): boolean 
       // AN OUTAGE SPENT NOTHING. A history of nothing but unreachable-resolver
       // attempts is not a spent budget, and memoising it would let one afternoon
       // without Claude Code close the question permanently.
+      // A SETTLED ANSWER IS SETTLED NEXT RUN TOO. The validator established that repair
+      // cannot improve it, so re-asking spends a call to reproduce a recorded conclusion -
+      // which is the same waste this memo exists to prevent, reached one step earlier.
+      // Absent on every record written before terminality was recorded, so an old history
+      // is read exactly as it was.
+      if (record.terminal === true)
+        return true;
       const answered = (record.attempts ?? []).filter(entry => entry.outcome !== 'TRANSPORT_FAILED');
       if (answered.length >= MAX_RESOLVER_ATTEMPTS)
         return true;
@@ -933,7 +978,8 @@ export async function resolveSemanticReviews(
   const auditLog = options.auditLog ?? AUDIT_LOG;
   const budget = Math.max(1, options.maxAttempts ?? MAX_RESOLVER_ATTEMPTS);
   const outcome: SemanticOutcome = {
-    asked: 0, skipped: 0, accepted: 0, rejected: 0, repaired: 0, calls: 0, audits: [],
+    asked: 0, skipped: 0, accepted: 0, rejected: 0, repaired: 0, calls: 0,
+    totalMs: 0, terminalStops: 0, audits: [],
   };
 
   for (const proposal of result.proposals) {
@@ -967,7 +1013,9 @@ export async function resolveSemanticReviews(
       decision: null, owner: null, methodName: null, parameterName: null, confidence: null,
       outcome: 'REJECTED', rejection: null,
       attempts: [], repaired: false,
+      startedAt: new Date().toISOString(),
     };
+    const exchangeStarted = Date.now();
 
     outcome.asked++;
 
@@ -995,6 +1043,7 @@ export async function resolveSemanticReviews(
 
       let text: string;
       outcome.calls++;
+      const callStarted = Date.now();
       try {
         text = await transport(prompt, model);
       } catch (error) {
@@ -1006,6 +1055,7 @@ export async function resolveSemanticReviews(
           attempt, kind, decision: null, owner: null, methodName: null, parameterName: null,
           textKind: null, confidence: null, outcome: 'TRANSPORT_FAILED',
           rejection: (error as Error).message,
+          transportMs: Date.now() - callStarted, responded: false,
         });
         audit.outcome = 'TRANSPORT_FAILED';
         audit.rejection = (error as Error).message;
@@ -1022,6 +1072,7 @@ export async function resolveSemanticReviews(
         audit.attempts.push({
           attempt, kind, decision: null, owner: null, methodName: null, parameterName: null,
           textKind: null, confidence: null, outcome: 'MALFORMED', rejection: parsed.why,
+          transportMs: Date.now() - callStarted, responded: true,
         });
         audit.outcome = 'MALFORMED';
         audit.rejection = parsed.why;
@@ -1048,11 +1099,26 @@ export async function resolveSemanticReviews(
         textKind: parsed.value.textKind, confidence: parsed.value.confidence,
         outcome: conclusive ? 'ACCEPTED' : 'REJECTED',
         rejection: verdict.rejection,
+        transportMs: Date.now() - callStarted, responded: true,
+        ...(verdict.terminal ? { terminal: true } : {}),
       });
 
       if (conclusive) {
         settled = verdict;
         audit.repaired = attempt > 1;
+        break;
+      }
+
+      // A VALIDATED TERMINAL ANSWER ENDS THE EXCHANGE, and it ends it exactly where a spent
+      // budget ends: the proposal keeps this verdict's NEEDS_REVIEW, takes the same
+      // STRUCTURAL refusal below, and is not re-asked in this run. Nothing is accepted that
+      // was not accepted before; what is saved is the two identical questions that used to
+      // follow. `settled` is deliberately NOT set - it is the applied verdict, and a decline
+      // applies nothing.
+      if (verdict.terminal) {
+        audit.terminal = true;
+        log(`  ${proposal.fingerprint}: attempt ${attempt}/${budget} settled the question - `
+          + `${verdict.rejection}\n`);
         break;
       }
 
@@ -1123,6 +1189,15 @@ export async function resolveSemanticReviews(
       proposal.refusals = proposal.refusalCodes.map(entry => entry.detail);
       log(`  ${proposal.fingerprint}: unresolved after ${audit.attempts.length} attempt(s)\n`);
     }
+
+    // THE EXCHANGE'S OWN WALL CLOCK, closed here so it covers every attempt and the
+    // validation between them - which is what a reader comparing cases needs, and what no
+    // field in the metrics carried while a case spent 278 s in this loop.
+    audit.finishedAt = new Date().toISOString();
+    audit.totalMs = Date.now() - exchangeStarted;
+    outcome.totalMs += audit.totalMs;
+    if (audit.terminal)
+      outcome.terminalStops++;
 
     proposal.semantic = audit;
     outcome.audits.push(audit);

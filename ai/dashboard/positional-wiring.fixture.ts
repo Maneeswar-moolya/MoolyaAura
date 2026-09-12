@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * The wiring between a measured position and the evidence file.
  *

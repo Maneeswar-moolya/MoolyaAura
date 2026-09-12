@@ -33,7 +33,15 @@ import http from 'node:http';
 import path from 'node:path';
 
 import { readCase, saveCase, suggestTestCaseId, type CaseDraft } from './authoring';
-import { hasPendingRecording, keepArtifactFor, recordingStatus, startRecording, stopRecording, toDraft } from './recorder';
+// `recorderSessionStatus`, aliased. Both this module and `case-status` export a
+// `recordingStatus`, and they answer different questions with different signatures:
+// the recorder's takes NOTHING and reports whether a codegen session is live, the
+// bookkeeper's takes a TestCase and reports whether that row's recording is stale.
+// Imported under one name, the second binding won and `GET /api/record` called the
+// bookkeeper with `testCase === undefined` - a throw on every poll of the Record
+// screen. Verified by bundling this file: only one `recordingStatus` survived, the
+// two-argument one.
+import { hasPendingRecording, keepArtifactFor, recordingStatus as recorderSessionStatus, startRecording, stopRecording, toDraft } from './recorder';
 import { readState, surveyWork } from '../autocode/work';
 import { assessReadiness } from '../excel/readiness';
 import { describeRecording, recordingStatus, rememberRecordingFingerprint } from './case-status';
@@ -41,13 +49,20 @@ import {
   HISTORY_LIMIT, collectLifecycle, deriveStatus, listGenerations, newGenerationId,
   parseGenerationLog, readGeneration, saveGeneration, type GenerationRecord,
 } from './generation-history';
+import {
+  assertWorkbookInScope, describeProjects, scopeForWorkbook, tryScopeFromSelection,
+} from './scope-request';
+import {
+  provisionProject, type ProvisionRequest, unownedWorkbooks, workbooksFor,
+} from '../projects/provision';
+import { addApplication } from '../projects/registry';
+import { type ApplicationScope, resetActiveScope, ScopeError } from '../projects/scope';
 import { buildCache, writeCache } from '../excel/data-driven';
-import { MAPPING_FILE, readMapping, runnerFor, scanDataDrivenRunners, upsertEntry, writeMapping } from '../excel/mapping';
+import {  readMapping, runnerFor, scanDataDrivenRunners, upsertEntry, writeMapping } from '../excel/mapping';
 import { parseWorkbook } from '../excel/parser';
 import { parseResults, type ExecutionRecord } from '../excel/results';
 import { readStepLogs, type StepRecord } from '../excel/steps';
 import type { TestCase } from '../excel/types';
-import { UserFacingError } from '../excel/writeback';
 
 /**
  * Always bound to loopback. A friendly hostname does not change that: the name
@@ -64,7 +79,7 @@ const HOSTNAME = process.env.EXCEL_DASHBOARD_HOST ?? 'moolyaautomationreport.com
  * before. The page compares it against its own and says so plainly rather than
  * failing with a bare 404 from a stale process.
  */
-const API_VERSION = 7;
+const API_VERSION = 8;
 
 /** Port 80 so the URL carries no ":1234". Falls back when it is unavailable. */
 const PORT = Number(process.env.EXCEL_DASHBOARD_PORT) || 80;
@@ -126,6 +141,24 @@ interface StepView {
 }
 
 interface RunRecord {
+  /**
+   * EXECUTION IDENTITY = applicationId + testCaseId + runId.
+   *
+   * `id` is the runId and is unique per execution; `applicationId` says whose
+   * execution it was. The store stays physically GLOBAL - `ai/dashboard/runs/` is one
+   * directory of past executions on this machine, which is the question it answers -
+   * but a global store needs every record to carry its own identity, or two projects'
+   * TC_LOGIN_001 appear as two indistinguishable rows and the dashboard cannot filter
+   * them apart.
+   *
+   * The application is NOT recoverable from `request.workbook` after the fact and must
+   * not be re-derived from it: a workbook can be renamed or reassigned, and a record is
+   * a statement about what happened, not a lookup to redo later. Optional so records
+   * written before this read as unknown rather than as belonging to anybody.
+   */
+  applicationId?: string;
+  /** Which environment it ran against. Configuration, recorded as evidence. */
+  environmentId?: string;
   id: string;
   startedAt: string;
   finishedAt?: string;
@@ -265,6 +298,16 @@ function recordGeneration(run: typeof autocode, exitCode: number | null): void {
       id: newGenerationId(),
       runId: parsed.runId,
       workbook: run.workbook,
+      // The workbook's DECLARED owner, so a global history can still tell two
+      // projects' TC_LOGIN_001 apart. Never thrown from - a missing registry costs
+      // the label, not the record.
+      applicationId: (() => {
+        try {
+          return scopeForWorkbook(run.workbook).applicationId;
+        } catch {
+          return undefined;
+        }
+      })(),
       requestedIds: run.ids,
       cases: parsed.cases,
       status: deriveStatus(parsed.cases, exitCode),
@@ -304,7 +347,17 @@ async function readJsonBody(req: http.IncomingMessage): Promise<unknown> {
 }
 
 /** Resolve a client-supplied workbook path, refusing anything outside the repo. */
-function resolveWorkbook(value: unknown): string {
+/**
+ * The workbook a request names, checked for SHAPE but not for existence.
+ *
+ * Split out so ownership can be decided before the filesystem is consulted. Which
+ * project a workbook belongs to is a fact about the registry, and answering "that file
+ * is not here" first turns a cross-project request into a missing-file message - which
+ * sends somebody looking for a file rather than telling them they picked the wrong
+ * project. The traversal and extension guards stay first, because they are about what
+ * the string is allowed to be at all.
+ */
+function workbookPathOf(value: unknown): string {
   const raw = typeof value === 'string' && value.trim() ? value.trim() : 'excel/login-test-cases.xlsx';
   const absolute = path.resolve(ROOT, raw);
   const relative = path.relative(ROOT, absolute);
@@ -312,8 +365,13 @@ function resolveWorkbook(value: unknown): string {
     throw new Error('Workbook must live inside the repository');
   if (!/\.xlsx$/i.test(absolute))
     throw new Error('Workbook must be an .xlsx file');
+  return absolute;
+}
+
+function resolveWorkbook(value: unknown): string {
+  const absolute = workbookPathOf(value);
   if (!fs.existsSync(absolute))
-    throw new Error(`No workbook at ${relative}`);
+    throw new Error(`No workbook at ${path.relative(ROOT, absolute)}`);
   return absolute;
 }
 
@@ -328,10 +386,18 @@ function specExists(testFile: string | undefined): boolean {
   return Boolean(testFile) && fs.existsSync(path.resolve(ROOT, testFile as string));
 }
 
-/** Everything the UI needs to render the picker for one workbook. */
-async function describeWorkbook(workbookPath: string) {
+/**
+ * Everything the UI needs to render the picker for one workbook.
+ *
+ * `scope` is the workbook's OWN application, resolved by the caller. It used to read
+ * the mapping and the recording status through the process-wide ambient scope, which
+ * in a long-lived server asks "which application is this process in" when the question
+ * is "which application is this workbook's". With two projects registered the answer
+ * would have come from whichever one the process happened to be pointed at.
+ */
+async function describeWorkbook(workbookPath: string, scope: ApplicationScope) {
   const parsed = await parseWorkbook(workbookPath);
-  const mapping = readMapping(MAPPING_FILE);
+  const mapping = readMapping(scope.paths.mappingFile);
   const cache = buildCache(parsed, new Date().toISOString());
   const runners = scanDataDrivenRunners(SPEC_DIR);
 
@@ -381,7 +447,7 @@ async function describeWorkbook(workbookPath: string) {
       // `automationStatus` above answers none of those, which is why one column
       // could never explain why a row was not running.
       readiness: (() => {
-        const recording = recordingStatus(testCase);
+        const recording = recordingStatus(testCase, scope.paths.recordingsDir);
         const verdict = assessReadiness(testCase, {
           recording: { exists: recording.exists, stale: recording.stale },
         });
@@ -394,7 +460,7 @@ async function describeWorkbook(workbookPath: string) {
         };
       })(),
       recording: (() => {
-        const status = recordingStatus(testCase);
+        const status = recordingStatus(testCase, scope.paths.recordingsDir);
         return {
           exists: status.exists,
           hasEvidence: status.hasEvidence,
@@ -436,7 +502,7 @@ async function describeWorkbook(workbookPath: string) {
  * author presses Save. It is the same code `excel:run` calls, so the two cannot
  * disagree.
  */
-async function activate(workbookPath: string, testCaseId: string): Promise<{
+async function activate(workbookPath: string, testCaseId: string, scope: ApplicationScope): Promise<{
   runnable: boolean;
   runner: string | null;
   /** Set when the saved row declares a contract that cannot be read. */
@@ -462,7 +528,7 @@ async function activate(workbookPath: string, testCaseId: string): Promise<{
   // - which is what a copy of a workbook is - would otherwise have each other's
   // entries rewritten every time someone pressed Save in either one.
   if (saved && runner) {
-    const mapping = readMapping(MAPPING_FILE);
+    const mapping = readMapping(scope.paths.mappingFile);
     upsertEntry(mapping, saved.testCaseId, {
       testFile: runner,
       testName: `${saved.testCaseId} - ${saved.scenario}`,
@@ -474,7 +540,7 @@ async function activate(workbookPath: string, testCaseId: string): Promise<{
       sourceWorksheet: saved.worksheet,
       sourceRow: saved.row,
     }, new Date().toISOString());
-    writeMapping(mapping, MAPPING_FILE);
+    writeMapping(mapping, scope.paths.mappingFile);
   }
 
   // Whether code needs writing is `surveyWork`'s decision, never a rule
@@ -486,7 +552,7 @@ async function activate(workbookPath: string, testCaseId: string): Promise<{
   //
   // Asking here rather than spawning and letting the generator decide keeps the
   // old property that a save which needs no code starts no process.
-  const mapping = readMapping(MAPPING_FILE);
+  const mapping = readMapping(scope.paths.mappingFile);
   const wantedId = saved?.testCaseId ?? testCaseId;
   const survey = surveyWork(parsed, mapping, readState(), new Set([wantedId.toUpperCase()]));
   const needsCode = survey.work.length > 0;
@@ -684,9 +750,13 @@ function saveRun(record: RunRecord, log: string[]): void {
       `${JSON.stringify({ ...record, log }, null, 2)}\n`, 'utf8');
 }
 
-function startRun(workbookPath: string, request: RunRequest): RunRecord {
+function startRun(workbookPath: string, request: RunRequest, scope: ApplicationScope): RunRecord {
   const id = new Date().toISOString().replace(/[:.]/g, '-');
   const record: RunRecord = {
+    // Stamped from the scope the ROUTE resolved, never looked up again here - the
+    // route already refused the request if no project was chosen.
+    applicationId: scope.applicationId,
+    environmentId: scope.environmentId,
     id,
     startedAt: new Date().toISOString(),
     request: { ...request, workbook: path.relative(ROOT, workbookPath).replace(/\\/g, '/') },
@@ -785,7 +855,20 @@ function startRun(workbookPath: string, request: RunRequest): RunRecord {
   return record;
 }
 
-function listRuns(): Array<Pick<RunRecord, 'id' | 'startedAt' | 'finishedAt' | 'exitCode' | 'summary'> & { count: number }> {
+/**
+ * Past executions, newest first, optionally narrowed to one application.
+ *
+ * The store stays GLOBAL - it answers "what has run on this machine" - so the
+ * narrowing happens HERE, on the record's own `applicationId`. Never on the workbook,
+ * the URL or the Test Case ID: two projects' TC_LOGIN_001 are two different executions
+ * and only the recorded application separates them.
+ *
+ * A record written before the field existed has no application, so it cannot be
+ * claimed by either project and is shown only in the unfiltered list. Attributing it
+ * to whichever project is asking would be inventing history.
+ */
+function listRuns(applicationId?: string): Array<Pick<RunRecord,
+  'id' | 'startedAt' | 'finishedAt' | 'exitCode' | 'summary' | 'applicationId'> & { count: number }> {
   if (!fs.existsSync(RUNS_DIR))
     return [];
   return fs.readdirSync(RUNS_DIR)
@@ -796,6 +879,7 @@ function listRuns(): Array<Pick<RunRecord, 'id' | 'startedAt' | 'finishedAt' | '
       .map(name => {
         const record = JSON.parse(fs.readFileSync(path.join(RUNS_DIR, name), 'utf8')) as RunRecord;
         return {
+          applicationId: record.applicationId,
           id: record.id,
           startedAt: record.startedAt,
           finishedAt: record.finishedAt,
@@ -809,7 +893,8 @@ function listRuns(): Array<Pick<RunRecord, 'id' | 'startedAt' | 'finishedAt' | '
           hasReport: record.hasReport ?? false,
           note: record.note,
         };
-      });
+      })
+      .filter(summary => !applicationId || summary.applicationId === applicationId);
 }
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -857,9 +942,67 @@ const server = http.createServer((req, res) => {
         return;
       }
 
+
+      // ---- Projects. The FIRST choice in every application-specific flow.
+      //
+      // The page shows `displayName` and sends `applicationId`, and those are two
+      // different things on purpose: "Bugasura" is what a person reads and `bugasura`
+      // is what every path, key and namespace is built from. A UI that posted the
+      // display name would make renaming a project silently orphan its artefacts.
+      if (route === '/api/projects' && req.method === 'GET') {
+        send(res, 200, describeProjects());
+        return;
+      }
+
+      // Add Project - the REGISTRY foundation, deliberately not a management UI.
+      // Everything else follows from the registry with no scaffolding step: ScopePaths
+      // derives every location from the applicationId, so a project is selectable and
+      // its artefacts resolve the moment this returns. The whole candidate is validated
+      // by the same `validateRegistry` that guards every read, so a duplicate id, a
+      // reserved name, a workbook another project already claims, or a credential VALUE
+      // where a variable name belongs are refused by the existing rules.
+      if (route === '/api/projects' && req.method === 'POST') {
+        const body = await readJsonBody(req);
+        try {
+          // PROVISIONING, not just registration. A registry entry alone makes every
+          // artefact path resolve, but it gives the project nowhere to author test
+          // cases - and without a workbook the dashboard has no case list, `excel:run`
+          // has nothing to select from and generation has no rows to read, so the
+          // project appears in the selector and can do nothing. `provisionProject`
+          // creates the workbook and the entry as ONE transaction: it validates the
+          // whole candidate registry first, writes the workbook, then writes the
+          // registry atomically, and removes the workbook it made if that last step
+          // fails. `resetActiveScope` happens inside it, for the same reason it did
+          // here - the memo was taken from the set of registered applications.
+          const created = await provisionProject(body as ProvisionRequest);
+          send(res, 201, {
+            projects: describeProjects().projects,
+            applicationId: created.applicationId,
+            displayName: created.displayName,
+            environmentId: created.environmentId,
+            baseUrl: created.baseUrl,
+            workbook: created.workbook,
+            count: created.registry.applications.length,
+          });
+        } catch (error) {
+          send(res, 400, { error: (error as Error).message });
+        }
+        return;
+      }
+
       if (route === '/api/workbook' && req.method === 'GET') {
         const workbookPath = resolveWorkbook(url.searchParams.get('workbook'));
-        send(res, 200, await describeWorkbook(workbookPath));
+        // Reading a workbook is scoped too: the page lists cases from it, and listing
+        // one project's rows while another is selected is exactly the mixing rule 14
+        // forbids. Only enforced when the request names a project, so the existing
+        // single-application page keeps working unchanged.
+        // The workbook's own application, and it must agree with any project the
+        // request names. Derived from the registry's declared ownership rather than
+        // from the ambient scope, so what is listed is this workbook's rows under this
+        // workbook's project - never whichever project the server process is in.
+        const scope = scopeForWorkbook(path.relative(ROOT, workbookPath),
+            { applicationId: url.searchParams.get('applicationId') ?? undefined });
+        send(res, 200, await describeWorkbook(workbookPath, scope));
         return;
       }
 
@@ -872,16 +1015,45 @@ const server = http.createServer((req, res) => {
       if (route === '/api/health' && req.method === 'GET') {
         send(res, 200, { api: API_VERSION,
           routes: ['run', 'case', 'next-id', 'upload', 'runs', 'report', 'autocode', 'record',
-            'generations'] });
+            'generations', 'projects'] });
         return;
       }
 
+      // WHICH WORKBOOKS MAY THIS PROJECT SELECT - not "what .xlsx files are there".
+      //
+      // A directory listing answers the second question, and answering it for the first
+      // is how one project's workbook becomes selectable by another: its rows would then
+      // be generated, run and written back under the wrong application, with the results
+      // landing in the real owner's spreadsheet. The registry's `workbooks` array is
+      // authoritative, and `workbooksFor` reads it and nothing else.
+      //
+      // FAIL CLOSED. A workbook no application declares is reported separately as
+      // `unowned` and is never offered as a selection: silently attributing it to
+      // whoever happens to be selected is identity-by-filename, which is the one thing
+      // this architecture refuses everywhere else. While a single application is
+      // registered the sole-application rule still applies, so an unmigrated checkout
+      // behaves exactly as it did.
       if (route === '/api/workbooks' && req.method === 'GET') {
-        const dir = path.join(ROOT, 'excel');
-        const files = fs.existsSync(dir)
-          ? fs.readdirSync(dir).filter(f => f.endsWith('.xlsx') && !f.startsWith('~$')).map(f => `excel/${f}`)
-          : [];
-        send(res, 200, { workbooks: files });
+        try {
+          const selected = tryScopeFromSelection({
+            applicationId: url.searchParams.get('applicationId') ?? undefined,
+            environmentId: url.searchParams.get('environmentId') ?? undefined,
+          });
+          if ('error' in selected) {
+            send(res, 400, { ...selected, workbooks: [] });
+            return;
+          }
+          const owned = workbooksFor(selected.scope.applicationId);
+          const unowned = unownedWorkbooks();
+          send(res, 200, {
+            applicationId: selected.scope.applicationId,
+            workbooks: owned,
+            // Reported so the page can say so, never merged into `workbooks`.
+            unowned,
+          });
+        } catch (error) {
+          send(res, 400, { error: (error as Error).message, workbooks: [] });
+        }
         return;
       }
 
@@ -914,7 +1086,8 @@ const server = http.createServer((req, res) => {
         fs.mkdirSync(path.dirname(destination), { recursive: true });
         fs.writeFileSync(destination, Buffer.concat(chunks));
         // Parse immediately: an unreadable upload should fail here, not later.
-        const summary = await describeWorkbook(destination);
+        const summary = await describeWorkbook(destination,
+            scopeForWorkbook(path.relative(ROOT, destination)));
         // A bulk import is the case this exists for: every row that needs a
         // spec gets one, without anyone naming them.
         const generating = startAutocode(destination, []);
@@ -969,15 +1142,27 @@ const server = http.createServer((req, res) => {
         // What the row said at the moment this recording was retained. Written
         // beside the artifact, never into it, so the next edit can be compared
         // against it. See ai/dashboard/case-status.ts.
+        // THE SELECTED PROJECT, resolved once and used for everything below.
+        //
+        // `rememberRecordingFingerprint` used to be called with no scope, so it fell to
+        // `recordingsDir()` -> the AMBIENT scope, which in this long-lived server is the
+        // declared legacy owner whatever project the person selected. Measured: saving
+        // Flipkart's TC_SMOKE_004 wrote `TC_SMOKE_004.authoring.json` into
+        // `ai/dashboard/recordings/bugasura` while the recording itself went correctly to
+        // `recordings/flipkart`. The bookkeeping and the artefact it describes ended up in
+        // two different applications' stores - and the sidecar is what decides whether a
+        // recording is stale, so it was answering that question for the wrong project.
+        const selectedScope = scopeForWorkbook(
+            path.relative(ROOT, workbookPath), body as Record<string, unknown>);
         if (artifact) {
           const savedRow = (await parseWorkbook(workbookPath)).testCases
               .find(row => row.testCaseId.toUpperCase() === saved.testCaseId.toUpperCase());
           if (savedRow)
-            rememberRecordingFingerprint(savedRow);
+            rememberRecordingFingerprint(savedRow, selectedScope.paths.recordingsDir);
         }
         // Rebuild the cache and register the mapping straight away, so the row
         // is a running test before the response reaches the page.
-        const live = await activate(workbookPath, saved.testCaseId);
+        const live = await activate(workbookPath, saved.testCaseId, selectedScope);
         // Send the generator after any row that needs code written, including
         // one whose spec this module already wrote and whose row has since been
         // edited. Keying off `runnable` was wrong: a spec-backed case is
@@ -1002,11 +1187,32 @@ const server = http.createServer((req, res) => {
           return;
         }
         const body = await readJsonBody(req);
+        // The application constrains the execution artefacts, and it is SELECTED.
+        // Never inferred from the generated spec's file name, the Test Case ID, the
+        // base URL or a Page Object name - all four of which are downstream of the
+        // decision rather than evidence for it.
+        const selected = tryScopeFromSelection(body as Record<string, unknown>);
+        if ('error' in selected) {
+          send(res, 400, selected);
+          return;
+        }
+        // OWNERSHIP FIRST, existence second. A workbook belongs to exactly one
+        // application and the registry says which, so "you selected the wrong project"
+        // is answerable without touching the disk - and it is the more useful answer.
+        // Without this a person could select Bugasura and run Flipkart's workbook, and
+        // every result would be written back into Flipkart's rows under Bugasura's
+        // scope - one application's execution record filed under another's name.
+        const candidate = workbookPathOf((body as Record<string, unknown>).workbook);
+        assertWorkbookInScope(selected.scope, path.relative(ROOT, candidate));
         const workbookPath = resolveWorkbook((body as Record<string, unknown>).workbook);
         const parsed = await parseWorkbook(workbookPath);
+        // Test cases are resolved INSIDE the selected application. TC_LOGIN_001 is
+        // unique within a workbook and a workbook belongs to one project, so the
+        // workbook boundary is the application boundary - reused here rather than
+        // duplicated into a second store keyed by applicationId.
         const known = new Set(parsed.testCases.map(c => c.testCaseId.toUpperCase()));
         const request = parseRunRequest(body, known);
-        send(res, 202, startRun(workbookPath, request));
+        send(res, 202, startRun(workbookPath, request, selected.scope));
         return;
       }
 
@@ -1060,6 +1266,10 @@ const server = http.createServer((req, res) => {
       if (route === '/api/autocode' && req.method === 'POST') {
         const body = (await readJsonBody(req)) as Record<string, unknown>;
         const workbookPath = resolveWorkbook(body.workbook);
+        // The workbook's own application. The staleness gate below reads recording
+        // evidence, and reading it through the ambient scope would check one project's
+        // rows against another project's recordings.
+        const autocodeScope = scopeForWorkbook(path.relative(ROOT, workbookPath), body);
         const parsed = await parseWorkbook(workbookPath);
         const known = new Set(parsed.testCases.map(c => c.testCaseId.toUpperCase()));
         const ids = Array.isArray(body.testCaseIds) ? body.testCaseIds.map(String) : [];
@@ -1079,7 +1289,7 @@ const server = http.createServer((req, res) => {
           const testCase = parsed.testCases.find(c => c.testCaseId.toUpperCase() === id.toUpperCase());
           if (!testCase)
             continue;
-          const recording = recordingStatus(testCase);
+          const recording = recordingStatus(testCase, autocodeScope.paths.recordingsDir);
           if (!recording.exists || recording.stale !== true)
             continue;
           const verdict = assessReadiness(testCase, {
@@ -1115,19 +1325,35 @@ const server = http.createServer((req, res) => {
           return;
         }
         const body = (await readJsonBody(req)) as Record<string, unknown>;
+        // THE PROJECT IS CHOSEN BEFORE THE BROWSER OPENS. A ScopeError here means
+        // either "you did not say which application" (with two or more registered) or
+        // "there is no application by that name", and both are answers a person has to
+        // give - so the request is refused with the choices named rather than resolved
+        // against whichever application happens to be first, or against the URL.
+        const selected = tryScopeFromSelection(body);
+        if ('error' in selected) {
+          send(res, 400, { started: false, ...selected });
+          return;
+        }
         // `await`: the live transport decides asynchronously whether it can run and
         // falls back to the codegen child process before answering, so the person
         // always gets a browser or a clear error - never a half-started session.
+        //
+        // `url` is optional and only ever narrows WHERE in the application to start.
+        // Omitted, the recorder opens the selected environment's own baseUrl, which is
+        // what makes the selection do the work instead of somebody retyping an address.
         const started = await startRecording({
-          url: String(body.url ?? ''),
+          scope: selected.scope,
+          url: typeof body.url === 'string' ? body.url : undefined,
           browser: String(body.browser ?? 'chromium'),
+          testCaseId: typeof body.testCaseId === 'string' ? body.testCaseId : undefined,
         });
         send(res, started.started ? 202 : 400, started);
         return;
       }
 
       if (route === '/api/record' && req.method === 'GET') {
-        send(res, 200, recordingStatus());
+        send(res, 200, recorderSessionStatus());
         return;
       }
 
@@ -1171,7 +1397,13 @@ const server = http.createServer((req, res) => {
       // run", which is a 404 that blames the wrong thing. A separate prefix cannot be
       // caught by it at all, whatever order these end up in.
       if (route === '/api/generations' && req.method === 'GET') {
-        send(res, 200, { generations: listGenerations(), limit: HISTORY_LIMIT });
+        // The RETENTION stays global and unchanged - the newest five generations on
+        // this machine, whatever project they belong to. Only the VIEW is narrowed, so
+        // asking as one project never evicts another project's record.
+        const wanted = url.searchParams.get('applicationId') ?? undefined;
+        const generations = listGenerations()
+            .filter(entry => !wanted || entry.applicationId === wanted);
+        send(res, 200, { generations, limit: HISTORY_LIMIT });
         return;
       }
 
@@ -1190,7 +1422,11 @@ const server = http.createServer((req, res) => {
       }
 
       if (route === '/api/runs' && req.method === 'GET') {
-        send(res, 200, { runs: listRuns(), active: active?.record.id ?? null });
+        // `?applicationId=` narrows a GLOBAL store by the identity each record carries.
+        send(res, 200, {
+          runs: listRuns(url.searchParams.get('applicationId') ?? undefined),
+          active: active?.record.id ?? null,
+        });
         return;
       }
 
@@ -1249,6 +1485,18 @@ const server = http.createServer((req, res) => {
 
       send(res, 404, { error: `No route for ${route}` });
     } catch (error) {
+      // A ScopeError is a CHOICE the person has not made, not a fault: "more than one
+      // application is registered and you did not say which", or "that workbook
+      // belongs to another project". Its message already names what to do, and it
+      // carries the choices so the page can offer them rather than making somebody
+      // read an error and go looking. Everything else stays a plain bad request.
+      if (error instanceof ScopeError) {
+        send(res, 400, {
+          error: error.message,
+          choices: describeProjects().projects.map(project => project.applicationId),
+        });
+        return;
+      }
       badRequest(res, error instanceof Error ? error.message : String(error));
     }
   })();

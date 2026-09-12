@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Parameters: arity, extraction, and reuse of one method by many recordings.
  *
@@ -22,7 +23,8 @@ import {
 } from './abstraction/parameter';
 import type { CandidateMeasurement, DomNode, TargetEvidence } from './dom-evidence';
 import type { IndexedMethod } from '../knowledge/index';
-import { readAllPageKnowledge, type PageElement } from '../knowledge/page-knowledge';
+import {  type PageElement } from '../knowledge/page-knowledge';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -181,15 +183,15 @@ function sectionArity(): void {
     // 9: a knowledge file that has drifted from the code must match nothing.
     //
     // Scoped to the file this phase owns, and then asserted as a SAFETY property for
-    // the rest. `bugasura__root.yaml` names `LoginPage.passwordLengthError`, which no
+    // the rest. `fixtureapp__root.yaml` names `LoginPage.passwordLengthError`, which no
     // longer exists on the class - pre-existing drift, found by this check and left
     // alone because repairing an unrelated screen's knowledge is not this phase's
     // work. It is harmless precisely because of the second assertion below: `exists()`
     // means a drifted entry never becomes a call.
     const index = buildIndex();
-    const missingHere = declared.filter(entry => entry.file === 'bugasura__apps.yaml'
+    const missingHere = declared.filter(entry => entry.file === 'fixtureapp__apps.yaml'
       && !index.pages[entry.pageObject]?.methods.some(m => m.name === entry.method));
-    check('9: every page_object_method in bugasura__apps.yaml exists on its class',
+    check('9: every page_object_method in fixtureapp__apps.yaml exists on its class',
         missingHere.length === 0, missingHere.map(e => `${e.pageObject}.${e.method}`).join(', '));
 
     const drifted = declared.filter(entry =>
@@ -208,7 +210,7 @@ function sectionArity(): void {
     process.stdout.write('\n== zero-argument behaviour, and the rules already here ==\n');
 
     // 1: the whole corpus, not a sample.
-    const dir = path.join(ROOT, 'ai', 'dashboard', 'recordings');
+    const dir = RECORDINGS();
     const recordings = fs.existsSync(dir)
       ? fs.readdirSync(dir).filter(name => name.endsWith('.spec.ts')) : [];
     const methods = Object.values(buildIndex().pages).flatMap(entry => entry.methods);
@@ -252,7 +254,7 @@ function sectionArity(): void {
     // 11: entry points are emitted with no argument BY CONSTRUCTION - their regex
     // matches a literal `()`. Asserted behaviourally: a bare navigation still opens
     // the screen through its declared entry point, with an empty call.
-    const navigate = stepsFor("  await page.goto('https://my.bugasura.io/');");
+    const navigate = stepsFor("  await page.goto('https://portal.fixture.invalid/');");
     const opener = navigate.find(step => step.kind === 'navigate');
     check('11: a declared entry point is still called with no argument',
         Boolean(opener && /\.\w+\(\s*\);/.test(opener.code)), opener?.code ?? 'no navigate step');
@@ -439,7 +441,7 @@ function sectionReuse(): void {
   function checkNoDataLeak(): void {
     process.stdout.write('\n== the value is an argument, never part of the method ==\n');
     const source = fs.readFileSync(path.join(ROOT, 'tests-e2e', 'pages', 'issues.page.ts'), 'utf8');
-    const yaml = fs.readFileSync(path.join(ROOT, 'ai', 'knowledge', 'page', 'bugasura__issues-id.yaml'), 'utf8');
+    const yaml = fs.readFileSync(path.join(ROOT, 'ai', 'knowledge', 'page', 'fixtureapp__issues-id.yaml'), 'utf8');
 
     check('12: no method NAME contains recorded data',
         !/issue639978|lineChart|shiftComparison/i.test(source));
@@ -454,11 +456,11 @@ function sectionReuse(): void {
   /* ------------------------------------------------------------- real corpus ---- */
 
   function checkCorpus(): void {
-    process.stdout.write('\n== the four real recordings ==\n');
+    process.stdout.write('\n== the authored synthetic recordings ==\n');
     const emitted = new Map<string, Set<string>>();
     let steps = 0;
-    for (const id of ['TC_DASHBOARD_008', 'TC_DASHBOARD_011', 'TC_LOGIN_083', 'TC_LOGIN_085']) {
-      const file = path.join(ROOT, 'ai', 'dashboard', 'recordings', `${id}.spec.ts`);
+    for (const id of ['TC_ROW_A', 'TC_ROW_B', 'TC_ROW_A', 'TC_ROW_B']) {
+      const file = path.join(RECORDINGS(), `${id}.spec.ts`);
       if (!fs.existsSync(file))
         continue;
       const recording = parseRecording(fs.readFileSync(file, 'utf8'), {
@@ -521,7 +523,7 @@ function sectionReuse(): void {
         at('findMethod') < at('findMethodByProvenLocator')
         && at('findMethodByProvenLocator') < at('findParameterisedMethod'));
     check('22: knowledge declares the method exactly once',
-        (fs.readFileSync(path.join(ROOT, 'ai', 'knowledge', 'page', 'bugasura__issues-id.yaml'), 'utf8')
+        (fs.readFileSync(path.join(ROOT, 'ai', 'knowledge', 'page', 'fixtureapp__issues-id.yaml'), 'utf8')
             .match(/page_object_method:\s*issueCheckboxState/g) ?? []).length === 1);
 
     // The gates themselves, unchanged and still required.

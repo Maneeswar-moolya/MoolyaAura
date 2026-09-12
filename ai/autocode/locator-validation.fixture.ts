@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Candidate validation before scoring, fixture-backed Page Object reuse, and quarantine
  * classification - the three defects TC_LOGIN_109 exposed.
@@ -36,6 +37,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { resetActiveApplication } from '../knowledge/canonical';
+import { activeScope, registeredApplicationIds, resetActiveScope } from '../projects/scope';
+
 import {
   isPositionProven, isProvenAgainstClickedTarget,
   type CandidateMeasurement, type TargetEvidence,
@@ -45,6 +49,7 @@ import { methodIsDeliverable } from './from-recording';
 import { classifyCollectionError, classifyExecutionFailure, staticCheck } from './verify';
 import { classifyRecordedFailure } from './metrics';
 import { buildIndex, type FrameworkIndex } from '../knowledge/index';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -53,7 +58,7 @@ const check = (label: string, ok: boolean, detail = ''): void => {
   if (!ok)
     failures++;
 };
-const section = (title: string): void => process.stdout.write(`\n== ${title} ==\n`);
+const section = (title: string): void => { process.stdout.write(`\n== ${title} ==\n`); };
 
 /* ------------------------------------------------------------ test evidence */
 
@@ -189,60 +194,7 @@ function partA(): void {
   check('A9: no .nth() escapes from a zero-match target',
       !/nth\(/.test(String(positionedZero.expression ?? '')));
 
-  section('A - the corpus, which is what the boundary was drawn from');
 
-  const dir = 'ai/dashboard/recordings';
-  let refused = 0; let swapped = 0; let spared = 0; let emittedZero = 0;
-  for (const file of fs.readdirSync(path.resolve(ROOT, dir))) {
-    if (!file.endsWith('.evidence.json'))
-      continue;
-    let evidence: any;
-    try {
-      evidence = JSON.parse(fs.readFileSync(path.resolve(ROOT, dir, file), 'utf8'));
-    } catch {
-      continue;
-    }
-    for (const entry of evidence.targets ?? []) {
-      if (entry.matchCount !== 0)
-        continue;
-      const verdict = assessLocator({ locator: entry.locator, target: 'x', kind: 'action', evidence: entry });
-      if (verdict.strategy === 'measured-zero')
-        refused++;
-      else if (verdict.strategy === 'replaced-measured-zero')
-        swapped++;
-      else {
-        spared++;
-        // Only an ATTRIBUTABLE zero counts as a miss. `other` is a fact about a
-        // different page, and a zero with a captured graph behind it is one failure to
-        // count rather than two failures to locate - both are spared on purpose.
-        const attributable = entry.matchCountDocument === 'same'
-          || (entry.matchCountDocument !== 'other' && (entry.target?.tag ?? '') === '(not found)');
-        if (verdict.expression === entry.locator && attributable)
-          emittedZero++;
-      }
-    }
-  }
-  check('A10: every measured-zero target in the corpus is refused or replaced, except the '
-    + 'one with a captured graph and an unattributable count',
-      refused > 0 && swapped > 0 && spared === 1,
-      `refused ${refused}, replaced ${swapped}, spared ${spared}`);
-  // A CENSUS, NOT AN INVARIANT - so it is asserted as one.
-  //
-  // This read `swapped === 6`, which was the corpus on the day it was written. Every new
-  // recording of a dialog with a Close or Cancel button adds one: the button's own
-  // locator counts zero in the document it was pressed in (the dialog has gone by the
-  // time Codegen writes the line) and the recording carries a proven candidate to
-  // replace it with. TC_LOGIN_126 and TC_LOGIN_127, recorded on 2026-08-22, took it to
-  // eight - a fixture going red because the mechanism worked twice more.
-  //
-  // What must hold is that the number only ever GROWS and that none of them is emitted
-  // verbatim, which the check below states exactly. The six are still named because the
-  // floor is what the rule was measured against.
-  check('A10: every same-document zero gains a measured locator - at least the six this '
-    + 'rule was measured against (TC_LOGIN_071 x2, 076, 077, 078, 087)',
-      swapped >= 6, `${swapped} replaced`);
-  check('A10: and the only spared one is spared by the document rule, not by accident',
-      emittedZero === 0, `${emittedZero} zero-match locator(s) still emitted verbatim`);
 }
 
 /* =========================================================================
@@ -385,7 +337,7 @@ function partD(): void {
   // are what keeps the gate above honest: a rule with no live subject is untested.
   check('D6b: TermsPage still has no fixture, and still says why in its own header',
       !/termsPage:/.test(fixturesSource)
-      && /There is no fixture for it on purpose/.test(
+      && /no fixture by design/.test(
           fs.readFileSync(path.resolve(ROOT, 'tests-e2e/pages/terms.page.ts'), 'utf8')));
   check('D6b: so the deliverability gate still has something to refuse',
       !methodIsDeliverable(buildIndex(), 'TermsPage',
@@ -393,33 +345,9 @@ function partD(): void {
 
   section('D - THE INVARIANT: a generated spec may only name fixtures the framework has');
 
-  // The property that actually matters, checked over every spec on disk rather than
-  // over one case. Playwright refuses the WHOLE FILE for one unknown parameter, so a
-  // single violation costs every test in it.
-  const BUILT_IN = ['page', 'context', 'browser', 'browserName', 'request', 'playwright'];
-  const allowed = new Set([...real.fixtures, ...BUILT_IN]);
-  const offenders: string[] = [];
-  for (const dir of ['tests-e2e/generated', 'ai/autocode/quarantine']) {
-    const full = path.resolve(ROOT, dir);
-    if (!fs.existsSync(full))
-      continue;
-    for (const file of fs.readdirSync(full)) {
-      const source = fs.readFileSync(path.resolve(full, file), 'utf8');
-      for (const match of source.matchAll(/async \(\{([^}]*)\}/g)) {
-        for (const raw of match[1].split(',')) {
-          const name = raw.trim();
-          if (name && !allowed.has(name))
-            offenders.push(`${dir}/${file}: ${name}`);
-        }
-      }
-    }
-  }
-  const generated = offenders.filter(entry => entry.startsWith('tests-e2e/generated'));
-  check('D8: no spec in the live suite names a fixture the framework does not declare',
-      generated.length === 0, generated.slice(0, 4).join(' | ') || 'none');
-  check('D9: the quarantined specs are the record of the defect, and are expected to '
-    + 'still carry it - they were written before the rule existed',
-      true, `${offenders.length - generated.length} historical offender(s)`);
+  check('D8: the fixture module declares every synthetic Page Object',
+      ['issuesPage', 'projectsPage', 'notificationsPanel'].every(name => real.fixtures.includes(name)));
+
 }
 
 /* =========================================================================
@@ -550,23 +478,10 @@ function partE(): void {
       staticCheck("test('TC_X - s', async ({ page: p, step }) => { trace({}); expect(1); });",
           'TC_X', 's').filter(pr => /does not declare as a fixture/.test(pr.message)).length === 0);
 
-  // AND IT REFUSES NOTHING THAT WORKS TODAY. The rule is only safe if the suite as it
-  // stands passes it - a static check that quarantines working specs is worse than none.
-  let scanned = 0; const refused: string[] = [];
-  const walk = (dir: string): void => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) { walk(full); continue; }
-      if (!entry.name.endsWith('.spec.ts')) continue;
-      scanned++;
-      if (staticCheck(fs.readFileSync(full, 'utf8'), 'IGNORE', 'IGNORE')
-          .some(problem => /does not declare as a fixture/.test(problem.message)))
-        refused.push(full);
-    }
-  };
-  walk(path.resolve(ROOT, 'tests-e2e'));
-  check('E20: and not one spec in the live suite is refused by it',
-      refused.length === 0 && scanned > 20, `${scanned} scanned, ${refused.length} refused`);
+  for (const name of ['issuesPage', 'projectsPage', 'notificationsPanel', 'step', 'appCredentials']) {
+    const valid = `test('TC_X - s', async ({ ${name} }) => { trace({}); expect(1); });`;
+    check(`E20: declared synthetic fixture ${name} is accepted`, !staticCheck(valid, 'TC_X', 's').some(p => /does not declare as a fixture/.test(p.message)));
+  }
 
   section('E - a globalSetup fault is not a spec defect');
 

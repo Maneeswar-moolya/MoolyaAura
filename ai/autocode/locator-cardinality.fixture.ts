@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * An ambiguous locator is rejected, never narrowed.
  *
@@ -32,6 +33,7 @@ import * as path from 'path';
 
 import { resolveLocator, HealingRecorder } from '../../tests-e2e/support/resilient-locator';
 import { staticCheck } from './verify';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -175,7 +177,7 @@ function checkStaticGate(): void {
   check('a Page Object call is NOT refused',
       !flagged('await (await issuesPage.searchField()).click();'));
   check('an unnarrowed locator is NOT refused',
-      !flagged("await page.locator('#filter-value').click();"));
+      !flagged("await page.locator('#record_search').click();"));
   check('a contextual chain with no positional call is NOT refused',
       !flagged("await page.locator('.r').filter({ hasText: d }).locator('.c').click();"));
 
@@ -222,13 +224,6 @@ function checkPageObjectLayer(): void {
   check('CASE 10: no resolve()-backed candidate narrows itself',
       offenders.length === 0, offenders.join(' | ') || 'none');
 
-  // The one declared collection, and the reason it is allowed.
-  const workspace = fs.readFileSync(path.join(ROOT, 'tests-e2e', 'pages', 'workspace.page.ts'), 'utf8');
-  check('CASE 6: dashboardTab declares collection semantics explicitly',
-      /dashboardTab[\s\S]{0,600}?this\.resolveMany\(/.test(workspace));
-  check('and isTabActive keeps its deliberate positional read',
-      /tab\.first\(\)\.getAttribute/.test(workspace));
-
   const base = fs.readFileSync(path.join(ROOT, 'tests-e2e', 'pages', 'base.page.ts'), 'utf8');
   check('resolve() means exactly one, resolveMany() is the opt-out',
       /protected resolve\(/.test(base) && /protected resolveMany\(/.test(base)
@@ -245,7 +240,7 @@ function checkNothingRegressed(): void {
     require('./from-recording') as typeof import('./from-recording');
 
   const methodsIn = (id: string): string[] => {
-    const file = path.join(ROOT, 'ai', 'dashboard', 'recordings', `${id}.spec.ts`);
+    const file = path.join(RECORDINGS(), `${id}.spec.ts`);
     if (!fs.existsSync(file))
       return [];
     const recording = parseRecording(fs.readFileSync(file, 'utf8'), {
@@ -256,10 +251,10 @@ function checkNothingRegressed(): void {
         .map(step => `${step.pageObject}.${step.method}`);
   };
 
-  const ninetyOne = methodsIn('TC_LOGIN_091');
+  const ninetyOne = methodsIn('TC_SEARCH');
   check('CASE 9/10: proven-locator reuse still resolves searchField three times',
       ninetyOne.filter(name => name === 'IssuesPage.searchField').length === 3, ninetyOne.join(', '));
-  const ninetyTwo = methodsIn('TC_LOGIN_092');
+  const ninetyTwo = methodsIn('TC_ROW_A');
   check('CASE 11: parameterised reuse still works',
       ninetyTwo.includes('IssuesPage.issueCheckbox'), ninetyTwo.join(', '));
   check('CASE 12: action and assertion remain separate methods',

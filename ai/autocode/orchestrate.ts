@@ -21,7 +21,7 @@ import {
   analyseCorpus, writeLedger, type CorpusResult, type UnmeasuredTarget,
 } from './abstraction/propose';
 import { resolveSemanticReviews } from './abstraction/semantic';
-import { applyProposals, type WriteResult } from './abstraction/writer';
+import { applyProposals, ensureFixturesModule, type WriteResult } from './abstraction/writer';
 import {
   appendLifecycleLog, decideLifecycle, describeLifecycle, summarise,
 } from './abstraction/lifecycle';
@@ -33,11 +33,13 @@ import { isRecordedTags } from '../dashboard/recorder';
 import * as metrics from './metrics';
 import { GroupSession, persistentSessionEnabled, SessionUnavailable } from './session';
 import {
-  AUTOCODE_DIR, fingerprint, frameworkFingerprint, GENERATED_DIR, QUARANTINE_DIR, readState,
-  slug, State, StateEntry, surveyWork, Verdict, writeState,
+  AUTOCODE_DIR, fingerprint, frameworkFingerprint, generatedDir, QUARANTINE_DIR, readState,
+  slug, StateEntry, stateKeyFor, surveyWork, Verdict, writeState,
 } from './work';
 import { gate, type GateResult } from './verify';
-import { MAPPING_FILE, readMapping, upsertEntry, writeMapping } from '../excel/mapping';
+import { activeApplicationId } from '../knowledge/canonical';
+import { activeMappingFile, readMapping, upsertEntry, writeMapping } from '../excel/mapping';
+import { pinActiveScope } from '../projects/scope';
 import { parseWorkbook } from '../excel/parser';
 
 const ROOT = process.cwd();
@@ -150,7 +152,7 @@ export function isRunning(): boolean {
 /** `tests-e2e/generated/create-project.spec.ts` for a case in the Projects module. */
 function specPathFor(module: string, worksheet: string): string {
   const name = slug(module.trim() || worksheet.trim());
-  return path.relative(ROOT, path.join(GENERATED_DIR, `${name}.spec.ts`)).replace(/\\/g, '/');
+  return path.relative(ROOT, path.join(generatedDir(), `${name}.spec.ts`)).replace(/\\/g, '/');
 }
 
 /**
@@ -169,7 +171,7 @@ function specPathFor(module: string, worksheet: string): string {
  */
 export function recordedSpecPathFor(testCaseId: string): string {
   const name = testCaseId.trim().toUpperCase().replace(/[^A-Z0-9_-]+/g, '_') || 'CASE';
-  return path.relative(ROOT, path.join(GENERATED_DIR, `${name}.spec.ts`)).replace(/\\/g, '/');
+  return path.relative(ROOT, path.join(generatedDir(), `${name}.spec.ts`)).replace(/\\/g, '/');
 }
 
 /**
@@ -182,8 +184,22 @@ export function recordedSpecPathFor(testCaseId: string): string {
 export function quarantine(specFile: string, testCaseId: string): string {
   fs.mkdirSync(QUARANTINE_DIR, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  // THE APPLICATION IS PART OF THE NAME, and the timestamp alone was not enough.
+  //
+  // The directory stays GLOBAL - it is a diagnostic pile, not an artefact store - but
+  // the name was `<testCaseId>.<stamp>`, which fails twice once two applications share
+  // a Test Case ID. `copyFileSync` OVERWRITES, so two generators quarantining
+  // TC_LOGIN_001 in the same millisecond lose one file silently; millisecond precision
+  // makes that unlikely, not impossible, and "unlikely" is not a property to rely on
+  // for the one copy of a spec somebody will want to read. The decisive reason is
+  // simpler though: `TC_LOGIN_001.2026-...txt` cannot be attributed to a project at
+  // all, so the pile becomes unreadable the moment there are two.
+  //
+  // Nothing parses this name back - every caller uses the returned path - so the only
+  // cost is that the file now says whose it is.
+  const owner = activeApplicationId();
   // .txt, not .ts: nothing should ever compile or collect this by accident.
-  const destination = path.join(QUARANTINE_DIR, `${testCaseId}.${stamp}.spec.ts.txt`);
+  const destination = path.join(QUARANTINE_DIR, `${owner}.${testCaseId}.${stamp}.spec.ts.txt`);
   fs.copyFileSync(path.resolve(ROOT, specFile), destination);
   return path.relative(ROOT, destination).replace(/\\/g, '/');
 }
@@ -306,6 +322,8 @@ interface PageObjectPass {
   proposals: Proposal[];
   unmeasured: UnmeasuredTarget[];
   writes: WriteResult[];
+  /** What the semantic resolver spent, or null when it was never engaged. */
+  semantic: metrics.SemanticSpend | null;
 }
 
 async function ensurePageObjects(
@@ -313,7 +331,7 @@ async function ensurePageObjects(
   options: RunOptions,
   log: (text: string) => void,
 ): Promise<PageObjectPass> {
-  const empty: PageObjectPass = { proposals: [], unmeasured: [], writes: [] };
+  const empty: PageObjectPass = { proposals: [], unmeasured: [], writes: [], semantic: null };
   if (options.createPageObjects === false || options.dryRun)
     return empty;
   try {
@@ -329,15 +347,28 @@ async function ensurePageObjects(
     if (!mine.length)
       return { ...empty, unmeasured };
 
+
     const deterministic = mine.filter(proposal => proposal.status === 'PROPOSED').length;
 
     // The resolver sees only what this case left unresolved, and only where what is
     // left is a question about meaning. Everything already settled costs no model call.
     const semantic = await resolveSemanticReviews({ ...result, proposals: mine }, {});
+    const spend: metrics.SemanticSpend | null = semantic.asked
+      ? {
+        exchanges: semantic.asked,
+        calls: semantic.calls,
+        attempts: semantic.audits.reduce((total, audit) => total + audit.attempts.length, 0),
+        totalMs: semantic.totalMs,
+        accepted: semantic.accepted,
+        rejected: semantic.rejected,
+        terminalStops: semantic.terminalStops,
+      }
+      : null;
     if (semantic.asked) {
       log(`  semantic resolver: asked ${semantic.asked}, accepted ${semantic.accepted} `
         + `(${semantic.repaired} after repair), rejected ${semantic.rejected}, `
-        + `${semantic.calls} transport call(s)\n`);
+        + `${semantic.calls} transport call(s) in ${Math.round(semantic.totalMs / 1000)}s`
+        + `${semantic.terminalStops ? `, ${semantic.terminalStops} settled on the first answer` : ''}\n`);
       for (const audit of semantic.audits) {
         log(`    ${audit.semanticCodes.join('+')} -> ${audit.outcome}`
           + `${audit.attempts.length > 1 ? ` in ${audit.attempts.length} attempt(s)` : ''}`
@@ -361,7 +392,7 @@ async function ensurePageObjects(
       log(`  no Page Object was written: ${outcome.reason}\n`);
     }
     writeLedger(result);
-    return { proposals: mine, unmeasured, writes: outcome.results };
+    return { proposals: mine, unmeasured, writes: outcome.results, semantic: spend };
   } catch (error) {
     log(`\n  abstraction: skipped - ${(error as Error).message}\n`);
     return empty;
@@ -374,6 +405,26 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
   const startedMs = Date.now();
   const startedAt = new Date(startedMs).toISOString();
   const workbookRelative = path.relative(ROOT, path.resolve(options.workbook)).replace(/\\/g, '/');
+
+  // WHICH APPLICATION THIS RUN IS FOR, stated before anything resolves a path.
+  //
+  // The workbook is the authoritative source - the registry declares exactly one owner for
+  // it - and every artefact this run reads or writes is application-owned: the recording it
+  // assembles from, the page knowledge it selects, the Page Object index it builds, the
+  // fixtures module a generated spec imports, the directory that spec lands in, the mapping
+  // entry it registers. All of those resolve through `activeScopePath`, which without this
+  // line answers with the AMBIENT scope - the declared legacy owner. Measured on a real
+  // Flipkart run: the recording sat in `ai/dashboard/recordings/flipkart/TC_SMOKE_003.spec.ts`
+  // while this process looked in `ai/dashboard/recordings/bugasura`, selected
+  // `bugasura__root.yaml`, and would have written into `tests-e2e/pages`. It then reported
+  // "no Codegen artifact was kept for this case" about a recording that existed.
+  //
+  // Pinned HERE rather than in `ai/autocode/cli.ts` because this is the single boundary
+  // every entry point crosses - the CLI, its --watch mode and the dashboard's spawn all
+  // arrive at `run()` - so one statement covers them all and none can forget it.
+  const scope = pinActiveScope({ workbook: options.workbook });
+  log(`application: ${scope.applicationId} (${scope.environmentId})
+`);
 
   const model = resolveModel();
   const runId = newRunId();
@@ -399,7 +450,8 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
     attempts: number,
     blocked?: string,
   ) => metrics.append({
-    kind: 'run', schema: metrics.SCHEMA, runId, workbook: workbookRelative, model,
+    kind: 'run', schema: metrics.SCHEMA, runId, workbook: workbookRelative,
+    applicationId: activeApplicationId(), model,
     startedAt, finishedAt: new Date().toISOString(), totalMs: Date.now() - startedMs,
     status, ...(blocked ? { blocked } : {}), routing, attempts,
     ...(sessions.groups.length ? { sessions } : {}),
@@ -421,7 +473,7 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
 
   try {
     const parsed = await parseWorkbook(path.resolve(options.workbook));
-    const mapping = readMapping(MAPPING_FILE);
+    const mapping = readMapping(activeMappingFile());
     const state = readState();
     const onlyIds = options.onlyIds?.length
       ? new Set(options.onlyIds.map(id => id.toUpperCase()))
@@ -628,7 +680,18 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
       // agent is the ordinary generator doing its ordinary thing.
       const recordedSpecFile = recordedSpecPathFor(testCase.testCaseId);
       const isRecorded = isRecordedTags(testCase.tags);
-      fs.mkdirSync(GENERATED_DIR, { recursive: true });
+      fs.mkdirSync(generatedDir(), { recursive: true });
+      // THE SPEC'S IMPORT TARGET IS AN OUTPUT DESTINATION TOO. Every generated spec
+      // imports this application's fixtures module unconditionally, so it has to exist by
+      // the time one is written - and it is NOT created by writing a Page Object, because
+      // a run can legitimately create none. Flipkart's TC_SMOKE_004 assembled from its
+      // recording with all five elements correctly refused, and was then quarantined at
+      // collection with `Cannot find module '../../flipkart.fixtures'`.
+      const fixturesModule = ensureFixturesModule();
+      if (fixturesModule.created) {
+        const shown = path.relative(ROOT, fixturesModule.file).split(path.sep).join('/');
+        log(`  created ${shown} - this application had no fixtures module yet\n`);
+      }
 
       log(`\n=== ${testCase.testCaseId} (${item.reason}) ${testCase.scenario}\n`);
       if (item.staleReason)
@@ -668,7 +731,7 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
         // Not the run's model: no model wrote this one. Recording the configured model
         // here would put a name against work it did not do, and `state.json` is read
         // later to explain why a batch of specs came out the way it did.
-        state[testCase.testCaseId] = nextState(state[testCase.testCaseId], item.fingerprint,
+        state[stateKeyFor(testCase.testCaseId)] = nextState(state[stateKeyFor(testCase.testCaseId)], item.fingerprint,
             outcome, 'none (deterministic mapping)');
         writeState(state);
         log(`  ${verdict.toUpperCase()}: ${reason}\n`);
@@ -683,10 +746,18 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
       // cannot be mapped confidently it falls through to the existing path below,
       // so a mapping failure costs a fallback rather than a wrong spec.
       let recordedResult: RecordedGeneration | null = null;
+      /**
+       * What the resolver spent on THIS case, held where `recordAttempt` can read it.
+       *
+       * The pass is scoped to the recorded branch; the metrics record is written for every
+       * branch, and a cost that only some records can carry is a cost nobody can compare.
+       */
+      let semanticSpend: metrics.SemanticSpend | null = null;
       if (isRecorded) {
         // FIRST, not afterwards. Any Page Object this recording proves and does not
         // already have is created here, so the mapping below can reuse it.
         const pass = await ensurePageObjects(testCase.testCaseId, options, log);
+        semanticSpend = pass.semantic;
         recordedResult = generateFromRecording(testCase, recordedSpecFile, workbookRelative);
         log(describeMapping(recordedResult));
 
@@ -780,7 +851,7 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
             sourceWorksheet: testCase.source.worksheet,
             sourceRow: testCase.source.row,
           }, new Date().toISOString());
-          writeMapping(mapping, MAPPING_FILE);
+          writeMapping(mapping, activeMappingFile());
           recordRecorded(testCase, 'accepted', verdict.reason, recordedResult, started, verdict);
           recordOutcomeOnly('accepted', verdict.reason, { specFile: recordedSpecFile });
           // Only now. The recording has produced a spec that passed the gate, so the
@@ -854,7 +925,7 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
           durationMs: Date.now() - started, ...extra,
         };
         base.outcomes.push(outcome);
-        state[testCase.testCaseId] = nextState(state[testCase.testCaseId], item.fingerprint, outcome, model);
+        state[stateKeyFor(testCase.testCaseId)] = nextState(state[stateKeyFor(testCase.testCaseId)], item.fingerprint, outcome, model);
         writeState(state);
         log(`  ${verdict.toUpperCase()}: ${reason}\n`);
         recordAttempt(outcome, agent, gateResult, wroteSpec);
@@ -908,6 +979,7 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
           repoDiscoveryMs: null,
           generationMs: null,
 
+          semantic: semanticSpend,
           gate: gateDetail
             ? {
               staticMs: gateDetail.detail.staticMs ?? null,
@@ -1060,7 +1132,7 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
           sourceWorksheet: testCase.source.worksheet,
           sourceRow: testCase.source.row,
         }, new Date().toISOString());
-        writeMapping(mapping, MAPPING_FILE);
+        writeMapping(mapping, activeMappingFile());
         record('accepted', verdict.reason, { specFile });
         return;
       }

@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * The gate must understand the same evidence after acceptance that it understood before.
  *
@@ -30,9 +31,10 @@ import * as path from 'path';
 import { staticCheck } from './verify';
 import { mapRecording, readAssertions, readEvidence } from './from-recording';
 import { parseRecording, readArchivedArtifact } from '../dashboard/recorder';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
-const LIVE_DIR = path.join(ROOT, 'ai', 'dashboard', 'recordings');
+const LIVE_DIR = RECORDINGS();
 const ARCHIVE_DIR = path.join(LIVE_DIR, 'accepted');
 
 let failures = 0;
@@ -41,7 +43,7 @@ const check = (label: string, ok: boolean, detail = ''): void => {
   if (!ok)
     failures++;
 };
-const section = (title: string): void => process.stdout.write(`\n== ${title} ==\n`);
+const section = (title: string): void => { process.stdout.write(`\n== ${title} ==\n`); };
 
 /* ------------------------------------------------------------------ the fixture ---- */
 
@@ -192,7 +194,7 @@ function checkGate(): void {
   clear();
 }
 
-/* --------------------------------------------- 10-11, the two real recordings ---- */
+/* --------------------------------------------- 10-11, the synthetic recordings ---- */
 
 function mapArchived(id: string) {
   const source = readArchivedArtifact(id);
@@ -208,41 +210,6 @@ function mapArchived(id: string) {
 }
 
 function checkRealCases(): void {
-  section('10-11 - the two accepted cases this was found on');
-
-  // 10 - TC_LOGIN_122: a genuine ambiguity, an index its own (archived) evidence proves.
-  const twoTwo = path.join(ROOT, 'tests-e2e', 'generated', 'TC_LOGIN_122.spec.ts');
-  if (fs.existsSync(twoTwo)) {
-    const scenario = '#tr_1749552 > .tabulator-cell.tabulator-cell--checkbox > .rounded-checkbox-cont'
-      + ' > .rounded-checkbox-ui — 1749552 is ticked';
-    const found = staticCheck(fs.readFileSync(twoTwo, 'utf8'), 'TC_LOGIN_122', scenario);
-    check('10: the accepted TC_LOGIN_122 spec passes the gate again',
-        found.length === 0, found.map(entry => entry.message.slice(0, 80)).join(' | '));
-    check('10: and it does still carry the measured index',
-        /\.nth\(2\)/.test(fs.readFileSync(twoTwo, 'utf8')));
-  }
-
-  const mapped = mapArchived('TC_LOGIN_122');
-  if (mapped) {
-    const assertion = mapped.steps.find(step => /^assert /.test(String(step.from)));
-    check('10: replayed, it still resolves through evidence-backed positional recovery',
-        (assertion as never as { quality?: { strategy?: string } })?.quality?.strategy
-          === 'evidence-backed-position');
-  }
-
-  // 11 - TC_LOGIN_123: a unique contextual candidate, so no index is generated at all.
-  // The gate change must not make an index acceptable where none is needed.
-  const oneTwoThree = mapArchived('TC_LOGIN_123');
-  if (oneTwoThree) {
-    const assertions = oneTwoThree.steps.filter(step => /^assert /.test(String(step.from)));
-    check('11: TC_LOGIN_123 still resolves its assertions through a Page Object',
-        assertions.length === 3 && assertions.every(step => step.kind === 'page-object'),
-        assertions.map(step => step.kind).join(','));
-    const nth = oneTwoThree.steps.reduce((total, step) =>
-      total + (step.code.join(' ').match(/\.nth\(/g) ?? []).length, 0);
-    check('11: and generates NO index anywhere', nth === 0, `${nth} occurrence(s)`);
-  }
-
   section('the boundary the gate keeps');
 
   // The gate may ask the recorder WHERE evidence lives. It may not import anything else

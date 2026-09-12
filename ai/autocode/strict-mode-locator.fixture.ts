@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * An unmeasured locator is not a locator. TC_LOGIN_096's regression.
  *
@@ -34,6 +35,7 @@ import { assessLocator, isUnscopedStructuralLocator, isUnscopedTextLocator } fro
 import { parseRecording } from '../dashboard/recorder';
 import { mapRecording, pageObjectRequirements, readAssertions, readEvidence } from './from-recording';
 import { isDomEvidence } from './dom-evidence';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -165,7 +167,7 @@ function checkScopeOfTheRule(): void {
     "page.getByRole('link', { name: 'Projects' })",
     "page.locator('#all_apps').getByText('Projects')",
     "page.locator('.tabulator-row').filter({ hasText: 'Projects' }).locator('.bugChecked')",
-    "page.locator('#filter-value')",
+    "page.locator('#record_search')",
     "page.getByLabel('Projects')",
   ])
     check(`not the shape: ${other.slice(0, 52)}`, !isUnscopedTextLocator(other));
@@ -181,35 +183,14 @@ function checkScopeOfTheRule(): void {
 /* -------------------------------------------- the real recording, end to end ---- */
 
 function checkRealRecording(): void {
-  process.stdout.write('\n== TC_LOGIN_096, from its own artefacts ==\n');
-  const id = 'TC_LOGIN_096';
-  const file = path.join(ROOT, 'ai', 'dashboard', 'recordings', `${id}.spec.ts`);
-  if (!fs.existsSync(file)) {
-    check('the TC_LOGIN_096 recording is present', false, file);
-    return;
-  }
-  const evidence = readEvidence(id);
-  const recording = parseRecording(fs.readFileSync(file, 'utf8'), {
-    startUrl: '', browser: '', durationMs: 0,
-    evidence, stateAssertions: readAssertions(id) });
-
-  // THE ROOT CAUSE, pinned: the assertion has no evidence row of its own.
-  const texts = isDomEvidence(evidence)
-    ? evidence.targets.filter(target => /getByText/.test(String(target.locator))) : [];
-  check('the Projects assertion has no evidence target - nothing ever measured it',
-      texts.length === 0, `${texts.length} text target(s)`);
-
+  const recording = parseRecording("import { test, expect } from '@playwright/test';\ntest('synthetic ambiguity', async ({ page }) => {\n  await expect(page.getByText('Projects')).toBeVisible();\n});", {
+    startUrl: '', browser: '', durationMs: 0 });
   const mapping = mapRecording(recording);
-  const code = mapping.steps.flatMap(step => step.code).join('\n');
-  check('no getByText("Projects") reaches the generated spec',
-      !/getByText\((['"])Projects\1\)/.test(code),
-      code.split('\n').filter(line => /Projects/.test(line)).join(' | ').slice(0, 80));
-  check('the step is NEEDS_REVIEW rather than a guess',
-      mapping.steps.some(step => step.kind === 'needs-review'));
-  check('and it is not reported as a Page Object requirement either',
-      !pageObjectRequirements(mapping).some(entry => /Projects is visible/.test(entry.target)),
-      pageObjectRequirements(mapping).map(entry => entry.target).join(' | ').slice(0, 76));
+  check('unmeasured bare text is refused through the assembler', mapping.steps.length === 1 && mapping.steps[0].kind === 'needs-review');
+  check('no ambiguous text locator reaches emitted code', !mapping.steps.flatMap(s => s.code).join('').includes('getByText'));
+  check('a safety refusal is not misreported as missing Page Object knowledge', pageObjectRequirements(mapping).length === 0);
 }
+
 
 /* ----------------------------------------- existing reuse must be untouched ---- */
 
@@ -217,7 +198,7 @@ function checkExistingReuse(): void {
   process.stdout.write('\n== the capabilities that already worked still work ==\n');
 
   const methodsIn = (id: string): string[] => {
-    const file = path.join(ROOT, 'ai', 'dashboard', 'recordings', `${id}.spec.ts`);
+    const file = path.join(RECORDINGS(), `${id}.spec.ts`);
     if (!fs.existsSync(file))
       return [];
     const recording = parseRecording(fs.readFileSync(file, 'utf8'), {
@@ -228,19 +209,19 @@ function checkExistingReuse(): void {
         .map(step => `${step.pageObject}.${step.method}`);
   };
 
-  const ninetyOne = methodsIn('TC_LOGIN_091');
-  check('TC_LOGIN_091 still reuses searchField three times',
+  const ninetyOne = methodsIn('TC_SEARCH');
+  check('TC_SEARCH still reuses searchField three times',
       ninetyOne.filter(name => name === 'IssuesPage.searchField').length === 3,
       ninetyOne.join(', '));
-  const ninetyTwo = methodsIn('TC_LOGIN_092');
-  check('TC_LOGIN_092 still reuses issueCheckbox',
+  const ninetyTwo = methodsIn('TC_ROW_A');
+  check('TC_ROW_A still reuses issueCheckbox',
       ninetyTwo.includes('IssuesPage.issueCheckbox'), ninetyTwo.join(', '));
-  check('TC_LOGIN_092 still reuses issueCheckboxState',
+  check('TC_ROW_A still reuses issueCheckboxState',
       ninetyTwo.includes('IssuesPage.issueCheckboxState'));
 
   // A measured-unique bare text locator is still emitted: the gate is about the
   // measurement, and removing these would be the over-correction.
-  const eight = methodsIn('TC_DASHBOARD_008');
+  const eight = methodsIn('TC_ROW_A');
   check('a recording whose text WAS measured at one still maps',
       eight.length > 0, `${eight.length} page-object step(s)`);
 }
@@ -334,7 +315,7 @@ function checkStructuralGate(): void {
     check(`the shape test leaves ${safe} alone`, !isUnscopedStructuralLocator(safe));
 
   // I: the REAL recording. Nothing may emit a bare h2 for TC_LOGIN_128.
-  const file = path.join(ROOT, 'ai', 'dashboard', 'recordings', 'TC_LOGIN_128.evidence.json');
+  const file = path.join(RECORDINGS(), 'TC_LOGIN_128.evidence.json');
   if (fs.existsSync(file)) {
     const evidence = JSON.parse(fs.readFileSync(file, 'utf8')) as { targets?: Array<Record<string, unknown>> };
     const h2 = (evidence.targets ?? []).find(target => String(target.locator) === "page.locator('h2')");

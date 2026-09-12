@@ -17,7 +17,7 @@ import path from 'node:path';
 
 import { buildCache, cachePathFor, writeCache } from '../../ai/excel/data-driven';
 import { parseWorkbook } from '../../ai/excel/parser';
-import { WORKBOOK_PATH } from './data-driven';
+import { SUITE_WORKBOOK, WORKBOOK_PATH } from './data-driven';
 import { HEALING_DIR } from './resilient-locator';
 import { STEPS_DIR } from './steps';
 
@@ -31,12 +31,22 @@ export default async function globalSetup(): Promise<void> {
   fs.rmSync(STEPS_DIR, { recursive: true, force: true });
   fs.rmSync(ALLURE_RESULTS, { recursive: true, force: true });
 
+  // NO WORKBOOK IS A REAL ANSWER, and it is the fail-closed one. `SUITE_WORKBOOK`
+  // resolves from the ACTIVE APPLICATION'S registry declaration, so an application that
+  // declares none gets no rows rather than another application's - which is exactly what
+  // the old hardcoded `excel/login-test-cases.xlsx` default did produce.
+  if (!WORKBOOK_PATH) {
+    process.stderr.write(`\nNo data-driven workbook for this run: ${SUITE_WORKBOOK.reason}. ` +
+      'Rows that need one will not run; nothing else is affected.\n');
+    return;
+  }
+
   if (!fs.existsSync(WORKBOOK_PATH)) {
     // Remove the cache rather than leaving yesterday's copy behind: the runner
     // reports a missing cache loudly, where stale rows would run silently.
     fs.rmSync(cachePathFor(WORKBOOK_PATH), { force: true });
-    process.stderr.write(`\nNo workbook at ${WORKBOOK_PATH} - data-driven rows will not run. ` +
-      'Set EXCEL_WORKBOOK to point at one.\n');
+    process.stderr.write(`\nNo workbook at ${WORKBOOK_PATH} (${SUITE_WORKBOOK.reason}) - ` +
+      'data-driven rows will not run.\n');
     return;
   }
 

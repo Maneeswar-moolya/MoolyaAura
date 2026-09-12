@@ -29,6 +29,28 @@
  * `parse` throws with a line number rather than returning something half-read. A
  * malformed knowledge file must be a loud failure, not silently missing knowledge
  * that makes the generator think it has to explore from scratch.
+ *
+ * Line endings are normalised once, at the entry to `parse`, before anything else
+ * looks at the text. Every step below is line-oriented and splits on '\n', which
+ * leaves a trailing '\r' on every line of a CRLF file - harmless in the places that
+ * `trim()` anyway, fatal in the one place that anchors a pattern to end-of-line.
+ * `key: >` arrives as `key: >\r`, the block-scalar opener does not match, the block
+ * is never folded, and its first body line reaches the indentation parser as a
+ * structural error: "Unexpected indentation on line 73". The YAML is valid; only
+ * the checkout differed. That is not hypothetical - it is what a `git clone` of
+ * this repository produces on Windows, where `core.autocrlf=true` is the installer
+ * default, so a file committed as LF lands on disk as CRLF and the generator dies
+ * on knowledge it wrote itself.
+ *
+ * Normalising here rather than widening that one regex is deliberate: it fixes the
+ * whole class instead of the one instance, so a line-oriented rule added later
+ * cannot reintroduce it. `\r\n` and a lone `\r` both become `\n` - YAML 1.2 counts
+ * all three as line breaks - which keeps line NUMBERS honest too, since a
+ * classic-Mac file would otherwise be read as one enormous line.
+ *
+ * This rewrites only the text the parser walks. `raw` is captured by the caller
+ * from the file itself and is never touched, so what a person or an agent reads
+ * back is still exactly what they wrote.
  */
 
 export type YamlValue = string | number | boolean | null | YamlValue[] | { [key: string]: YamlValue };
@@ -161,8 +183,18 @@ function foldBlockScalars(source: string): string {
   return out.join('\n');
 }
 
+/**
+ * CRLF and lone CR both become LF, so every line-oriented step below sees the same
+ * text whichever platform checked the file out. Nothing else about the document
+ * changes: the line COUNT is identical for a CRLF file, so reported line numbers
+ * still point at what an editor shows.
+ */
+function normalizeLineEndings(source: string): string {
+  return source.replace(/\r\n?/g, '\n');
+}
+
 export function parse(document: string): YamlValue {
-  const source = foldBlockScalars(document);
+  const source = foldBlockScalars(normalizeLineEndings(document));
   const lines: Line[] = [];
   source.split('\n').forEach((raw, index) => {
     const withoutComment = stripComment(raw);

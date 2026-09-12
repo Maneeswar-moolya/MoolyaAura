@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * The recorded-test lifecycle, pinned offline.
  *
@@ -25,13 +26,17 @@ import {
 } from './from-recording';
 import { quarantine, recordedSpecPathFor, retractSpec } from './orchestrate';
 import { classifyRecordedFailure } from './metrics';
-import { fingerprint, surveyWork, type State } from './work';
-import { MAPPING_FILE, readMapping } from '../excel/mapping';
+import { fingerprint, stateKeyFor, surveyWork, type State } from './work';
+import { activeMappingFile, readMapping } from '../excel/mapping';
+import {
+  enterIsolatedArtefactRoot, isInsideFixtureRoot, leaveIsolatedArtefactRoot,
+} from '../projects/fixture-safety';
+import { activeScope } from '../projects/scope';
 import { parseWorkbook } from '../excel/parser';
 import type { TestCase } from '../excel/types';
 
 const ROOT = process.cwd();
-const WORKBOOK = 'excel/login-test-cases.xlsx';
+const WORKBOOK = 'excel/fixture-cases.xlsx';
 const abs = (relative: string) => path.resolve(ROOT, relative);
 
 let failures = 0;
@@ -49,7 +54,13 @@ function syntheticCase(id: string, scenario: string, expectedResult = 'The banne
     testData: '', expectedResult, priority: '' as TestCase['priority'],
     tags: ['recorded'], automationStatus: 'Not Automated', automationNotes: '',
     execute: null, expectedOutcome: '', expectedMessage: '',
-    source: { workbook: 'login-test-cases.xlsx', worksheet: 'Login Test Cases', row: 999 },
+    requirementId: '', testType: '' as TestCase['testType'],
+    businessRisk: '' as TestCase['businessRisk'], environment: '', userRole: '',
+    authenticationProfile: '', testOwner: '',
+    source: {
+      workbookPath: '', workbook: 'login-test-cases.xlsx',
+      worksheet: 'Login Test Cases', row: 999,
+    },
     extra: {}, issues: [],
   };
 }
@@ -72,7 +83,7 @@ function generate(id: string, scenario: string, source: string) {
 const INTERLEAVED = `import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://my.bugasura.io/');
+  await page.goto('https://portal.fixture.invalid/');
   await page.getByRole('textbox', { name: 'Email' }).fill('someone@moolya.com');
   await expect(page.locator('#loginForm')).toContainText('Sign In');
   await page.getByRole('textbox', { name: 'Password' }).fill('[type=password]');
@@ -84,7 +95,7 @@ test('test', async ({ page }) => {
 const NO_ASSERTION = `import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://my.bugasura.io/');
+  await page.goto('https://portal.fixture.invalid/');
   await page.getByRole('textbox', { name: 'Email' }).fill('someone@moolya.com');
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
 });
@@ -93,7 +104,7 @@ test('test', async ({ page }) => {
 const RAW_LOCATOR = `import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://my.bugasura.io/');
+  await page.goto('https://portal.fixture.invalid/');
   await page.locator('#some_unknown_widget .thing').click();
   await expect(page.locator('#project_banner')).toContainText('Multi tasking is hard. Focus is good.');
 });
@@ -146,13 +157,13 @@ async function main(): Promise<void> {
 
   process.stdout.write('\n== TEST B2 — the survey stops a placeholder row before anything runs ==\n');
   const parsed = await parseWorkbook(abs(WORKBOOK));
-  const mapping = readMapping(MAPPING_FILE);
-  const probe = parsed.testCases.find(t => t.testCaseId === 'TC_LOGIN_029');
+  const mapping = readMapping(activeMappingFile());
+  const probe = parsed.testCases.find(t => t.testCaseId === 'TC_SYNTHETIC_001');
   if (!probe)
-    throw new Error('TC_LOGIN_029 missing from the workbook');
+    throw new Error('TC_SYNTHETIC_001 missing from the workbook');
   const placeholderRow = { ...probe, expectedResult: NEEDS_CONFIRMATION };
   const surveyed = surveyWork(
-      { ...parsed, testCases: [placeholderRow] }, {}, {}, new Set(['TC_LOGIN_029']));
+      { ...parsed, testCases: [placeholderRow] }, {}, {}, new Set(['TC_SYNTHETIC_001']));
   check('not sent to generation', surveyed.work.length === 0);
   check('skipped with the explicit reason',
       Boolean(surveyed.skipped[0]?.reason.includes('recorded test has no assertion')),
@@ -207,9 +218,10 @@ async function main(): Promise<void> {
   check('G: *** TC_TEST_D spec survived ***', fs.existsSync(abs(d.spec)));
 
   process.stdout.write('\n== TEST H — stale accepted state ==\n');
-  const only = new Set(['TC_LOGIN_029']);
+  const only = new Set(['TC_SYNTHETIC_001']);
+  // Keyed `applicationId/testCaseId` - the generation identity. See work.ts State.
   const entry = (specFile: string) => ({
-    TC_LOGIN_029: {
+    [stateKeyFor('TC_SYNTHETIC_001')]: {
       fingerprint: fingerprint(probe), verdict: 'accepted' as const, specFile,
       reason: 'fixture', model: 'none', at: new Date(0).toISOString(), attempts: 0,
     },
@@ -257,15 +269,121 @@ async function main(): Promise<void> {
     check(`${label} → ${expected}`, actual === expected, actual || '(none)');
   }
 
-  process.stdout.write(`\n${failures ? `${failures} CHECK(S) FAILED` : 'all checks passed'}\n`);
 }
+
+/**
+ * THE REAL ARTEFACT STORE, LISTED BEFORE ANYTHING RUNS.
+ *
+ * Taken before isolation is entered, so it is a list of what the repository actually
+ * holds, and compared again at the end. It is the PROOF rather than the mechanism:
+ * isolation is what keeps this fixture away from those files, and this is what would
+ * notice if it ever stopped working.
+ */
+const realStore = path.join(ROOT, 'ai', 'dashboard', 'recordings');
+function listStore(): string[] {
+  const out: string[] = [];
+  const walk = (dir: string): void => {
+    if (!fs.existsSync(dir))
+      return;
+    for (const name of fs.readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (fs.statSync(full).isDirectory())
+        walk(full);
+      else
+        out.push(full);
+    }
+  };
+  walk(realStore);
+  return out.sort();
+}
+const storeBefore = listStore();
+
+/**
+ * ISOLATED, and this fixture is the reason the rule needed restating.
+ *
+ * It drives the REAL `acceptRecording`, which ARCHIVES an artefact into `accepted/`
+ * rather than deleting it - so the cleanup below, which removed `artifactPath(id)`, was
+ * looking in the live directory for a file production had already moved out of it.
+ * `TC_TEST_A.spec.ts` therefore accumulated in the real FixturePortal store, and the recorded
+ * count of 410 quietly included it (409 without).
+ *
+ * Isolation is the fix rather than a longer cleanup list: a fixture that cannot reach the
+ * real store cannot leave anything in it, whatever the production code it drives decides
+ * to do with a file. Entered before `main()` because the module-level `written` paths and
+ * every `artifactPath` call resolve through the scope.
+ */
+const fixtureRoot = enterIsolatedArtefactRoot('recorded-lifecycle');
+
+/**
+ * Seed the isolated root with the inputs this fixture READS.
+ *
+ * `AURA_ARTEFACT_ROOT` moves every application artefact together - Page Objects, page
+ * knowledge, the mapping and the fixtures module as well as the recordings - so an empty
+ * root leaves the framework index with no `LoginPage` to reuse and the fixture asserting
+ * about a repository that does not exist. Copying is what keeps this honest: the fixture
+ * reads real Page Objects and real knowledge, and writes only into the temporary tree, so
+ * the originals cannot be touched however production behaves.
+ *
+ * Copies, never links: a symlink would make a stray write reach the real file, which is
+ * the whole thing isolation exists to prevent.
+ */
+function seedIsolatedRoot(): void {
+  const scope = activeScope();
+  const copy = (from: string, to: string): void => {
+    if (!fs.existsSync(from))
+      return;
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.cpSync(from, to, { recursive: true });
+  };
+  copy(path.join(ROOT, 'tests-e2e', 'pages'), scope.paths.pagesDir);
+  copy(path.join(ROOT, 'tests-e2e', 'fixtures.ts'), scope.paths.fixturesFile);
+  copy(path.join(ROOT, 'ai', 'knowledge', 'page'), scope.paths.knowledgePageDir);
+  copy(path.join(ROOT, 'ai', 'test-mapping', 'mapping.json'), scope.paths.mappingFile);
+  // `ai/knowledge/framework` is framework-owned rather than application-owned, so it is
+  // NOT part of the scope and is read from the repository either way.
+}
+seedIsolatedRoot();
 
 main()
     .catch(error => { process.stdout.write(`\nfixture error: ${String(error)}\n`); failures++; })
     .finally(() => {
-      for (const file of [...written, artifactPath('TC_TEST_B'), artifactPath('TC_TEST_C'),
-        artifactPath('TC_TEST_D')])
+      process.stdout.write('\n== isolation ==\n');
+      // THE QUARANTINE PILE IS DELIBERATELY GLOBAL, and `orchestrate.ts` says so in as
+      // many words: "The directory stays GLOBAL - it is a diagnostic pile, not an
+      // artefact store". So it is not scoped, cannot be isolated by an artefact root, and
+      // is removed by name instead. Exempting it is a statement about that design, not a
+      // hole in this check - everything the scope owns is still required to be isolated.
+      const quarantinePile = path.join(ROOT, 'ai', 'autocode', 'quarantine');
+      const isQuarantine = (file: string) =>
+        !path.relative(quarantinePile, path.resolve(file)).startsWith('..');
+      for (const file of written.filter(isQuarantine))
         fs.rmSync(file, { force: true });
-      process.stdout.write('cleaned up every file the fixture wrote\n');
+
+      // Everything the scope owns must be inside the temporary root. The question is
+      // WHERE it wrote, not whether the cleanup list was long enough.
+      const stray = [...written, artifactPath('TC_TEST_B'), artifactPath('TC_TEST_C'),
+        artifactPath('TC_TEST_D')]
+          .filter(file => !isQuarantine(file) && !isInsideFixtureRoot(file));
+      check('every scoped artefact this fixture wrote was inside the fixture root',
+          stray.length === 0, stray.map(file => path.relative(ROOT, file)).join(', ') || 'none');
+      check('and the global quarantine pile holds nothing of this fixture\'s',
+          !fs.existsSync(quarantinePile)
+          || !fs.readdirSync(quarantinePile).some(name => /TC_TEST_[A-Z]/.test(name)),
+          fs.existsSync(quarantinePile)
+            ? fs.readdirSync(quarantinePile).filter(name => /TC_TEST_[A-Z]/.test(name)).join(', ') || 'none'
+            : 'no pile');
+
+      leaveIsolatedArtefactRoot();
+
+      const storeAfter = listStore();
+      check('the real recordings store has the identical file list afterwards',
+          JSON.stringify(storeBefore) === JSON.stringify(storeAfter),
+          `${storeBefore.length} before, ${storeAfter.length} after`);
+      check('and no TC_TEST_* artefact was left in it',
+          !storeAfter.some(file => /TC_TEST_[A-Z]/.test(file)),
+          storeAfter.filter(file => /TC_TEST_[A-Z]/.test(file))
+              .map(file => path.relative(ROOT, file)).join(', ') || 'none');
+
+      process.stdout.write(`\n${failures ? `${failures} CHECK(S) FAILED` : 'all checks passed'}\n`);
       process.exit(failures ? 1 : 0);
     });

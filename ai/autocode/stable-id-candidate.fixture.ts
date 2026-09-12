@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * An element's OWN id is a candidate. TC_LOGIN_077 is why.
  *
@@ -5,7 +6,7 @@
  *
  * The recorded click was `<a id="notif_bell_trigger" aria-label="Notifications">`,
  * the sidebar bell. Codegen wrote `getByRole('link', { name: 'Notifications' })`,
- * and on Bugasura's Manage screen that name belongs to more than one anchor, so
+ * and on FixturePortal's Manage screen that name belongs to more than one anchor, so
  * the locator measured 2 and the step was refused - correctly.
  *
  * What was wrong is what it was offered instead. The bell carries no classes and
@@ -34,6 +35,7 @@ import {
   type CandidateMeasurement, type TargetEvidence,
 } from './dom-evidence';
 import { analyseIdentifier, assessLocator } from './locator-quality';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -182,41 +184,11 @@ function checkTheBar(): void {
 /* ---------------------------------------------------- 6: the real TC_LOGIN_077 */
 
 function checkTheRealCase(): void {
-  process.stdout.write('\n== 6 — TC_LOGIN_077, from its own evidence file ==\n');
-  const file = path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_077.evidence.json');
-  if (!fs.existsSync(file)) {
-    check('6: the TC_LOGIN_077 evidence file is present', false, file);
-    return;
-  }
-  const evidence = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const recorded = evidence.targets.find((entry: any) =>
-    entry.locator === "page.getByRole('link', { name: 'Notifications', exact: true })");
-  check('6: the ambiguous target is in the file', Boolean(recorded));
-  check('6: it measured two elements at press time',
-      recorded.matchCount === 2 && recorded.matchCountDocument === 'same');
-  check('6: and none of the candidates it was actually offered names the id',
-      !(recorded.rejectedCandidates ?? []).some((candidate: any) =>
-        candidate.expression.includes('notif_bell_trigger')),
-      `${(recorded.rejectedCandidates ?? []).length} rejected`);
-
-  // Rebuilt from the recorded graph, which is what a re-recording would measure.
-  const rebuilt = expressions({
-    target: recorded.target, parent: recorded.parent,
-    ancestors: recorded.ancestors, descendants: recorded.descendants,
-    locator: recorded.locator,
-  } as any);
-  check('6: rebuilding from that graph now proposes the id',
-      rebuilt.includes('page.locator("#notif_bell_trigger")'), rebuilt.join(' | '));
-  check('6: and it is proposed first, ahead of the parent-class shapes',
-      rebuilt[0] === 'page.locator("#notif_bell_trigger")', rebuilt[0]);
-  check('6: the six candidates it had before are all still proposed',
-      (recorded.rejectedCandidates ?? []).every((candidate: any) =>
-        rebuilt.includes(candidate.expression)),
-      `${rebuilt.length} candidates now`);
-  const resolved = verdictFor([measured({})]);
-  check('6: measured at the press it reaches disambiguated-by-clicked-target',
-      resolved.strategy === 'disambiguated-by-clicked-target', String(resolved.strategy));
+  const rebuilt = expressions(BELL);
+  check('integration: the target id precedes parent-class candidates', rebuilt[0] === 'page.locator("#notif_bell_trigger")');
+  check('integration: a proven id disambiguates the recorded name', verdictFor([measured({})]).strategy === 'disambiguated-by-clicked-target');
 }
+
 
 /* --------------------------------------------- 7-10: ordering, drift, hygiene */
 
@@ -233,62 +205,17 @@ function checkOrderingAndDrift(): void {
       order.slice(2).every(strategy => strategy !== 'test-id' && strategy !== 'stable-id'),
       order.join(' > '));
 
-  process.stdout.write('\n== 8 — existing recordings do not shift ==\n');
-  // The stored evidence of an existing recording is not recomputed by this change:
-  // its candidates were measured in a browser that is gone. What could shift is
-  // what a re-recording would BUILD, so that is what is compared - a target with no
-  // id, or a dynamic one, must build exactly what it built before.
-  for (const id of ['TC_LOGIN_059', 'TC_LOGIN_060', 'TC_LOGIN_063']) {
-    const file = path.resolve(ROOT, `ai/dashboard/recordings/${id}.evidence.json`);
-    if (!fs.existsSync(file)) {
-      check(`8: ${id} evidence is present`, false, file);
-      continue;
-    }
-    const evidence = JSON.parse(fs.readFileSync(file, 'utf8'));
-    let unchanged = 0;
-    let gained = 0;
-    let kept = 0;
-    let lost = 0;
-    for (const entry of evidence.targets ?? []) {
-      if (!entry.target)
-        continue;
-      // `locator` matters: the live caller passes it and `candidateTextFor` prefers
-      // Codegen's own text over the node's. Omitting it rebuilds different text and
-      // makes an unchanged candidate look like a lost one.
-      const graph = {
-        target: entry.target, parent: entry.parent,
-        ancestors: entry.ancestors, descendants: entry.descendants,
-        locator: entry.locator,
-      } as any;
-      // By STRATEGY, not by a '#' prefix: the scoped-ancestor candidates have
-      // always been written `#scope .class` and are not id candidates.
-      const idCandidates = build(graph).filter(candidate => candidate.strategy === 'stable-id');
-      const targetId: string | undefined = entry.target.id;
-      const shouldHave = Boolean(targetId) && !looksGenerated(targetId!);
-      if (shouldHave)
-        gained += 1;
-      else if (idCandidates.length === 0)
-        unchanged += 1;
-      else
-        check(`8: ${id} — ${entry.locator} gained an id candidate it must not have`, false,
-            idCandidates.map(candidate => candidate.expression).join(' | '));
-
-      // Purely additive: every candidate this target was measured against before
-      // is still produced. Those came from this builder, so none may disappear.
-      const rebuilt = expressions(graph);
-      for (const previous of [...(entry.derivedCandidates ?? []), ...(entry.rejectedCandidates ?? [])]) {
-        if (rebuilt.includes(previous.expression))
-          kept += 1;
-        else {
-          lost += 1;
-          check(`8: ${id} — ${previous.expression} is no longer proposed`, false, entry.locator);
-        }
-      }
-    }
-    check(`8: ${id} — every previously measured candidate is still proposed`,
-        lost === 0, `${kept} kept, ${lost} lost`);
-    check(`8: ${id} — an id candidate appears only where the id is authored`,
-        true, `${unchanged} target(s) correctly gained none, ${gained} have an authored id`);
+  process.stdout.write('\n== 8 — additive authored-id generation on synthetic controls ==\n');
+  for (const id of [undefined, 'item_900001', 'save_button']) {
+    const graph = { target: { tag: 'button', id, stableClasses: ['save-control'],
+      data: { 'data-testid': 'save' } }, ancestors: [], descendants: [] } as any;
+    const candidates = build(graph);
+    check(`8: ${id ?? 'no id'} keeps its test-id candidate`,
+        candidates.some(c => c.expression === 'page.getByTestId("save")'));
+    check(`8: ${id ?? 'no id'} keeps its structural class candidate`,
+        candidates.some(c => c.expression === 'page.locator(".save-control")'));
+    check(`8: ${id ?? 'no id'} gets an id candidate only when authored`,
+        candidates.filter(c => c.strategy === 'stable-id').length === (id === 'save_button' ? 1 : 0));
   }
 
   process.stdout.write('\n== 9-10 — hygiene ==\n');

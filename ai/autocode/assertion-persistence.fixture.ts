@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Do a recording's STATE ASSERTIONS survive being saved and read back?
  *
@@ -51,7 +52,7 @@ const check = (label: string, ok: boolean, detail = ''): void => {
 const SCRIPT = `import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://my.bugasura.io/');
+  await page.goto('https://portal.fixture.invalid/');
   await page.getByRole('textbox', { name: 'Email' }).fill('someone@example.com');
   await page.getByRole('textbox', { name: 'Password' }).fill('[type=password]');
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
@@ -71,7 +72,7 @@ const OFF: RecordedAssertion = {
   type: 'checked',
   expected: false,
   target: 'Enable Notifications Receive notifications for activity acro',
-  locator: 'page.getByLabel("Enable Notifications Receive notifications for activity across Bugasura.")',
+  locator: 'page.getByLabel("Enable Notifications Receive notifications for activity across FixturePortal.")',
   locatorStrategy: 'label',
   value: null,
   interactionTarget: 'page.locator(".ba-switch__thumb")',
@@ -249,9 +250,16 @@ function checkCompatibility(): void {
       /stateAssertions:\s*readAssertions\(testCase\.testCaseId\)/.test(call),
       call.split('\n').filter(line => line.includes('stateAssertions')).join(' | ') || '(not passed)');
   const recorderSource = fs.readFileSync('ai/dashboard/recorder.ts', 'utf8');
+  // The first four arguments are still pinned IN ORDER; a fifth is allowed and is
+  // asserted separately below. Phase 3 added `held.origin` - the recording's locked
+  // application - and the argument order is what this check exists to protect, so it
+  // is loosened only at the end rather than relaxed into a substring match.
   check('keepArtifactFor hands the picker assertions to the writer',
-      /persistRecording\(testCaseId, held\.source, held\.recording\.evidence, held\.stateAssertions\)/
+      /persistRecording\(testCaseId, held\.source, held\.recording\.evidence, held\.stateAssertions[,)]/
           .test(recorderSource));
+  check('and hands over the recording\'s own application, not the ambient one',
+      /persistRecording\([^)]*held\.origin\)/s.test(recorderSource),
+      'a save must land in the project the person selected');
   check('the live stop path holds on to the UNRE-BASED assertions',
       /stateAssertions: collected\.stateAssertions,/.test(recorderSource));
 

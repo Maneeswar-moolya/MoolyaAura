@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * An assertion about a repeated element, addressed by its container (Phase 2C).
  *
@@ -180,7 +181,7 @@ async function checkPhraseRefusals(): Promise<void> {
   check('5: and it never includes the dynamic number',
       !String(containerPhraseFor({ text: ROW_TEXT }, gen)).includes('639978'));
 
-  // 6 - Bugasura's table wrapper holds an inline <script> containing the account email.
+  // 6 - FixturePortal's table wrapper holds an inline <script> containing the account email.
   const script = 'var email_lo = "someone@example.com"; var email_domain_lo = email_lo.split';
   check('6: a script/credential-bearing container yields no phrase',
       containerPhraseFor({ text: script }, gen) === null);

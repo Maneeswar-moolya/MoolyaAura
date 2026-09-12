@@ -6,7 +6,7 @@ analyse what failed, and report results back as a separate Excel workbook.
 **The source workbook is only written when you ask** (`excel:run`, or `report --in-place`), and
 always after a timestamped backup. Otherwise everything is written to `reports/`.
 
-Target application: [my.bugasura.io](https://my.bugasura.io/).
+Applications are registered through the dashboard. The repository starts with an empty registry.
 
 ## Layout
 
@@ -24,20 +24,19 @@ Target application: [my.bugasura.io](https://my.bugasura.io/).
 
 `tests-e2e/` is kept separate from the repository's own `tests/`, and
 `playwright.excel.config.ts` separate from `playwright.config.ts`, so that `npm test` and the
-Playwright roll workflow stay independent of whether Bugasura is reachable.
+Playwright roll workflow stay independent of application availability.
 
 ## Commands
 
 ```bash
-npm run excel:demo          # regenerate the sample workbook excel/login-test-cases.xlsx
 
-npm run excel:list     -- excel/login-test-cases.xlsx --priority P0 --module Login
-npm run excel:quality  -- excel/login-test-cases.xlsx
-npm run excel:sync-data -- excel/login-test-cases.xlsx   # which rows run without a spec
-npm run excel:mapping  -- sync --workbook excel/login-test-cases.xlsx
+npm run excel:list     -- excel/<applicationId>-test-cases.xlsx --priority P0 --module Login
+npm run excel:quality  -- excel/<applicationId>-test-cases.xlsx
+npm run excel:sync-data -- excel/<applicationId>-test-cases.xlsx   # which rows run without a spec
+npm run excel:mapping  -- sync --workbook excel/<applicationId>-test-cases.xlsx
 npm run excel:test
 npm run excel:mapping  -- promote --results test-results-excel/results.json
-npm run excel:report   -- excel/login-test-cases.xlsx --results test-results-excel/results.json
+npm run excel:report   -- excel/<applicationId>-test-cases.xlsx --results test-results-excel/results.json
 ```
 
 ## Driving everything from the spreadsheet
@@ -46,7 +45,7 @@ One command runs the cases the workbook selects and writes the results back into
 workbook:
 
 ```bash
-npm run excel:run -- excel/login-test-cases.xlsx
+npm run excel:run -- excel/<applicationId>-test-cases.xlsx
 ```
 
 Add a **`Run`** column to the sheet (`Yes`/`No`). Only rows marked `Yes` execute. Without that
@@ -60,10 +59,10 @@ A blank Run cell means "no opinion", not "no" — an unfilled cell never silentl
 A workbook is usually one sheet per module, so the sheet is the natural unit of work:
 
 ```bash
-npm run excel:run -- excel/login-test-cases.xlsx --sheet "Create Project"
-npm run excel:run -- excel/login-test-cases.xlsx --sheet "Login Validation" --priority P0
-npm run excel:run -- excel/login-test-cases.xlsx --id TC_LOGIN_014
-npm run excel:run -- excel/login-test-cases.xlsx --module Login --tag negative
+npm run excel:run -- excel/<applicationId>-test-cases.xlsx --sheet "Create Project"
+npm run excel:run -- excel/<applicationId>-test-cases.xlsx --sheet "Login Validation" --priority P0
+npm run excel:run -- excel/<applicationId>-test-cases.xlsx --id TC_LOGIN_014
+npm run excel:run -- excel/<applicationId>-test-cases.xlsx --module Login --tag negative
 ```
 
 Every filter — `--sheet --module --feature --priority --tag --status --id` — is repeatable or
@@ -83,7 +82,7 @@ Two consequences that prevent nasty surprises:
 Not sure what a command will pick up? Ask first — nothing runs and the workbook is not touched:
 
 ```bash
-npm run excel:run -- excel/login-test-cases.xlsx --sheet "Create Project" --dry-run
+npm run excel:run -- excel/<applicationId>-test-cases.xlsx --sheet "Create Project" --dry-run
 ```
 
 It lists what would run and, underneath, everything excluded with the reason — `Run=No` or
@@ -132,7 +131,7 @@ they run, watch the output live, and read the per-case result.
 | **Test case picker** | Grouped by worksheet, filterable by sheet, priority, free text, and the workbook's **Run** column (all · Yes · No · blank). Cases with no automation are greyed out |
 | **Select all** | The header checkbox selects every visible case; each worksheet has its own checkbox for that sheet alone. Both act on what the filters currently show, and go half-ticked when only part of the group is selected |
 | **Browser** | Chromium, Firefox or WebKit |
-| **Parallel workers** | 1–8. Warns above 1, because Bugasura refuses concurrent navigation |
+| **Parallel workers** | 1–8. Choose concurrency appropriate to the selected environment |
 | **Headed / headless** | Headed opens a visible browser so you can watch |
 | **Screenshot / Video / Trace** | Never · On failure · Always, chosen per execution |
 | **Write into workbook** | Off by default. On, results are written back after a timestamped backup |
@@ -315,8 +314,8 @@ Secrets and awkward values are **named, not typed into the spreadsheet**:
 | Token | Resolves to |
 | --- | --- |
 | `<blank>` | the empty string |
-| `<registered-email>` | `BUGASURA_EMAIL` |
-| `<valid-password>` | `BUGASURA_PASSWORD` |
+| `<registered-email>` | `APPLICATION_EMAIL` |
+| `<valid-password>` | `APPLICATION_PASSWORD` |
 | `<invalid-password>` | a deliberately wrong password |
 | `<email:250>` | a well-formed address of exactly 250 characters |
 | `<chars:300>` | 300 repeated characters |
@@ -332,7 +331,7 @@ See the `Login Validation` sheet for a worked example — seven cases, no spec w
 them. Inspect what a workbook declares with:
 
 ```bash
-npm run excel:sync-data -- excel/login-test-cases.xlsx
+npm run excel:sync-data -- excel/<applicationId>-test-cases.xlsx
 ```
 
 ### What this deliberately does not do
@@ -361,7 +360,7 @@ in `Test Data` alongside the fields:
 
 | Reserved input | Meaning | Default |
 | --- | --- | --- |
-| `url` | Where to start, relative or absolute | `BUGASURA_BASE_URL` |
+| `url` | Where to start, relative or absolute | `APPLICATION_BASE_URL` |
 | `scope` | A CSS selector confining the search to one form | the whole page |
 | `submit` | The control to press, by its visible text | the form's own submit button |
 
@@ -377,7 +376,7 @@ password = <blank>
 is enough for a module that has never been coded.
 
 The submit control is searched for **inside the form the fields were found in**, not across the
-page. That distinction is not cosmetic: Bugasura mounts sign-in, sign-up and reset together, and
+page. That distinction is not cosmetic: applications may mount multiple forms together, and
 a page-wide button search pressed "Sign in with Google" instead.
 
 **Precedence:** a module with its own runner keeps it. `Login` rows go to
@@ -410,7 +409,7 @@ cannot disagree. Use `--html <path>` to relocate the HTML, or `--no-html` to ski
 `--in-place` to also merge results into the source workbook.
 
 ```bash
-start reports/login-test-cases-execution-report.html   # Windows
+start reports/<applicationId>-test-cases-execution-report.html   # Windows
 ```
 
 Filters accepted by `list` and `mapping unautomated`: `--module`, `--feature`, `--priority`,
@@ -464,48 +463,15 @@ These are enforced in code where possible and in the skill everywhere else:
 
 ## Credentials
 
-Copy `.env.example` to `.env` and fill it in. `.env` is git-ignored; shell variables override
-it, so CI secrets are never shadowed by a stale local file.
+Declare credential variable names for the environment in the dashboard's Add Project form.
+Supply their values through the shell or ignored `.env`; see `.env.example`. Application
+selection determines the account, URL, workbooks and artifacts. No default project or
+account ships with the repository. Mutating flows require that application's explicit opt-in.
 
-```ini
-BUGASURA_EMAIL=qa.user@moolya.com
-BUGASURA_PASSWORD=...
-```
+## Onboarding
 
-Tests that need credentials skip with an explanatory reason when they are absent, rather than
-failing. Which test needs what:
-
-| Test case | Needs |
-| --- | --- |
-| `TC_LOGIN_001` | A registered email **and** its password |
-| `TC_LOGIN_002` | A registered email only — it supplies a wrong password by design |
-| `TC_LOGIN_003`, `TC_LOGIN_004` | Nothing |
-
-Use a **dedicated QA account**. The suite makes real failed sign-in attempts, which can trip
-account lockout on a personal login. Note also that `trace: 'retain-on-failure'` captures
-typed input, so a failing login test records the password into the git-ignored
-`test-results-excel/`.
-
-## Known environment constraint
-
-`my.bugasura.io` returns `ERR_EMPTY_RESPONSE` when several browsers navigate to it
-simultaneously from one host; the same tests pass serially. The suite therefore defaults to
-one worker. Once that is confirmed to be a rate limit and raised, override it:
-
-```bash
-EXCEL_WORKERS=4 npm run excel:test
-```
-
-## Demo
-
-```bash
-npm run excel:demo
-npm run excel:list    -- excel/login-test-cases.xlsx --priority P0
-npm run excel:quality -- excel/login-test-cases.xlsx
-npm run excel:test
-npm run excel:report  -- excel/login-test-cases.xlsx --results test-results-excel/results.json
-```
-
-The sample workbook is deliberately awkward — non-standard headings, a banner row, a prose
-sheet, a row with no ID, one vague test case and one duplicate — so each stage has something
-real to do.
+Run `npm run excel:dashboard`, choose **Add Project**, and provide a stable applicationId,
+display name, environment and base URL. A validated project registration creates its workbook;
+other scoped structures are available immediately and materialize on their first write.
+Add cases, record intent and assertions, then generate and verify automation through the
+existing lifecycle. Repeat for additional projects without framework source changes.

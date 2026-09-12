@@ -25,6 +25,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { activeScope, type ApplicationScope, scopedFilePath } from '../projects/scope';
+
 const ROOT = process.cwd();
 const TESTS = path.resolve(ROOT, 'tests-e2e');
 export const KNOWLEDGE_DIR = path.resolve(ROOT, 'ai', 'knowledge');
@@ -64,7 +66,36 @@ export interface IndexedFile {
 }
 
 export interface FrameworkIndex {
-  /** Page Objects, keyed by class name. */
+  /**
+   * Which application this index describes. Every `pages` entry belongs to it.
+   *
+   * Present so a consumer can ASSERT the index it was handed matches the scope it
+   * is working in. Nothing keys off it - see the note on `pages`.
+   */
+  applicationId: string;
+  /**
+   * Page Objects, keyed by class name - **within one application**.
+   *
+   * WHY THE KEY IS STILL THE BARE CLASS NAME
+   *
+   * Two applications may both have a `LoginPage`, so the obvious fix is to key this
+   * `bugasura/LoginPage`. That was rejected: `index.pages[owner]` is read in fifteen
+   * places across `abstraction/propose.ts`, `abstraction/semantic.ts`,
+   * `abstraction/writer.ts`, `from-recording.ts` and `context.ts`, and the owner
+   * string in each of them comes from a knowledge file's `page_object:` field, a
+   * resolver's answer, or a proposal. Namespacing the key means namespacing all of
+   * those too - a wholesale rewrite of the Page Object and abstraction logic to
+   * solve a collision that the SEARCH SPACE already solves.
+   *
+   * So the scope constrains what is scanned, not how it is keyed. `buildIndex`
+   * reads one application's directory, the index is built fresh per run, and within
+   * it a class name is unique because it came from one application. Bugasura's
+   * `LoginPage` and Flipkart's are never in the same object to collide - not because
+   * the key distinguishes them, but because no index ever contains both.
+   *
+   * The invariant that keeps this true: NOTHING may merge two indexes, and nothing
+   * may add an entry from outside `scope.paths.pagesDir`.
+   */
   pages: Record<string, IndexedFile>;
   /** Fixture names a spec can destructure from `test({ ... })`. */
   fixtures: string[];
@@ -218,10 +249,28 @@ function fixturesOf(source: string): string[] {
   return [...names];
 }
 
-export function buildIndex(): FrameworkIndex {
-  const index: FrameworkIndex = { pages: {}, fixtures: [], support: {} };
+/**
+ * Build the index for ONE application.
+ *
+ * `scope` defaults to the active one, which - while Bugasura is the only registered
+ * application - resolves to the flat `tests-e2e/pages` this has always read. So
+ * every existing caller keeps working with no argument and no behaviour change, and
+ * a caller that knows its scope passes it.
+ *
+ * Page Objects come from `scope.paths.pagesDir` and the fixtures module from
+ * `scope.paths.fixturesFile`; both are application-owned.
+ *
+ * `support/` is deliberately NOT scoped and is the one thing here read from a fixed
+ * location. It holds the framework's own plumbing - `resilient-locator.ts`, `env.ts`,
+ * `steps.ts`, `generic-form.ts` - which is a SHARED_CAPABILITY: no application owns
+ * it, every application uses the same copy, and duplicating it per application is
+ * precisely what `SHARED_CAPABILITIES` forbids. Nothing here merges two
+ * applications' entries.
+ */
+export function buildIndex(scope: ApplicationScope = activeScope()): FrameworkIndex {
+  const index: FrameworkIndex = { applicationId: scope.applicationId, pages: {}, fixtures: [], support: {} };
 
-  const pagesDir = path.join(TESTS, 'pages');
+  const pagesDir = scope.paths.pagesDir;
   if (fs.existsSync(pagesDir)) {
     for (const name of fs.readdirSync(pagesDir).filter(file => file.endsWith('.ts'))) {
       const absolute = path.join(pagesDir, name);
@@ -229,7 +278,11 @@ export function buildIndex(): FrameworkIndex {
     }
   }
 
-  const fixturesFile = path.join(TESTS, 'fixtures.ts');
+  // Scoped, because `index.fixtures` is what `writer.ts verify()` consults to decide
+  // that a Page Object method it just wrote is REACHABLE. Reading a different
+  // application's fixtures file there would let a method be reported APPLIED because
+  // some OTHER application had registered a fixture of the same derived name.
+  const fixturesFile = scope.paths.fixturesFile;
   if (fs.existsSync(fixturesFile)) {
     index.fixtures = fixturesOf(fs.readFileSync(fixturesFile, 'utf8'));
     index.support.fixtures = readIndexed(fixturesFile);
@@ -275,7 +328,16 @@ export function toYaml(index: FrameworkIndex): string {
       lines.push(`      - ${method.name}()${method.returns ? ` -> ${method.returns}` : ''}`);
   }
   lines.push('', 'fixtures:');
-  lines.push(`  importFrom: tests-e2e/fixtures.ts`);
+  // THE FILE THE INDEX ACTUALLY READ, not a literal.
+  //
+  // This was `tests-e2e/fixtures.ts` spelled out, while `buildIndex` reads
+  // `scope.paths.fixturesFile` - so the index READ one application's fixtures module
+  // and then TOLD the generator to import from the flat one. Under a scoped layout the
+  // prompt would name a file that is not this application's, and the generated spec
+  // would either fail to resolve it or destructure another project's Page Objects.
+  // `index.support.fixtures.file` is the path that was read, so there is one answer
+  // rather than two that can disagree.
+  lines.push(`  importFrom: ${index.support.fixtures?.file ?? '(no fixtures module found)'}`);
   lines.push(`  available: [${index.fixtures.join(', ')}]`);
   lines.push('', 'support:');
   for (const [name, entry] of Object.entries(index.support)) {
@@ -289,10 +351,22 @@ export function toYaml(index: FrameworkIndex): string {
   return `${lines.join('\n')}\n`;
 }
 
-/** Write the inspectable copy, only when it changed. */
+/**
+ * Write the inspectable copy, only when it changed.
+ *
+ * `ai/knowledge/framework/` is a declared SHARED capability, but what lands in it
+ * here is not: `index.pages` and `index.fixtures` are one application's. So the file
+ * carries the application in its name, with flat compatibility only for the explicitly
+ * declared legacy owner. Registry size never changes the destination. Without that, a second application's
+ * `excel:index` would silently overwrite the first's, and the overwrite would be
+ * invisible because nothing reads this file back.
+ */
 export function writeIndex(index: FrameworkIndex = buildIndex()): { file: string; changed: boolean } {
   fs.mkdirSync(FRAMEWORK_DIR, { recursive: true });
-  const file = path.join(FRAMEWORK_DIR, 'framework.yaml');
+  const scope = activeScope();
+  if (index.applicationId !== scope.applicationId)
+    throw new Error('Cannot write another application\'s framework index under the active scope.');
+  const file = scopedFilePath(FRAMEWORK_DIR, index.applicationId, 'framework.yaml', scope.flatLayout);
   const next = toYaml(index);
   const changed = !fs.existsSync(file) || fs.readFileSync(file, 'utf8') !== next;
   if (changed)

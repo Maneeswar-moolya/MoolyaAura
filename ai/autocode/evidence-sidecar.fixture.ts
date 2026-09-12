@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Does the DOM evidence captured during recording survive Save and reach the resolver?
  *
@@ -6,11 +7,12 @@
  * Offline. The defect this pins is the one TC_LOGIN_040 exposed: the evidence existed
  * in memory, the artifact was a `.spec.ts` that could not carry it, and generation
  * re-parsed the script alone - so the resolver was handed nothing and correctly said
- * it had nothing. The checks below walk the whole path with the REAL TC_LOGIN_040
+ * it had nothing. The checks below walk the whole path with a minimal authored
  * script, and the ones that matter most are the refusals: a missing, malformed or
  * stale sidecar must degrade to exactly the behaviour that shipped before it existed.
  */
 
+import { recordingSource } from '../testing/synthetic-data';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -20,10 +22,14 @@ import {
 import { generateFromRecording, locatorMetrics, mapRecording, readEvidence } from './from-recording';
 import { artifactPath, discardArtifact, evidencePath, parseRecording } from '../dashboard/recorder';
 import type { TestCase } from '../excel/types';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 const CASE_ID = 'TC_EVID_SIDECAR';
-const REAL_ARTIFACT = path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_040.spec.ts');
+const SCRIPT = recordingSource([
+  "await expect(page.locator('#tc_summary_638717')).toContainText('Line Chart');",
+  "await page.locator('#tc_summary_638717').getByText('Line Chart').click();",
+]);
 
 let failures = 0;
 const check = (label: string, ok: boolean, detail = '') => {
@@ -37,7 +43,7 @@ const check = (label: string, ok: boolean, detail = '') => {
  *
  * Constructed rather than replayed: TC_LOGIN_040 was recorded before the sidecar
  * existed, so no real one is on disk. Every value here is one the live capture
- * actually reported for `#tc_summary_*` on Bugasura - the dynamic id, the
+ * actually reported for `#tc_summary_*` on FixturePortal - the dynamic id, the
  * `tabulator-cell-draft--summary` class, the `#bugReport-table` ancestor, matchCount 1
  * - plus a deliberately ambiguous second candidate so the filter has something to
  * reject.
@@ -74,17 +80,19 @@ function syntheticCase(id: string): TestCase {
     expectedResult: 'The summary is visible', priority: '' as TestCase['priority'],
     tags: ['recorded'], automationStatus: 'Not Automated', automationNotes: '',
     execute: null, expectedOutcome: '', expectedMessage: '',
-    source: { workbook: 'login-test-cases.xlsx', worksheet: 'Login Test Cases', row: 999 },
+    requirementId: '', testType: '' as TestCase['testType'],
+    businessRisk: '' as TestCase['businessRisk'], environment: '', userRole: '',
+    authenticationProfile: '', testOwner: '',
+    source: {
+      workbookPath: '', workbook: 'login-test-cases.xlsx',
+      worksheet: 'Login Test Cases', row: 999,
+    },
     extra: {}, issues: [],
   };
 }
 
 function main(): void {
-  if (!fs.existsSync(REAL_ARTIFACT)) {
-    check('the TC_LOGIN_040 artifact is present', false, REAL_ARTIFACT);
-    process.exit(1);
-  }
-  const script = fs.readFileSync(REAL_ARTIFACT, 'utf8');
+  const script = SCRIPT;
   const graph = sanitiseEvidence([measuredEvidence()], new Date(0).toISOString());
   fs.mkdirSync(path.dirname(artifactPath(CASE_ID)), { recursive: true });
 
@@ -190,7 +198,7 @@ function main(): void {
     fs.writeFileSync(artifactPath(CASE_ID), script, 'utf8');
     fs.writeFileSync(evidencePath(CASE_ID), JSON.stringify(graph), 'utf8');
     const declined = generateFromRecording(syntheticCase(CASE_ID),
-        'tests-e2e/generated/TC_EVID_SIDECAR.spec.ts', 'excel/login-test-cases.xlsx');
+        'tests-e2e/generated/TC_EVID_SIDECAR.spec.ts', 'excel/fixture-cases.xlsx');
     check('F: a blocked generation keeps both files for diagnosis',
         fs.existsSync(artifactPath(CASE_ID)) && fs.existsSync(evidencePath(CASE_ID)),
         `assembled=${declined.assembled} block=${declined.block ?? '-'}`);

@@ -90,7 +90,87 @@ export const SEMANTIC_ROLES = [
 export interface DomNode {
   tag: string;
   role?: string;
+  /**
+   * The element's accessible name.
+   *
+   * TWO SOURCES, AND THEY ARE NOT EQUIVALENT - read `accessibleNameSource` before
+   * trusting this. `browser-computed` is the browser's own answer, obtained through CDP
+   * at the press; `aria-label` and `title` are the attributes the capture can read in
+   * the page, which is what this field has always held and is an APPROXIMATION of the
+   * accessible name, not the accessible name.
+   *
+   * Measured on eleven live targets: the browser's answer was available on 11 of 11 and
+   * an in-page approximation agreed with it on 7 of 10. The three disagreements were all
+   * cases where the browser folds something else in - Bugasura's password field computes
+   * as "Password Not too short! enter min 5 characters." once its error label is showing,
+   * and Bugasura's Google button as "Google Google Sign In". A locator built on the
+   * approximation there matched ZERO elements, which is the failure mode this
+   * distinction exists to keep visible rather than to hide.
+   */
   accessibleName?: string;
+  /** WHERE `accessibleName` came from. Absent on every recording made before this. */
+  accessibleNameSource?: 'browser-computed' | 'aria-label' | 'title';
+  /**
+   * Is `accessibleName` the browser's own computed value?
+   *
+   * `true` only for `browser-computed`. False or absent means the name is an
+   * approximation and a candidate built from it must earn its place at run time exactly
+   * like any other - which every candidate already has to do, so this changes no gate.
+   * It is recorded so a reader can tell an unverified name from a verified one without
+   * inferring it from the source string.
+   */
+  accessibleNameVerified?: boolean;
+  /**
+   * Did the authoritative accessible name hold still between the press and the settled
+   * point, for the SAME parked element in the SAME document?
+   *
+   * COLLECTION ONLY. Nothing reads this to decide anything: candidate generation,
+   * ranking, Page Object reuse, the budgets, AI eligibility and the falsification gate
+   * are all unchanged by its presence. It exists so a future ranking decision can be made
+   * from recorded evidence rather than from one anecdote.
+   *
+   *   `stable`  - the browser computed the same name at both points.
+   *   `changed` - it computed a different one. NOT a verdict: a name that changes may be
+   *               legitimate UI state, and whether it makes a locator unusable is decided
+   *               by replaying that locator, not by this field.
+   *   `unknown` - the comparison could not be PROVEN to be about the same target in the
+   *               same document. Missing CDP, a released slot, a detached node, a
+   *               navigation between the two points, or a press-time name that was only
+   *               the in-page approximation all land here.
+   *
+   * FAIL CLOSED. `unknown` is the answer whenever anything is unproven, and two equal
+   * strings are never enough on their own - Phase 6 measured a stale slot producing two
+   * identical names and a confident, entirely false `stable`.
+   *
+   * Absent on every recording made before this existed, which reads as "not measured".
+   */
+  accessibleNameStable?: 'stable' | 'changed' | 'unknown';
+  /**
+   * The `href` ATTRIBUTE as it was authored - never the resolved absolute URL.
+   *
+   * Resolving it would bake in the origin, and the same application at two environments
+   * has two origins: a locator built on the resolved value would be environment-specific
+   * by construction. `/mobile-phones-store` is a fact about the application;
+   * `https://www.flipkart.com/mobile-phones-store` is a fact about one deployment of it.
+   */
+  href?: string;
+  /**
+   * The authored href is absolute (has a scheme, or is protocol-relative).
+   *
+   * A flag rather than a resolution, and it is what keeps `javascript:void(0)` and
+   * cross-origin links out of candidate generation without anything having to parse a
+   * URL twice.
+   */
+  hrefAbsolute?: boolean;
+  /** The `alt` attribute, authored. Frequently shared - see `getByAltText` generation. */
+  alt?: string;
+  /**
+   * This ancestor does NOT satisfy the container/role/id rule and was kept anyway.
+   *
+   * Exactly one per graph, the nearest, appended after every qualifying ancestor so it
+   * can never displace one from any window a consumer slices. Present only on ancestors.
+   */
+  nonQualifying?: boolean;
   /** Trimmed and truncated to `maxTextLength`. Never the node's whole subtree text. */
   text?: string;
   id?: string;
@@ -231,6 +311,20 @@ export interface CandidateMeasurement {
   rejectionReason?: string;
   /** What stopped the measurement, when `matchCount` is null. */
   measurementError?: string;
+  /**
+   * WHICH ESTABLISHED CAPABILITY'S DECLARED LOCATOR THIS EXPRESSION IS.
+   *
+   * Present only on a measurement taken to answer one question - does the locator this
+   * capability declares resolve to the element that was just acted on? - and it is the
+   * only thing that makes such a measurement attributable. Without it a measurement is
+   * a candidate for a NEW locator; with it, it is evidence about an EXISTING method.
+   *
+   * The measurement itself is ordinary: same rebuild, same count, same in-page identity
+   * comparison, same `provesIdentity` bar. What is different is only what it is asked
+   * ABOUT, and this field records that. Absent everywhere else, and absent on every
+   * recording made before it existed.
+   */
+  capability?: { owner: string; method: string };
 }
 
 /**
@@ -387,6 +481,34 @@ export function provesIdentity(
     : isProvenAgainstClickedTarget(candidate);
 }
 
+/**
+ * EVERY MEASUREMENT THIS ELEMENT CARRIES THAT PROVES IDENTITY, from all four lists.
+ *
+ * One reader, so "what did the browser prove about this element?" has a single answer.
+ * The bar is `provesIdentity` and nothing here relaxes it: one element, in the
+ * interaction's own document, and that element is the one acted on (an assertion may
+ * also be proven at its own pick, exactly as everywhere else).
+ *
+ * `rejectedCandidates` is read too, and that is not a promotion. Nothing is emitted from
+ * this list - the caller is asking whether a KNOWN expression identified this element,
+ * not choosing a locator - and a measurement that satisfies `provesIdentity` proves that
+ * whichever list the recorder happened to file it in. The filing decides what may be
+ * emitted; it does not decide what was measured.
+ */
+export function provenMeasurements(
+  evidence: TargetEvidence | null | undefined,
+  role: 'action' | 'assertion',
+): CandidateMeasurement[] {
+  if (!evidence)
+    return [];
+  return [
+    ...(evidence.capabilityMeasurements ?? []),
+    ...(evidence.derivedCandidates ?? []),
+    ...(evidence.positionProvenCandidates ?? []),
+    ...(evidence.rejectedCandidates ?? []),
+  ].filter(candidate => provesIdentity(candidate, role));
+}
+
 export function candidateRejection(candidate: CandidateMeasurement): string | null {
   if (candidate.matchCount === null) {
     return candidate.measurementError
@@ -472,6 +594,22 @@ export interface TargetEvidence {
    * Present only on an `assertion-pick` row.
    */
   captureRef?: string;
+  /**
+   * The route the document was showing when this graph was taken - `location.pathname`,
+   * read in the page, in the document that parked the press.
+   *
+   * A FACT ABOUT THE SCREEN, AND NEVER ABOUT THE APPLICATION. The application is the
+   * locked `ApplicationScope`, decided before the browser opened; a URL is configuration
+   * and changes between environments, so deriving identity from it is the category error
+   * `ai/knowledge/canonical.ts` records at length. What this answers is which SCREEN of
+   * that application the person was on, which is the one thing a first recording of a
+   * new application cannot otherwise state.
+   *
+   * Pathname only - no query, no fragment - because that is where a reset token, a
+   * session id and a search term live. Optional: every recording made before this field
+   * existed carries none, reads as absent, and is never bootstrapable.
+   */
+  route?: string;
   /** Was the element attached when the graph was taken? */
   attached?: boolean;
   /** Where it sat, and whether that was on screen. Numbers only, no content. */
@@ -528,6 +666,23 @@ export interface TargetEvidence {
    * could build none.
    */
   rejectedCandidates?: CandidateMeasurement[];
+  /**
+   * MEASUREMENTS OF ESTABLISHED CAPABILITIES' OWN DECLARED LOCATORS, against this element.
+   *
+   * A FOURTH LIST, and deliberately not one of the other three. `derivedCandidates`,
+   * `positionProvenCandidates` and `rejectedCandidates` are about locators the framework
+   * might EMIT for this element, and every one of them competes for a budget and a rank.
+   * These are not candidates at all: nothing here is ever emitted, ranked, budgeted or
+   * promoted. They answer one question the other lists cannot - is the element that was
+   * acted on the element an existing capability already wraps? - and mixing them in would
+   * change what gets generated, which this is not allowed to do.
+   *
+   * Each entry carries `capability`. Entries that did not prove identity are kept with
+   * their reason, because "we asked and the answer was no" is a different and equally
+   * useful fact from "we never asked"; every reader applies `provesIdentity` before
+   * acting, so a refused one can never be mistaken for a match.
+   */
+  capabilityMeasurements?: CandidateMeasurement[];
   /** How many candidates were built and measured, before any were refused. */
   candidatesTried?: number;
   /**
@@ -593,6 +748,40 @@ export interface DomEvidence {
    * without inspecting the artifact's first line, which is not a diagnostic.
    */
   recording?: RecordingTelemetry;
+  /**
+   * WHICH APPLICATION THIS EVIDENCE IS ABOUT.
+   *
+   * Optional, so every recording made before this existed still reads exactly as it
+   * did - absence means "made before ownership was stamped", never "belongs to
+   * nobody". The DIRECTORY is still the authority (`recordings/<applicationId>/`);
+   * this is the copy that survives a file being moved, mailed or quoted in a report,
+   * and it is what lets a reader answer "which product is this about?" from the
+   * evidence itself rather than from where it happened to be filed.
+   *
+   * Stamped from the SELECTED scope at Stop, never from the recorded URL - see
+   * `Session.scope`.
+   */
+  origin?: RecordingOrigin;
+}
+
+/**
+ * The application context a recording was made in.
+ *
+ * `applicationId` is identity, `environmentId` and `baseUrl` are configuration, and
+ * the distinction is load-bearing: two environments of one application share an
+ * identity and differ in address, so a reader must never recover the first from the
+ * second. `baseUrl` is kept because it is evidence of WHERE the recording ran, which
+ * is a real question when a failure turns out to be environment-specific.
+ */
+export interface RecordingOrigin {
+  applicationId: string;
+  environmentId: string;
+  baseUrl: string;
+  /** The row it was recorded for, when the person named one before starting. */
+  testCaseId?: string;
+  /** Browser and transport, so "where did this come from" is answerable offline. */
+  browser?: string;
+  startedAt?: string;
 }
 
 /** What the recorder itself did. Additive; every field is optional to a reader. */
@@ -645,6 +834,63 @@ export function isForbiddenKey(key: string): boolean {
 }
 
 /**
+ * Tags whose TEXT provably cannot be a value somebody typed.
+ *
+ * AN ALLOW-LIST, so the default is to redact. A custom element can host a control in a
+ * shadow root, an unknown tag is unknown, and an absent tag says nothing at all - all
+ * three fail closed by simply not being here. `code`, `pre`, `samp`, `kbd` and `output`
+ * are deliberately ABSENT even though they hold no value: they are where an application
+ * displays a token when it displays one, so they are left to be judged on their content.
+ */
+const TEXT_ONLY_TAGS = [
+  'label', 'p', 'span', 'div', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'li', 'ul', 'ol', 'dl', 'dt', 'dd', 'td', 'th', 'tr', 'table', 'thead', 'tbody',
+  'strong', 'em', 'b', 'i', 'u', 'small', 'mark', 'abbr', 'cite', 'q', 'blockquote',
+  'section', 'article', 'header', 'footer', 'nav', 'main', 'aside', 'figure',
+  'figcaption', 'form', 'fieldset', 'legend', 'button', 'summary', 'details',
+  'img', 'svg', 'path', 'br', 'hr',
+];
+
+/**
+ * Would keeping this node's TEXT keep a credential?
+ *
+ * TWO INDEPENDENT TESTS, and the node is redacted if either says so.
+ *
+ * 1. IT IS A CREDENTIAL FIELD. A password input has no text, but a mis-tagged one might,
+ *    and the cost of being wrong is a leaked secret. What changed is the "it is a field"
+ *    half: only a FORM CONTROL can hold a value somebody typed. A `<label>`, `<p>` or
+ *    `<div>` has no value at all, so a credential word in its id describes a field rather
+ *    than being one.
+ *
+ *    The old rule asked `isForbiddenKey(id)` of every node, so `#password_field-error` -
+ *    a `<label>` carrying "Not too short! enter min 5 characters." - lost its text for
+ *    mentioning a password. Measured cost: every content-family candidate for that
+ *    element became underivable, on an element that is a validation MESSAGE and can never
+ *    hold a secret.
+ *
+ * 2. THE TEXT ITSELF LOOKS LIKE A SECRET, whatever the element is. This is new and it is
+ *    strictly MORE protective: the old rule read only the type, name and id, so a
+ *    `<div>` displaying a JWT was kept in full because no attribute mentioned a
+ *    credential. `looksLikeSecretValue` is the same shape test `filterAttributes`
+ *    already applies to every attribute value.
+ *
+ * FAIL CLOSED ON AMBIGUITY. `TEXT_ONLY_TAGS` is an ALLOW-LIST, so an absent tag, an
+ * unknown tag and a custom element - which can host a real control in a shadow root -
+ * are all judged as though they could hold a value.
+ */
+export function holdsCredentialText(node: Pick<DomNode, 'tag' | 'type' | 'name' | 'id' | 'text'>): boolean {
+  // The content test runs first and applies to EVERY element, whatever it is.
+  if (node.text && looksLikeSecretValue(node.text))
+    return true;
+  const tag = (node.tag ?? '').toLowerCase();
+  if (TEXT_ONLY_TAGS.includes(tag))
+    return false;
+  return FORBIDDEN_INPUT_TYPES.includes((node.type ?? '').toLowerCase())
+    || isForbiddenKey(node.name ?? '')
+    || isForbiddenKey(node.id ?? '');
+}
+
+/**
  * Strip anything a capture must not keep.
  *
  * Applied to every node before it is stored, on the belt-and-braces principle the
@@ -659,6 +905,28 @@ export function redactNode<T extends DomNode>(node: T): T {
   const safe: DomNode = { tag: node.tag };
   if (node.role) safe.role = node.role;
   if (node.accessibleName) safe.accessibleName = truncate(node.accessibleName);
+  // The provenance travels with the value or the value cannot be judged. Both are
+  // copied only when the name itself survived above, so a source can never outlive
+  // the name it describes.
+  if (node.accessibleName && node.accessibleNameSource)
+    safe.accessibleNameSource = node.accessibleNameSource;
+  if (node.accessibleName && node.accessibleNameVerified !== undefined)
+    safe.accessibleNameVerified = node.accessibleNameVerified;
+  // Carried only beside a name, like the other two provenance fields: a stability verdict
+  // about a name that did not survive redaction would describe nothing.
+  if (node.accessibleName && node.accessibleNameStable)
+    safe.accessibleNameStable = node.accessibleNameStable;
+  // AN HREF CAN CARRY A CREDENTIAL. A reset link is `?token=…`, a magic sign-in link is
+  // the whole secret, and both are ordinary hrefs on ordinary anchors. The key test is
+  // applied to the query's parameter NAMES and the shape test to the value, which is the
+  // same pair of rules `filterAttributes` already uses - href is not special enough to
+  // deserve its own weaker ones.
+  if (node.href && !hrefCarriesSecret(node.href)) {
+    safe.href = truncate(node.href);
+    if (node.hrefAbsolute !== undefined) safe.hrefAbsolute = node.hrefAbsolute;
+  }
+  if (node.alt) safe.alt = truncate(node.alt);
+  if (node.nonQualifying !== undefined) safe.nonQualifying = node.nonQualifying;
   if (node.id) safe.id = node.id;
   if (node.name) safe.name = node.name;
   if (node.type) safe.type = node.type;
@@ -669,11 +937,7 @@ export function redactNode<T extends DomNode>(node: T): T {
   if (node.virtualized !== undefined) safe.virtualized = node.virtualized;
   if (node.virtualizedSignal) safe.virtualizedSignal = node.virtualizedSignal;
 
-  // Text is dropped entirely for a credential-shaped field: a password input has no
-  // text, but a mis-tagged one might, and the cost of being wrong is a leaked secret.
-  const credentialShaped = FORBIDDEN_INPUT_TYPES.includes((node.type ?? '').toLowerCase())
-    || isForbiddenKey(node.name ?? '') || isForbiddenKey(node.id ?? '');
-  if (node.text && !credentialShaped)
+  if (node.text && !holdsCredentialText(node))
     safe.text = truncate(node.text);
 
   safe.aria = filterAttributes(node.aria);
@@ -705,6 +969,45 @@ export function redactNode<T extends DomNode>(node: T): T {
  * and exactly the kind of stable hook the next phase is meant to find. A secret is
  * long, unbroken and mixes letters with digits; an identifier is short and readable.
  */
+/**
+ * Would keeping this href keep a credential?
+ *
+ * Two independent tests, either of which refuses the whole href rather than editing it:
+ * a query parameter whose NAME is one of the forbidden keys (`?token=`, `?session=`),
+ * and any query VALUE that looks like a secret by the existing shape rule. The href is
+ * dropped whole because a redacted URL is a different URL - trimming the query would
+ * leave a value that reads like an authored link and is not one.
+ *
+ * Deliberately not applied to the path: `/reset-password` is a route, not a secret, and
+ * refusing it would throw away exactly the stable link this phase exists to capture.
+ */
+/**
+ * Does any segment of this path look like a secret?
+ *
+ * `/reset/9f2c8ab1e4d7...` is a token in a path rather than a query, and a screen
+ * identity built from it would be both useless and a leak. The test is
+ * `looksLikeSecretValue`, unchanged - one rule for values, wherever they are found -
+ * applied per segment so an ordinary route is never refused for its length.
+ */
+export function routeCarriesSecret(route: string): boolean {
+  return route.split('/').some(segment => segment && looksLikeSecretValue(segment));
+}
+
+export function hrefCarriesSecret(href: string): boolean {
+  const query = href.slice(href.indexOf('?') + 1);
+  if (!href.includes('?') || !query)
+    return false;
+  for (const pair of query.split(/[&;]/)) {
+    const [key, ...rest] = pair.split('=');
+    if (key && isForbiddenKey(key))
+      return true;
+    const value = rest.join('=');
+    if (value && looksLikeSecretValue(decodeURIComponent(value)))
+      return true;
+  }
+  return false;
+}
+
 export function looksLikeSecretValue(value: string): boolean {
   const trimmed = value.trim();
   if (trimmed.length < 20 || /\s/.test(trimmed))
@@ -774,6 +1077,11 @@ export function sanitiseEvidence(
       previousSiblings: entry.previousSiblings.slice(0, EVIDENCE_LIMITS.maxPreviousSiblings).map(redactNode),
       nextSiblings: entry.nextSiblings.slice(0, EVIDENCE_LIMITS.maxNextSiblings).map(redactNode),
       relationships: [...new Set(entry.relationships)],
+      // THE ROUTE, WHEN IT IS SAFE TO KEEP. A path segment that looks like a secret is
+      // dropped whole rather than trimmed, by the same rule and the same test `href`
+      // already uses: a redacted route is a different route that still reads like a real
+      // one. Dropping it fails bootstrap closed, which is the correct outcome.
+      ...(entry.route && !routeCarriesSecret(entry.route) ? { route: entry.route } : {}),
       ...(entry.captureTiming ? { captureTiming: entry.captureTiming } : {}),
       ...(entry.attached === undefined ? {} : { attached: entry.attached }),
       ...(entry.viewport ? { viewport: entry.viewport } : {}),
@@ -820,6 +1128,21 @@ export function sanitiseEvidence(
         ? {
           positionProvenCandidates: (entry.positionProvenCandidates ?? [])
               .filter(isPositionProven)
+              .slice(0, EVIDENCE_LIMITS.maxRejectedCandidates)
+              .map(redactCandidate),
+        }
+        : {}),
+      // CAPABILITY MEASUREMENTS, carried whole and bounded by the same limit.
+      //
+      // Not filtered to the proven ones. A capability whose declared locator was
+      // measured and found to be a DIFFERENT element is the answer this phase exists to
+      // record, and dropping it would leave that indistinguishable from never having
+      // asked. Every reader applies `provesIdentity`, so nothing unproven can be acted
+      // on; what is kept is the fact that the question was put.
+      ...(entry.capabilityMeasurements?.length
+        ? {
+          capabilityMeasurements: entry.capabilityMeasurements
+              .filter(candidate => candidate.capability?.owner && candidate.capability?.method)
               .slice(0, EVIDENCE_LIMITS.maxRejectedCandidates)
               .map(redactCandidate),
         }
@@ -1153,6 +1476,12 @@ export function evidenceForAssertionSubject(
       ...(target.positionProvenCandidates
         ? { positionProvenCandidates: target.positionProvenCandidates } : {}),
       ...(target.rejectedCandidates ? { rejectedCandidates: target.rejectedCandidates } : {}),
+      // WHICH ESTABLISHED CAPABILITY IS THIS ELEMENT - an element-level fact, so it
+      // transfers like the candidate lists beside it. The pick takes this measurement
+      // against the asserted node itself, and dropping it here would leave an assertion
+      // unable to say which capability it is about while the answer sat in its own capture.
+      ...(target.capabilityMeasurements
+        ? { capabilityMeasurements: target.capabilityMeasurements } : {}),
       ...(typeof target.candidatesTried === 'number' ? { candidatesTried: target.candidatesTried } : {}),
       ...(target.pressTimeText ? { pressTimeText: target.pressTimeText } : {}),
       ...(target.documentId ? { documentId: target.documentId } : {}),
@@ -1233,6 +1562,190 @@ export interface SelectorCandidate {
   descendant?: string;
   /** The Playwright expression this stands for. Rendered here so one place owns it. */
   expression: string;
+  /**
+   * Which budget this candidate competes in. See `FAMILY_BUDGET`.
+   *
+   * Derived from the strategy by `familyOf`, so a new strategy joins a budget by being
+   * named there rather than by every call site remembering to say so.
+   */
+  family?: CandidateFamily;
+  /**
+   * HOW this candidate is measured, and it is not a preference.
+   *
+   *  - `page` (the default, and every candidate that existed before) is a CSS selector
+   *    plus the optional text/descendant narrowing, measured inside the batched
+   *    `__auraMeasure` call with `document.querySelectorAll`.
+   *  - `expression` is a Playwright chain - `getByRole`, `getByLabel`, `getByText` -
+   *    which `querySelectorAll` cannot evaluate at all. It is rebuilt on the Node side
+   *    with `buildLocator` and identity-checked against the parked node.
+   *
+   * The split is why the in-page measurement and its own cap are untouched by any of
+   * this: the new families never reach it.
+   */
+  measuredBy?: 'page' | 'expression';
+}
+
+/**
+ * The budgets a candidate competes in.
+ *
+ * `identifier`, `content`, `container` and `structural` are the families that already
+ * existed, kept apart only so the budget can protect them; `semantic`,
+ * `semantic-scoped` and `attribute` are new.
+ */
+export type CandidateFamily =
+  | 'identifier' | 'content' | 'container' | 'structural'
+  | 'semantic' | 'semantic-scoped' | 'attribute';
+
+/**
+ * Which cap a strategy competes under. Three answers, and the difference is where the
+ * candidate is generated rather than how good it is:
+ *
+ *  - `structural-cap`  - built by `candidateSelectorsFor` itself and sliced by
+ *                        `MAX_CANDIDATES`, which is byte-identical to what that function
+ *                        produced before any semantic family existed;
+ *  - `family-budget`   - built by `semanticCandidatesFor` and admitted by
+ *                        `applyFamilyBudget`, so its family MUST carry a positive
+ *                        `FAMILY_BUDGET` entry or every candidate it produces is dropped;
+ *  - `unbudgeted`      - not generated here at all. `recorded-locator` is Codegen's own
+ *                        line, measured by the recorder against the parked node; it
+ *                        competes for no slot because it was never in the list.
+ */
+export type CandidateBudget = 'structural-cap' | 'family-budget' | 'unbudgeted';
+
+/**
+ * EVERYTHING THE PIPELINE HAS TO KNOW ABOUT ONE STRATEGY, in one declaration.
+ *
+ * A strategy used to be a bare string spelled at four unrelated places - the emission
+ * site, `familyOf`, the scorer's shape classifier and `buildLocator`'s rebuildable set -
+ * and every disagreement between them failed SILENTLY, always in the direction of the new
+ * strategy quietly vanishing: an unmapped family resolves to `structural`, whose
+ * `FAMILY_BUDGET` entry is undefined, so `applyFamilyBudget` admits none of it; an
+ * expression the scorer cannot parse ranks last; an expression `buildLocator` cannot
+ * rebuild is measured as `matchCount: null` and can never be proven. Measured, all three:
+ * a made-up strategy emitted through `semanticCandidatesFor` produced 0 retained
+ * candidates, `scoreExpression` returned null for an unknown Playwright call, and
+ * `buildLocator` returned null for the same.
+ *
+ * So the four properties are declared here, together, and `strategy-contract.fixture.ts`
+ * runs the REAL generators and asserts the declaration against what they actually emit.
+ * Nothing in this table decides anything at run time except the family, which is the one
+ * answer `familyOf` always gave - the rest is what makes an omission a red test instead
+ * of a candidate nobody notices is missing.
+ */
+export interface StrategyContract {
+  /** The budget family. Exactly what `familyOf` returns for this strategy. */
+  family: CandidateFamily;
+  /**
+   * How this candidate is counted: `page` goes to the batched in-page `__auraMeasure`
+   * with its `selector`, `expression` is rebuilt on the Node side by `buildLocator`.
+   * `getByRole` cannot be expressed in `querySelectorAll`, which is why the split exists.
+   */
+  measuredBy: 'page' | 'expression';
+  budget: CandidateBudget;
+  /** `scoreExpression` returns a score for its expressions. Nothing ranks without one. */
+  scoreable: boolean;
+  /** `buildLocator` reconstructs its expressions faithfully. Required for `expression`. */
+  rebuildable: boolean;
+}
+
+/**
+ * THE STRATEGIES THIS FRAMEWORK EMITS. Adding one means adding a line here.
+ *
+ * Order follows the generators: the structural half of `candidateSelectorsFor` first,
+ * then its content and container families, then `semanticCandidatesFor`.
+ */
+export const STRATEGY_CONTRACT: Readonly<Record<string, StrategyContract>> = {
+  /* ---- candidateSelectorsFor: identifiers, content, containers, structure. */
+  'test-id': { family: 'identifier', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: true },
+  'stable-id': { family: 'identifier', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: true },
+  // `.filter({ hasText })`, which `buildLocator` deliberately refuses to reconstruct -
+  // and never has to: this shape is counted in the page by `__auraMeasure`.
+  'scoped-class-text': { family: 'content', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: false },
+  // `.filter({ hasText })`, which `buildLocator` deliberately refuses to reconstruct -
+  // and never has to: this shape is counted in the page by `__auraMeasure`.
+  'scoped-class-pair-text': { family: 'content', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: false },
+  'scoped-parent-class-text': { family: 'content', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: true },
+  'scoped-parent-class-pair-text': { family: 'content', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: true },
+  'scoped-text': { family: 'content', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: true },
+  // The same `.filter({ hasText })` shape, plus the descendant inside it.
+  'container-text': { family: 'container', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: false },
+  'scoped-class': { family: 'structural', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: true },
+  'scoped-parent-class': { family: 'structural', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: true },
+  'scoped-parent-class-pair': { family: 'structural', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: true },
+  'scoped-tag': { family: 'structural', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: true },
+  class: { family: 'structural', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: true },
+  'parent-class': { family: 'structural', measuredBy: 'page', budget: 'structural-cap', scoreable: true, rebuildable: true },
+
+  /* ---- semanticCandidatesFor: page-wide semantics. */
+  'role-name': { family: 'semantic', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'role-name-loose': { family: 'semantic', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'role-generic': { family: 'semantic', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  label: { family: 'semantic', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  placeholder: { family: 'semantic', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'test-id-api': { family: 'semantic', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  title: { family: 'semantic', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'alt-text': { family: 'semantic', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+
+  /* ---- semanticCandidatesFor: the same, scoped to an authored ancestor id. */
+  'scoped-role-name': { family: 'semantic-scoped', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'scoped-role-name-loose': { family: 'semantic-scoped', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'scoped-label': { family: 'semantic-scoped', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'scoped-placeholder': { family: 'semantic-scoped', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'scoped-semantic-text': { family: 'semantic-scoped', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+
+  /* ---- semanticCandidatesFor: stable attributes and their bounded combinations. */
+  attribute: { family: 'attribute', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'scoped-attribute': { family: 'attribute', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'attribute-pair': { family: 'attribute', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+
+  /* ---- The recorder's own: CODEGEN'S LINE, not a generated candidate.
+   *
+   * Built in `live-recorder.ts` at the moment Codegen writes it and measured against the
+   * parked node like anything else. It is declared here because every consumer that asks
+   * a candidate what family it is will meet it, and `unbudgeted` is the honest answer:
+   * it was never in the generated list, so no cap ever applied to it. */
+  'recorded-locator': { family: 'structural', measuredBy: 'expression', budget: 'unbudgeted', scoreable: true, rebuildable: true },
+
+  /* ---- RESERVED NAMES: `familyOf` has always answered for these and no site emits one.
+   * Kept so that answer is unchanged, and listed in the fixture's own not-yet-emitted set
+   * so a genuinely dead entry cannot hide among them. */
+  text: { family: 'semantic', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'scoped-test-id-api': { family: 'semantic-scoped', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'scoped-title': { family: 'semantic-scoped', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+  'scoped-alt-text': { family: 'semantic-scoped', measuredBy: 'expression', budget: 'family-budget', scoreable: true, rebuildable: true },
+};
+
+/**
+ * The table as a Map, built once.
+ *
+ * A Map rather than an index into the object literal for two reasons, and neither is
+ * style: `familyOf` runs once per candidate on the recording path, so the lookup wants to
+ * be a hash probe rather than a prototype walk; and a Map cannot answer `constructor` or
+ * `toString` with something that is not a contract, which an object literal can. The
+ * declaration above stays an object because that is what a person reads.
+ */
+const CONTRACT_BY_STRATEGY: ReadonlyMap<string, StrategyContract> =
+  new Map(Object.entries(STRATEGY_CONTRACT));
+
+/** The contract for one strategy, or null where nothing declares it. */
+export function strategyContract(strategy: string): StrategyContract | null {
+  return CONTRACT_BY_STRATEGY.get(strategy) ?? null;
+}
+
+/**
+ * Which budget a strategy competes in. One table, so a new strategy cannot be homeless.
+ *
+ * THE DEFAULT IS UNCHANGED AND IS STILL A REAL ANSWER, not an error path: a strategy
+ * nothing declares still gets the family it always got. What is new is that the fixture
+ * refuses to let a generator emit one - the silent drop this default used to hide
+ * (`structural` carries no `FAMILY_BUDGET` entry) is now a red test rather than a
+ * candidate that never appears.
+ */
+export function familyOf(strategy: string): CandidateFamily {
+  const contract = strategyContract(strategy);
+  if (contract)
+    return contract.family;
+  return strategy.endsWith('-text') ? 'content' : 'structural';
 }
 
 /** One line, single spaces, bounded. A whitespace difference is not evidence. */
@@ -1569,7 +2082,7 @@ export function candidateSelectorsFor(graph: {
   const built: SelectorCandidate[] = [];
   const add = (candidate: SelectorCandidate) => {
     if (candidate.selector && !built.some(entry => entry.expression === candidate.expression))
-      built.push(candidate);
+      built.push({ ...candidate, family: familyOf(candidate.strategy), measuredBy: 'page' });
   };
   // Quotes and backslashes only: a class or id going into a CSS selector.
   const escape = (value: string) => value.split('"').join('\\"').split('\\').join('\\\\');
@@ -1731,5 +2244,305 @@ export function candidateSelectorsFor(graph: {
   for (const className of parentClasses.slice(0, 2))
     structural('parent-class', `.${escape(className)}`);
 
-  return built.slice(0, MAX_CANDIDATES);
+  // THE STRUCTURAL BUDGET IS UNCHANGED, deliberately and to the byte. Everything above
+  // is what this function produced before the semantic families existed, sliced by the
+  // same constant, so no candidate that is proven today can be displaced by one added
+  // below - and the in-page measurement, which has its own cap, receives exactly the
+  // list it always did.
+  const structuralCandidates = built.slice(0, MAX_CANDIDATES);
+  const semantic = semanticCandidatesFor(graph, isGenerated, stableAncestors);
+  const taken = new Set(structuralCandidates.map(entry => entry.expression));
+  return [
+    ...structuralCandidates,
+    ...applyFamilyBudget(semantic.filter(entry => !taken.has(entry.expression))),
+  ];
+}
+
+/* ------------------------------------------------- semantic candidate families */
+
+/**
+ * The ARIA role a node has without anyone writing it down.
+ *
+ * Lives here rather than in the recorder because BOTH halves need the identical table
+ * and a second copy would drift: the recorder reads it to decide whether a parked
+ * element satisfies a `getByRole` literal Codegen wrote, and generation reads it to
+ * propose a `getByRole` of its own. A role that means one thing when claiming and
+ * another when generating would pair a graph with a locator describing a different
+ * element - the exact failure the claim rules exist to prevent.
+ *
+ * Only mappings that are unambiguous from tag plus type. Anything else returns null and
+ * no role candidate is generated; a guessed role is a guessed element.
+ */
+export function implicitRole(node: { tag?: string; type?: string } | undefined): string | null {
+  const tag = (node?.tag ?? '').toLowerCase();
+  const type = (node?.type ?? '').toLowerCase();
+  if (tag === 'li') return 'listitem';
+  if (tag === 'button') return 'button';
+  if (tag === 'a') return 'link';                       // only emitted for a linked anchor
+  if (tag === 'textarea') return 'textbox';
+  if (tag === 'select') return 'combobox';
+  if (/^h[1-6]$/.test(tag)) return 'heading';
+  if (tag === 'input') {
+    if (type === 'checkbox') return 'checkbox';
+    if (type === 'radio') return 'radio';
+    if (['', 'text', 'email', 'tel', 'url', 'password'].includes(type)) return 'textbox';
+    return null;                                        // submit, file, range, date…
+  }
+  return null;
+}
+
+/**
+ * Roles whose accessible name comes from the element's own content.
+ *
+ * For anything else - a textbox above all - the name comes from a `<label>`, and label
+ * text is NOT captured. So an input's name is not derivable here and no named role
+ * candidate is generated for one. That is the honest answer rather than a convenient
+ * one: `getByRole('textbox', { name: 'Email' })` is a locator this evidence cannot
+ * justify, however obviously right it looks next to `placeholder="Enter your email"`.
+ */
+const NAME_FROM_CONTENT = new Set([
+  'link', 'button', 'heading', 'listitem', 'checkbox', 'radio', 'option', 'menuitem', 'tab',
+]);
+
+/** How many of each new family may be generated. See `applyFamilyBudget`. */
+export const FAMILY_BUDGET: Partial<Record<CandidateFamily, number>> = {
+  semantic: 5,
+  'semantic-scoped': 4,
+  attribute: 3,
+};
+
+/** The hard ceiling on everything, structural budget included. */
+export const MAX_TOTAL_CANDIDATES = 28;
+
+/**
+ * Keep each new family inside its own budget, in generation order.
+ *
+ * WHY A BUDGET RATHER THAN A BIGGER CAP. Measured across the whole recorded corpus:
+ * adding these families takes 706 of 1058 targets past `MAX_CANDIDATES`, and a single
+ * larger number resolves that by letting whichever family generates most win - which is
+ * `structural`, the weakest one, because a page with many classes produces many class
+ * shapes. A per-family budget makes the outcome independent of how prolific a family
+ * happens to be on a given page: five semantic candidates are five semantic candidates
+ * whether the element carries eight classes or none.
+ *
+ * Deterministic: generation order inside a family is fixed, the budgets are constants,
+ * and nothing here consults a measurement - a budget decided by what resolved would
+ * make candidate generation depend on the page it is measured against.
+ */
+export function applyFamilyBudget(candidates: SelectorCandidate[]): SelectorCandidate[] {
+  const used = new Map<CandidateFamily, number>();
+  const kept: SelectorCandidate[] = [];
+  for (const candidate of candidates) {
+    if (kept.length + MAX_CANDIDATES >= MAX_TOTAL_CANDIDATES)
+      break;
+    const family = candidate.family ?? familyOf(candidate.strategy);
+    const budget = FAMILY_BUDGET[family] ?? 0;
+    const spent = used.get(family) ?? 0;
+    if (spent >= budget)
+      continue;
+    used.set(family, spent + 1);
+    kept.push(candidate);
+  }
+  return kept;
+}
+
+/**
+ * Candidates Playwright can express and `querySelectorAll` cannot.
+ *
+ * EVERY ONE IS BUILT FROM SOMETHING THE CAPTURE ACTUALLY HOLDS. Where the information
+ * is missing the candidate is simply not generated - there is no fallback, no guess and
+ * no inference from a neighbouring field:
+ *
+ *  - `href` and `alt` ARE captured now, for the target only, so both yield candidates -
+ *    an href only when it is relative, because an absolute one names a deployment;
+ *  - `<label>` text is still not captured, so `getByLabel` comes only from an
+ *    `aria-label`. Measured, it earns nothing on its own anyway: `getByLabel("Email")`
+ *    matches three elements on Bugasura, one per simultaneously-mounted form;
+ *  - the accessible name is the BROWSER'S where CDP could be reached at the press
+ *    (`accessibleNameVerified`), and otherwise an approximation from `aria-label`,
+ *    `title`, or the element's own text for a name-from-content role. Nothing here
+ *    reimplements the accessible-name algorithm.
+ *
+ * Every candidate returned here is still only a CANDIDATE: it is measured at the press
+ * and refused unless it matches exactly one element AND that element is the one acted
+ * on. Nothing below decides anything.
+ */
+export function semanticCandidatesFor(
+  graph: { target: DomNode; parent?: DomNode; ancestors?: RelatedNode[]; descendants?: RelatedNode[] },
+  isGenerated: (value: string) => boolean,
+  stableAncestors?: RelatedNode[],
+): SelectorCandidate[] {
+  const target = graph.target;
+  if (!target)
+    return [];
+  const out: SelectorCandidate[] = [];
+  const seen = new Set<string>();
+  const emit = (strategy: string, expression: string, selector: string) => {
+    if (seen.has(expression))
+      return;
+    seen.add(expression);
+    out.push({ strategy, selector, expression, family: familyOf(strategy), measuredBy: 'expression' });
+  };
+
+  const literal = (value: string) => JSON.stringify(value);
+  const escape = (value: string) => value.split('"').join('\\"').split('\\').join('\\\\');
+  // The same filter every candidate's text passes: bounded, single-line, never a
+  // secret-shaped value, never a lone generated identifier.
+  const usable = (value: string | undefined): string | null => {
+    const text = usableCandidateText(value, isGenerated);
+    return text && text.length <= CANDIDATE_TEXT_LIMIT ? text : null;
+  };
+
+  const role = target.role && !isGenerated(target.role) ? target.role : implicitRole(target);
+  const ariaLabel = usable(target.aria?.['aria-label']);
+  const title = usable(target.title);
+  const placeholder = usable(target.placeholder);
+  const testId = target.data?.['data-testid'] ?? target.data?.['data-test-id'];
+  // The element's own text is a NAME only for a role that takes its name from content.
+  // It is also only the element's own text when the element has no children to have
+  // borrowed it from - `text` is `textContent`, which is the whole subtree.
+  const ownText = usable(target.text);
+  const leaf = !(graph.descendants ?? []).length;
+  const nameFromContent = role && NAME_FROM_CONTENT.has(role) && ownText ? ownText : null;
+  // THE BROWSER'S OWN ANSWER FIRST, when there is one. `accessibleNameVerified` is set
+  // only where CDP returned the computed name at the press; everything below it is an
+  // approximation built from attributes, and the two disagree in exactly the cases that
+  // matter - a field whose error label the browser folds into its name, a button whose
+  // icon contributes a word. A candidate built from either is still measured and still
+  // refused unless it identifies the element that was acted on; the order only decides
+  // which one is tried, never which one is trusted.
+  const verifiedName = target.accessibleNameVerified === true ? usable(target.accessibleName) : null;
+  const accessibleName = verifiedName ?? ariaLabel ?? title ?? nameFromContent;
+
+  /* ---- role + name, and text + role: the same candidate, named by its source. */
+  // THE SAME NAME, MATCHED LOOSELY - a second CANDIDATE, never a preference, and never
+  // ahead of anything that already existed.
+  //
+  // `exact: true` and the bare form fail in OPPOSITE directions, and both failures were
+  // measured rather than imagined. `exact: true` was introduced in P5.1 against a loose
+  // form that matched TWO elements for Flipkart's "Home"; re-measured on 2026-09-08 that
+  // page resolves to one either way, and the ambiguity reproduces on Bugasura instead -
+  // `{ name: "Sign In" }` matches 2 (Google's sign-in button contains the words) where
+  // exact matches 1. Loose survives where exact cannot when the application EXTENDS a
+  // name with state text: Bugasura's email field computes as "Email" and then carries its
+  // validation message, at which point exact matches 0 and loose still matches 1 - both
+  // measured live, in that order, on the same field. Neither is generally better, so neither is
+  // chosen here - both are offered, and the existing pipeline decides: each is counted
+  // at the press, each must resolve to exactly one element, and each must BE the element
+  // acted on. A loose candidate matching two is refused by the same ambiguity gate as
+  // anything else; one matching a different element is refused by identity.
+  //
+  // DEFERRED TO THE END OF ITS FAMILY, and that is the budget rule rather than a
+  // preference. Emitted beside its exact twin it displaced 150 candidates the generator
+  // already produced (125 scoped text, 25 scoped label) - none of them proven in this
+  // corpus, but "not proven yet" is not "worthless", and `FAMILY_BUDGET` exists so that
+  // nothing proven today can be displaced by anything added. Appended, it displaces
+  // ZERO and still offers 374 of the 524 loose candidates: measured both ways over all
+  // 1026 captured targets.
+  const loose: Array<[string, string]> = [];
+  if (role && accessibleName) {
+    emit('role-name', `page.getByRole(${literal(role)}, { name: ${literal(accessibleName)}, exact: true })`, '');
+    loose.push(['role-name-loose', `page.getByRole(${literal(role)}, { name: ${literal(accessibleName)} })`]);
+  } else if (role)
+    emit('role-generic', `page.getByRole(${literal(role)})`, '');
+
+  if (ariaLabel)
+    emit('label', `page.getByLabel(${literal(ariaLabel)})`, '');
+  if (placeholder)
+    emit('placeholder', `page.getByPlaceholder(${literal(placeholder)})`, '');
+  if (testId && !isGenerated(testId))
+    emit('test-id-api', `page.getByTestId(${literal(testId)})`, '');
+  if (title)
+    emit('title', `page.getByTitle(${literal(title)})`, '');
+  // AMBIGUITY IS PRESERVED, NOT AVOIDED. Measured on Flipkart's homepage: 91 images
+  // carry an alt, and of eight sampled three identified their element uniquely while
+  // four shared `alt="Image"` across 62 elements. The shared ones are not a reason to
+  // withhold the candidate - they are a reason to measure it, which is what happens to
+  // every candidate here. A 62-element match is refused at the press like any other.
+  const alt = usable(target.alt);
+  if (alt)
+    emit('alt-text', `page.getByAltText(${literal(alt)}, { exact: true })`, '');
+  // NO PAGE-WIDE getByText, and this is the content family's rule rather than a new one:
+  // "Only ever WITH a scope: a page-wide `getByText` carries no structure and is what
+  // this path exists to avoid." A bare text locator scores 75 - above an authored id at
+  // 70 - so generating one would let ranking prefer it over `#create_team_cancel_btn`
+  // on a page where the text happened to be unique when it was recorded, which is
+  // exactly the TC_LOGIN_128 failure (one `h2` at record time, three at run time). The
+  // scoped form is emitted below, where a scope exists to give it structure.
+
+  /* ---- ancestor-scoped semantic candidates, and stable attribute combinations.
+   *
+   * The scope is an ANCESTOR'S AUTHORED ID and nothing else - the same scopes the
+   * structural families already use, by the same rule. Scoping is what settles the
+   * ambiguity a page-wide semantic locator cannot: three sign-in forms are mounted at
+   * once on Bugasura, so `getByPlaceholder("Enter your email")` matches three elements
+   * and `#loginForm` + the same placeholder matches one. */
+  const scopes = (stableAncestors ?? (graph.ancestors ?? []).filter(node => node.id && !isGenerated(node.id)))
+      .filter(node => node.id)
+      .slice(0, 2)
+      .map(node => idSelector(node.id!, escape));
+
+  for (const scope of scopes) {
+    const within = `page.locator(${literal(scope)})`;
+    if (role && accessibleName) {
+      emit('scoped-role-name', `${within}.getByRole(${literal(role)}, { name: ${literal(accessibleName)}, exact: true })`, '');
+      loose.push(['scoped-role-name-loose', `${within}.getByRole(${literal(role)}, { name: ${literal(accessibleName)} })`]);
+    }
+    if (ariaLabel)
+      emit('scoped-label', `${within}.getByLabel(${literal(ariaLabel)})`, '');
+    if (placeholder)
+      emit('scoped-placeholder', `${within}.getByPlaceholder(${literal(placeholder)})`, '');
+    if (ownText && leaf)
+      emit('scoped-semantic-text', `${within}.getByText(${literal(ownText)}, { exact: true })`, '');
+  }
+
+  /* ---- stable direct attributes and their bounded combinations.
+   *
+   * `type` never appears alone: it names a KIND of control, never one control. `value`
+   * and `class` are excluded for the same reason plus a stronger one - a value can be
+   * what somebody typed. */
+  const tag = (target.tag ?? '').toLowerCase();
+  const attribute = (strategy: string, selector: string) =>
+    emit(strategy, `page.locator(${literal(selector)})`, selector);
+
+  // SCOPED FIRST, and the order IS the fix.
+  //
+  // The family is budgeted at three and these were emitted last, so an element carrying
+  // `name` plus two of {aria-label, href} spent every slot on unscoped shapes and lost
+  // the scoped one entirely. That is the wrong candidate to lose: measured on Bugasura's
+  // sign-in page, `[name="email"]` matches THREE elements - the sign-in, sign-up and
+  // reset forms are all mounted at once - while `#loginForm input[name="email"]` matches
+  // one. The unscoped shapes are the ambiguous ones; the scoped shape is the reason the
+  // family is worth having.
+  //
+  // At most two scopes are ever offered (`scopes` is sliced to 2), so a budget of three
+  // always leaves at least one slot for an unscoped candidate. Nearest scope first, which
+  // is the order `scopes` already carries, so the highest-value scoped variant is the one
+  // that survives a constrained budget.
+  for (const scope of scopes) {
+    if (tag && target.name)
+      attribute('scoped-attribute', `${scope} ${tag}[name="${escape(target.name)}"]`);
+  }
+  if (target.name)
+    attribute('attribute', `[name="${escape(target.name)}"]`);
+  if (ariaLabel)
+    attribute('attribute', `[aria-label="${escape(ariaLabel)}"]`);
+  // RELATIVE HREFS ONLY, and that is the whole of the environment rule. An absolute href
+  // carries the origin, so a locator built on it belongs to one deployment rather than to
+  // the application - and `javascript:void(0)`, which names no destination at all, is
+  // absolute by the same test and excluded by the same line. Measured: Flipkart's Mobiles
+  // and Home links both resolve to exactly one element by their authored path, which is
+  // the only candidate either of them has.
+  if (target.href && target.hrefAbsolute !== true)
+    attribute('attribute', `[href="${escape(target.href)}"]`);
+  if (tag && target.name && target.type)
+    attribute('attribute-pair', `${tag}[type="${escape(target.type)}"][name="${escape(target.name)}"]`);
+  else if (tag && target.name)
+    attribute('attribute-pair', `${tag}[name="${escape(target.name)}"]`);
+
+  // The loose twins, last: they take the slots their families have left and no others.
+  for (const [strategy, expression] of loose)
+    emit(strategy, expression, '');
+
+  return out;
 }

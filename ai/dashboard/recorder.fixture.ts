@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Offline gate for the recording review: assertions, note visibility, credentials.
  *
@@ -23,7 +24,7 @@ import path from 'node:path';
 
 import { mapRecording, assembleSpec } from '../autocode/from-recording';
 import { parseInputs, parseToken } from '../excel/data-driven';
-import type { TestCase } from '../excel/parser';
+import type { TestCase } from '../excel/types';
 
 import {
   NEEDS_CONFIRMATION, expectedResultFrom, parseRecording, redactSourceForTest,
@@ -53,7 +54,7 @@ const SYNTHETIC_SECRET = 'not-the-real-one-7f3a91';
 
 function record(source: string): Recording {
   return parseRecording(source, {
-    startUrl: 'https://my.bugasura.io/',
+    startUrl: 'https://portal.fixture.invalid/',
     browser: 'chromium',
     durationMs: 12_345,
   });
@@ -64,14 +65,14 @@ const SIGN_IN_WITH_ASSERTIONS = `
 import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://my.bugasura.io/');
+  await page.goto('https://portal.fixture.invalid/');
   await page.getByRole('textbox', { name: 'Email' }).click();
   await page.getByRole('textbox', { name: 'Email' }).fill('qa.user@moolya.com');
   await page.getByRole('textbox', { name: 'Password' }).fill('${SYNTHETIC_SECRET}');
   await page.getByRole('button', { name: 'Sign In' }).click();
   await expect(page.getByText('Multi tasking is hard. Focus')).toBeVisible();
   await expect(page.getByText('Faclon labs')).toBeVisible();
-  await expect(page.getByText('Bugasura Live Support')).toBeVisible();
+  await expect(page.getByText('FixturePortal Live Support')).toBeVisible();
 });
 `;
 
@@ -80,7 +81,7 @@ const SIGN_IN_NO_ASSERTIONS = `
 import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://my.bugasura.io/');
+  await page.goto('https://portal.fixture.invalid/');
   await page.getByRole('textbox', { name: 'Email' }).fill('qa.user@moolya.com');
   await page.getByRole('textbox', { name: 'Password' }).fill('${SYNTHETIC_SECRET}');
   await page.getByRole('button', { name: 'Sign In' }).click();
@@ -92,7 +93,7 @@ const NO_AUTHENTICATION = `
 import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://my.bugasura.io/apps');
+  await page.goto('https://portal.fixture.invalid/apps');
   await page.getByRole('link', { name: 'Following' }).click();
   await expect(page.getByText('Faclon labs')).toBeVisible();
 });
@@ -106,7 +107,7 @@ const ODDLY_LABELLED_SECRET = `
 import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://my.bugasura.io/');
+  await page.goto('https://portal.fixture.invalid/');
   await page.getByRole('textbox', { name: 'Div' }).fill('${SYNTHETIC_SECRET}');
   await page.getByRole('button', { name: 'Sign In' }).click();
 });
@@ -114,7 +115,7 @@ test('test', async ({ page }) => {
 
 // The guard reads process.env at call time. Setting it here is process-local and
 // never written anywhere; the real value is left untouched and unread.
-process.env.BUGASURA_PASSWORD = SYNTHETIC_SECRET;
+process.env.FIXTUREAPP_PASSWORD = SYNTHETIC_SECRET;
 
 /* ------------------------------------------------- A: assertions and the warning */
 
@@ -129,7 +130,7 @@ check('the count the review card reads is 3',
     withAsserts.metrics.assertionCount === 3, `got ${withAsserts.metrics.assertionCount}`);
 check('every assertion keeps its target',
     withAsserts.assertions.map(a => a.target).join(' | ')
-      === 'Multi tasking is hard. Focus | Faclon labs | Bugasura Live Support',
+      === 'Multi tasking is hard. Focus | Faclon labs | FixturePortal Live Support',
     withAsserts.assertions.map(a => a.target).join(' | '));
 check('all three are visibility assertions',
     withAsserts.assertions.every(a => a.type === 'visible'));
@@ -138,7 +139,7 @@ check('needsConfirmation is FALSE when assertions exist',
 check('the expected result is composed from the assertions, not the actions',
     withAssertsDraft.expectedResult
       === 'Multi tasking is hard. Focus is visible; Faclon labs is visible; '
-        + 'Bugasura Live Support is visible',
+        + 'FixturePortal Live Support is visible',
     withAssertsDraft.expectedResult);
 
 const noAsserts = record(SIGN_IN_NO_ASSERTIONS);
@@ -253,7 +254,7 @@ check('the artifact keeps its locators and assertions intact',
 // Guard 2 reads whatever the environment holds. If a real secret is present, prove
 // the same surfaces reject it - by comparison only. The value is never printed.
 const realSecret = fs.existsSync(path.join(ROOT, '.env'))
-  ? (/^BUGASURA_PASSWORD\s*=\s*(.+)$/m.exec(fs.readFileSync(path.join(ROOT, '.env'), 'utf8'))?.[1] ?? '').trim()
+  ? (/^FIXTUREAPP_PASSWORD\s*=\s*(.+)$/m.exec(fs.readFileSync(path.join(ROOT, '.env'), 'utf8'))?.[1] ?? '').trim()
   : '';
 if (realSecret.length >= 4) {
   const live = record(SIGN_IN_WITH_ASSERTIONS.replace(SYNTHETIC_SECRET, realSecret));
@@ -263,7 +264,7 @@ if (realSecret.length >= 4) {
       && !redactSourceForTest(SIGN_IN_WITH_ASSERTIONS.replace(SYNTHETIC_SECRET, realSecret), live)
           .includes(realSecret));
 } else {
-  console.log('  [SKIP] no BUGASURA_PASSWORD in .env, so the live-secret sweep did not run');
+  console.log('  [SKIP] no FIXTUREAPP_PASSWORD in .env, so the live-secret sweep did not run');
 }
 
 /* ------------------------------------- F: the deterministic recorded generation path */
@@ -286,14 +287,14 @@ const testCase = {
 } as unknown as TestCase;
 
 const mapping = mapRecording(withAsserts);
-const spec = assembleSpec(testCase, mapping, 'excel/login-test-cases.xlsx');
+const spec = assembleSpec(testCase, mapping, 'excel/fixture-cases.xlsx');
 
 check('the recorded sign-in maps to the existing fixture, not to recorded values',
-    mapping.authenticated === true && mapping.fixtures.has('bugasuraCredentials'));
+    mapping.authenticated === true && mapping.fixtures.has('appCredentials'));
 check('the spec guards on requireCredentials',
-    spec.includes('requireCredentials(bugasuraCredentials)'));
+    spec.includes('requireCredentials(appCredentials)'));
 check('the spec signs in through the Page Object',
-    /\.signIn\(bugasuraCredentials\.email, bugasuraCredentials\.password\)/.test(spec));
+    /\.signIn\(appCredentials\.email, appCredentials\.password\)/.test(spec));
 check('the spec carries the traceability the gate checks',
     spec.includes("testCaseId: 'TC_FIXTURE_001'") && spec.includes('TC_FIXTURE_001 - '));
 // ALL THREE ARE ACCOUNTED FOR, AND NOT ONE OF THEM IS EMITTED.

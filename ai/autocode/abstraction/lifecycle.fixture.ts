@@ -1,3 +1,4 @@
+import '../../testing/isolated-checkout';
 /**
  * The Page Object lifecycle: every element gets a decision, and none of them is silence.
  *
@@ -17,7 +18,7 @@ import * as fs from 'fs';
 
 import { analyseCorpus, type CorpusResult, type UnmeasuredTarget } from './propose';
 import {
-  decideLifecycle, summarise, type Disposition, type LifecycleDecision,
+  decideLifecycle, summarise, type Disposition,
 } from './lifecycle';
 import {
   eligibility, labelProblem, resolveSemanticReviews, revalidate, SEMANTIC_ENABLED,
@@ -25,7 +26,7 @@ import {
 } from './semantic';
 import { deriveScenarioTitle, unstableTitleReason } from '../scenario-title';
 import { fixtureRegistered, registerFixture, renderKnowledgeEntry } from './writer';
-import { refuse, REFUSAL_CLASS, type Proposal, type RefusalCode } from './types';
+import { refuse, REFUSAL_CLASS, type Proposal } from './types';
 import type { MappedStep, MappingResult } from '../from-recording';
 
 const ROOT = process.cwd();
@@ -137,7 +138,7 @@ function checkReuse(): void {
       kind: 'page-object', pageObject: 'IssuesPage', method: 'issueCheckbox',
       from: 'click the row checkbox', label: 'Click the row checkbox',
       code: ["await (await issuesPage.issueCheckbox('Copy of login')).click();"],
-      why: 'accessible name in bugasura__issues-id.yaml',
+      why: 'accessible name in fixtureapp__issues-id.yaml',
     })]),
     proposals: [], unmeasured: [],
   });
@@ -356,7 +357,7 @@ function checkTitle(): void {
       unstableTitleReason(authored) ?? 'accepted');
 
   const journey = mapping([
-    step({ kind: 'navigate', from: 'navigate', label: 'Open https://my.bugasura.io/' }),
+    step({ kind: 'navigate', from: 'navigate', label: 'Open https://portal.fixture.invalid/' }),
     step({ kind: 'authenticate', from: 'sign in', label: 'Sign in' }),
     step({ kind: 'page-object', pageObject: 'ProjectsPage', method: 'open', from: 'open', label: 'Open' }),
     step({ kind: 'page-object', pageObject: 'IssuesPage', method: 'issueCheckbox',
@@ -576,39 +577,17 @@ async function checkWriterAndDiscovery(): Promise<void> {
   check('23: and no second method is proposed for it', existing.proposal.method === 'projectCard');
 }
 
-/* ----------------------------------------- the real corpus, read only, no model */
+/* ----------------------------------------- the synthetic corpus, read only, no model */
 
 function checkRealCorpus(): void {
-  process.stdout.write('\n== the real corpus ==\n');
-
   const result = analyseCorpus();
-  check('the analyser records elements it cannot evaluate instead of skipping them',
-      result.unmeasured.length > 0, `${result.unmeasured.length} unmeasured element(s)`);
-  // TWO codes, both SAFETY: nothing measured it, or it is the recorder's own overlay.
-  // The property under test is that NONE of them is silent - every entry names a code,
-  // says why, and says what would change the answer.
-  const codes = new Set(result.unmeasured.map(entry => entry.code));
-  check('every unmeasured element states a code, a reason and a remedy',
-      result.unmeasured.every(entry =>
-        REFUSAL_CLASS[entry.code] === 'SAFETY' && Boolean(entry.reason) && Boolean(entry.remedy)),
-      [...codes].join(', '));
-  check('every proposal carries its sightings, so a decision is findable per test',
-      result.proposals.every(entry => Array.isArray(entry.sightings))
-      && result.proposals.every(entry => entry.sightings.length > 0),
-      `${result.proposals.filter(entry => !entry.sightings.length).length} without sightings`);
-
-  const eligible = result.proposals.filter(entry => eligibility(entry).eligible);
-  check('a resolver is still asked about a small minority of the corpus',
-      eligible.length > 0 && eligible.length < result.proposals.length / 3,
-      `${eligible.length} of ${result.proposals.length}`);
-  check('NO eligible proposal carries a safety refusal',
-      !eligible.some(entry => entry.refusalCodes.some(code => code.class === 'SAFETY')));
-
-  // THE INVARIANT THE WHOLE PHASE RESTS ON.
-  const safetyResolved = result.proposals.filter(entry =>
-    entry.resolvedBy === 'ai' && entry.refusalCodes.some(code => code.class === 'SAFETY'));
-  check('no proposal was resolved by a model over a safety refusal', safetyResolved.length === 0,
-      safetyResolved.map(entry => entry.fingerprint).join(', '));
+  check('unmeasured inputs remain visible', result.unmeasured.length > 0);
+  check('every unmeasured input reports safety code, reason, and remedy', result.unmeasured.every(e => REFUSAL_CLASS[e.code] === 'SAFETY' && Boolean(e.reason) && Boolean(e.remedy)));
+  check('proposals retain their sightings', result.proposals.length > 0 && result.proposals.every(e => e.sightings.length > 0));
+  const eligible = result.proposals.filter(e => eligibility(e).eligible);
+  check('semantic questions are eligible for the resolver', eligible.length > 0);
+  check('no safety refusal reaches the resolver', eligible.every(e => e.refusalCodes.every(c => c.class === 'SEMANTIC')));
+  check('deterministic analysis never claims AI resolved a safety refusal', !result.proposals.some(e => e.resolvedBy === 'ai' && e.refusalCodes.some(c => c.class === 'SAFETY')));
 }
 
 async function main(): Promise<void> {

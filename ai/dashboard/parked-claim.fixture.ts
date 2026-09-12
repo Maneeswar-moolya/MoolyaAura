@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * A press is claimed whatever shape Codegen wrote the locator in.
  *
@@ -11,7 +12,7 @@
  *
  *     CONTAINERS.indexOf(tag) >= 0 || getAttribute('role') || current.id
  *
- * Bugasura's row checkbox is `span.rounded-checkbox-ui` inside
+ * FixturePortal's row checkbox is `span.rounded-checkbox-ui` inside
  * `label.rounded-checkbox-cont` inside `div.tabulator-cell.tabulator-cell--checkbox`
  * inside `div#tr_1749558.tabulator-row`. A plain div and a label satisfy none of the
  * three conditions, so the cell is recorded NOWHERE and the label survives only as
@@ -235,41 +236,19 @@ function checkExistingShapesUnchanged(): void {
       && analyseIdentifier('loginForm').dynamic === false);
 }
 
-/* ---------------------------------------- the real corpus, end to end ---- */
+/* ---------------------------------------- the synthetic corpus, end to end ---- */
 
-function checkRealCorpus(): void {
-  process.stdout.write('\n== the five real recordings this fix exists for ==\n');
-  const dir = path.join(ROOT, 'ai/dashboard/recordings');
-  let compound = 0;
-  let claimable = 0;
-  for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.evidence.json'))) {
-    const body = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')) as
-      {
-        targets?: Array<{
-          locator?: string; ancestors?: Array<{ id?: string }>;
-          target?: { stableClasses?: string[] };
-        }>;
-      };
-    for (const target of body.targets ?? []) {
-      const selector = /locator\((['"])(.*?)\1\)/.exec(String(target.locator ?? ''))?.[2] ?? '';
-      if (!/[>]/.test(selector) || /["'[\]()]/.test(selector))
-        continue;
-      compound++;
-      const rowId = (target.ancestors ?? []).map(a => a.id).find(Boolean);
-      // THE PRESSED ELEMENT COMES FROM THE SIDECAR, not from an assumption. One of
-      // these six is a press on the LABEL (`.rounded-checkbox-cont`) rather than the
-      // span inside it, and hard-coding the span made the replay build the wrong node
-      // and report a production failure that was really a fixture failure. Reading it
-      // back is the same discipline this whole file was rewritten for.
-      const pressed = target.target?.stableClasses ?? [];
-      if (!rowId || !pressed.length)
-        continue;
-      if (claimParkedEntry([rowPress(rowId, pressed)], String(target.locator)))
-        claimable++;
+function checkSyntheticMatrix(): void {
+  process.stdout.write('\n== authored compound-CSS capture shapes ==\n');
+  for (const rowId of ['row_800001', 'row_800002']) {
+    for (const classes of [['rounded-checkbox-ui'], ['rounded-checkbox-cont'], ['tabulator-cell', 'tabulator-cell--checkbox']]) {
+      const locator = `page.locator('#${rowId} > .unrecorded-wrapper > .${classes.join('.')}')`;
+      check(`${rowId}: all final-compound classes must match the captured press`,
+          Boolean(claimParkedEntry([rowPress(rowId, classes)], locator)));
+      check(`${rowId}: a different row cannot supply this press`,
+          !claimParkedEntry([rowPress('row_899999', classes)], locator));
     }
   }
-  check('every compound-CSS target in the corpus can now claim its row press',
-      compound > 0 && claimable === compound, `${claimable} of ${compound}`);
 }
 
 function main(): void {
@@ -278,7 +257,7 @@ function main(): void {
   checkGatesStillApply();
   checkWrongTarget();
   checkExistingShapesUnchanged();
-  checkRealCorpus();
+  checkSyntheticMatrix();
   process.stdout.write(`\n${failures ? `${failures} CHECK(S) FAILED` : 'all checks passed'}\n`);
   process.exit(failures ? 1 : 0);
 }

@@ -20,7 +20,7 @@ directories, separate output directories. Never merge them.
 | Tests | `tests/` | `tests-e2e/` |
 | Output | `test-results/` | `test-results-excel/` |
 | Run | `npm test` | `npm run excel:test` |
-| Targets | The MCP server, hermetically | Bugasura (my.bugasura.io) over the network |
+| Targets | The MCP server, hermetically | The selected application |
 
 The separation is load-bearing three times over: `npm test` gates the Playwright roll and must
 stay hermetic; the suites need conflicting **global** settings (ours requires `workers: 1` and
@@ -51,11 +51,13 @@ npm run excel -- help                       # full toolkit reference
 `MCP_IN_DOCKER=1`). The `ftest` and `wtest` scripts target `firefox` and `webkit` projects that
 do not exist and fail immediately — verified, not assumed.
 
-**There is no typecheck and no TS linter.** No `tsconfig.json`, no `typescript` in
-`node_modules` — `npm run lint` only regenerates `README.md` from the tool schemas, and `tsx`
-strips types without checking them. So a type error in `ai/` or `tests-e2e/` surfaces only as a
-runtime failure: after editing either, actually run the thing (`npm run excel:run -- <wb>
---dry-run` exercises parser, column map and filter without a browser).
+**There is no typecheck and no TS linter.** No `typescript` in `node_modules` — `npm run lint`
+only regenerates `README.md` from the tool schemas, and `tsx` strips types without checking them.
+A `tsconfig.json` does exist, but it is for editors only: `noEmit`, nothing runs it, and it
+describes how the repository already executes rather than gating anything. So a type error in
+`ai/` or `tests-e2e/` surfaces only as a runtime failure: after editing either, actually run the
+thing (`npm run excel:run -- <wb> --dry-run` exercises parser, column map and filter without a
+browser).
 
 ## Commit Convention
 
@@ -115,7 +117,7 @@ rather than reading `.xlsx` files directly. Reading business intent, choosing a 
 writing the spec and deciding whether a failure is safe to heal belong to the skill.
 
 ```bash
-npm run excel:run -- excel/login-test-cases.xlsx                  # workbook drives it, results written back
+npm run excel:run -- excel/<applicationId>-test-cases.xlsx                  # workbook drives it, results written back
 npm run excel:run -- <wb> --sheet "Create Project" --dry-run      # show the selection, run nothing
 npm run excel:list -- <wb> --priority P0 --module Login
 npm run excel:quality -- <wb>                                     # → ai/reports/test-case-quality-report.md
@@ -127,12 +129,6 @@ npm run excel:allure && npm run excel:allure:open                 # needs Java
 ```
 
 The skill itself is [.claude/skills/excel-automation/SKILL.md](.claude/skills/excel-automation/SKILL.md).
-
-**`npm run excel:demo` is the one destructive command in the set.** It regenerates the demo
-workbook and, with no `--out`, writes straight over `excel/login-test-cases.xlsx` — no backup,
-no existence check, unlike every other write path here. It would discard authored rows and
-every result written back. Pass `--out <path>` unless recreating the demo from scratch is
-exactly the intent.
 
 `ai/dashboard/` is a localhost-only control panel: pick cases, pick browser / workers / headed /
 capture, run, read per-case results with links to their screenshot, video and trace. It spawns
@@ -207,7 +203,7 @@ Three things that are easy to get wrong here:
   `runnerFor()` in `mapping.ts` resolves exact-match first, wildcard second — give a module its
   own runner later and its rows move across automatically. The row supplies `url`, `scope` and
   `submit` in `Test Data`; fields are found by their human name. The submit control is searched
-  for **inside the form the fields were found in** — a page-wide search pressed Bugasura's
+  for **inside the form the fields were found in** — a page-wide search pressed an application's
   "Sign in with Google" button.
 - **A blank `Assert Outcome` means "not data-driven"; an unreadable one fails the run.** Never
   infer the contract from prose, and never downgrade a broken contract to a skip.
@@ -274,7 +270,7 @@ mean six things:
 - **Business** — Test Case ID, Title/Scenario, Description, Requirement ID, Module, Feature,
   Test Type, Priority, Business Risk, Tags, Test Owner.
 - **Execution context** — Environment, User Role, **Authentication Profile**. The profile is a
-  NAME (`BUGASURA_QA_USER`), never an account: values live in the environment, and `validateDraft`
+  NAME (`APPLICATION_QA_USER`), never an account: values live in the environment, and `validateDraft`
   refuses an address, a space or a lower-case value in that field.
 - **System-managed** — Automation Status, execution results, spec path, attempts, fingerprints,
   recording artefacts. The form displays them read-only and the writer has no column for them.
@@ -314,20 +310,11 @@ selection and why everything else was excluded.
 
 ### CI
 
-`.github/workflows/excel-suite.yml`, kept apart from `ci.yml` for the same reason the configs
-are kept apart: a Bugasura outage must never block a Playwright roll. Two jobs:
-
-- **`workbook`** — no browser, no credentials, no network; the only job a fork can run.
-  `excel:sync-data --strict` **fails the build** on an unreadable data-driven contract;
-  `excel:quality` only reports, because ambiguous rows are findings for the workbook's author
-  and the workbook is expected to carry some at any time.
-- **`suite`** — schedule (06:30 UTC weekdays) and `workflow_dispatch` only, never on push.
-  It asserts the credentials are present first: without them every authenticated case skips
-  with a reason, and a suite of skips reports green. Runs with `--no-in-place`, because CI must
-  not write results into the git-tracked workbook, and deliberately leaves
-  `BUGASURA_ALLOW_DATA_MUTATION` unset so a nightly job cannot litter a real team's board.
-  A `concurrency` group serialises runs — two at once is exactly the concurrent navigation
-  Bugasura refuses.
+`.github/workflows/excel-suite.yml` validates every registered workbook under its owner.
+An empty registry is a valid no-work state. The former application's live scheduled job
+has been retired. Live CI needs explicit environment-specific credentials and scheduling
+when an application owner configures it; dashboard provisioning does not modify CI.
+Keep `ci.yml` and the upstream MCP suite independent of application availability.
 
 ### Invariants that break things silently if violated
 
@@ -351,53 +338,23 @@ are kept apart: a Bugasura outage must never block a Playwright roll. Two jobs:
 - **Excel locks an open workbook.** Write-back checks first and reports it plainly; `--dry-run`
   and `--no-in-place` work with the file open.
 
-### Bugasura facts
+### Application facts
 
-Cost hours once; do not rediscover them:
-
-- Sign-in, sign-up and reset forms are **all mounted simultaneously** (`#loginForm`,
-  `#createUserForm`, `#resetForm`). Scope every login locator to `#loginForm`, and filter
-  `:visible` — the hidden sign-up password field means an unfiltered count never reaches zero,
-  so an "am I signed in?" check can never return true.
-- Login errors are a toast in `#toast-container .toast-message`, auto-dismissing in ~5s. Poll;
-  do not sleep then read.
-- Create Project errors are **inline** `label.error`, not toasts: `Team is not selected.` and
-  `Project name cannot be empty.`. Team is checked first and masks the name error. Invalid
-  submits fire **no request at all** — blocked client-side, so validation tests create nothing.
-- After sign-in the app navigates itself to `/apps`. Calling `goto()` while that is in flight
-  aborts it (`net::ERR_ABORTED`) — wait for the redirect instead.
-- **`/apps` is clickable before it is functional, and waiting for the redirect is not enough.**
-  The project cards are streamed in while the document is still parsing — present, visible,
-  stable and hit-testable ~1.35 s after sign-in — but their click handler is bound later, by the
-  application's own ready block (~2.3 s). A click in that gap passes every actionability check,
-  is reported as successful, and does nothing: the browser simply stays on `/apps`. Measured
-  6 failures in 9 runs, all with the click issued at 1144–1604 ms; every click after 2125 ms
-  worked. That one gap quarantined eight recordings, each blamed on a different locator.
-  `ProjectsPage.open()` now waits for `load` and then for `#all_apps [data-original-title]` —
-  the tooltip initialisation the app performs in the same ready block that binds the click,
-  measured flipping in the same 100 ms sample. It is the only DOM-visible witness this screen
-  offers; no class, no `data-initialized` and no framework upgrade marker moves at that moment.
-- `my.bugasura.io` returns `ERR_EMPTY_RESPONSE` on concurrent navigation from one host, so the
-  suite defaults to one worker (`EXCEL_WORKERS` overrides).
-- Neither the email nor the project-name field declares a `maxlength`; the email limit (250) is
-  enforced server-side only.
-- The `/apps` tab strip (`.dashboard-tab-options`) holds **My Favourites, All, Team Projects,
-  Following**, and every one of those labels is in the DOM at all times. "Is My Favourites on the
-  page?" is therefore true before anything is clicked — which is how a `Visible` row for
-  TC_DASHBOARD_001 passed in 80 ms having clicked nothing. The element that moves is the section
-  heading (`h2`): **`All Projects` on arrival**, the tab's name after it is selected, and the tab
-  gains `class="active"`. Assert on the heading; the tab label witnesses nothing.
-
-Credentials come from the git-ignored `.env` (see `.env.example`); the account is the
-**@moolya.com** address. Tests that write to the live workspace are gated behind
-`BUGASURA_ALLOW_DATA_MUTATION=1` plus `BUGASURA_TEAM`, because nothing deletes what they create.
-
+Application facts belong in the selected application's scoped knowledge and Page Objects.
+Register new applications through the dashboard. Read [AGENTS.md](AGENTS.md) and governance
+before changes; no application data or credentials ship with the framework.
 
 ## Session Handoff
 
 **START HERE, every session.** The repository is the source of truth, not any
 conversation. This project is worked on across sessions and across Claude
 accounts, so nothing important may live only in a reply or in reasoning.
+
+[MoolyaAura_Governance_Pack/](MoolyaAura_Governance_Pack/README.md) is the authoritative
+engineering contract for the MoolyaAura framework: four durable governance documents
+(engineering principles, architecture, locator contract, testing contract) plus
+`MOOLYAAURA-CURRENT-STATE.md`, which is a dated point-in-time handoff and **not** governance.
+Read the relevant contract before changing production code under `ai/` or `tests-e2e/`.
 
 Before changing anything:
 

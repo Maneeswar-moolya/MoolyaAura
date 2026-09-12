@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * A locator this module cannot rebuild is not a locator it may rebuild APPROXIMATELY.
  *
@@ -12,7 +13,7 @@
  *
  * was counted as `page.locator(".tabulator-row").locator(".bugChecked")` - every
  * checkbox in every row, instead of the checkbox in the row that says a particular
- * thing. Measured live on my.bugasura.io: the recorded expression matches 1, the
+ * thing. Measured live on portal.fixture.invalid: the recorded expression matches 1, the
  * filter-stripped one matches 2, and 2 is the number that reached TC_LOGIN_123's
  * sidecar as `locatorMatchCount`.
  *
@@ -36,15 +37,15 @@ import * as path from 'path';
 import { buildLocator, chainMethodsIn } from './live-recorder';
 import { assessLocator } from '../autocode/locator-quality';
 import type { CandidateMeasurement, DomNode, TargetEvidence } from '../autocode/dom-evidence';
+import { activeAcceptedDir as ACCEPTED, activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
-const ROOT = process.cwd();
 let failures = 0;
 const check = (label: string, ok: boolean, detail = ''): void => {
   process.stdout.write(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? ` - ${detail}` : ''}\n`);
   if (!ok)
     failures++;
 };
-const section = (title: string): void => process.stdout.write(`\n== ${title} ==\n`);
+const section = (title: string): void => { process.stdout.write(`\n== ${title} ==\n`); };
 
 /* --------------------------------------------------------------- a stub page ---- */
 
@@ -263,16 +264,16 @@ function checkConsequence(): void {
 function checkCorpus(): void {
   section('the recordings on disk whose counts came from a broadened locator');
 
-  const dirs = ['ai/dashboard/recordings', 'ai/dashboard/recordings/accepted'];
+  const dirs = [RECORDINGS(), ACCEPTED()];
   let withFilter = 0;
   const cases = new Set<string>();
   for (const dir of dirs) {
-    if (!fs.existsSync(path.join(ROOT, dir)))
+    if (!fs.existsSync(dir))
       continue;
-    for (const file of fs.readdirSync(path.join(ROOT, dir)).filter(name => name.endsWith('.assertions.json'))) {
+    for (const file of fs.readdirSync(dir).filter(name => name.endsWith('.assertions.json'))) {
       let list: Array<{ locator?: string; subjectProvenance?: { locatorMatchCount?: number | null } }> = [];
       try {
-        list = JSON.parse(fs.readFileSync(path.join(ROOT, dir, file), 'utf8'));
+        list = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
       } catch {
         continue;
       }
@@ -409,13 +410,13 @@ function checkOptions(): void {
 
   // EVERY option key the recordings actually contain, checked against what the builder
   // supports. A key that is neither supported nor refusing would be one being dropped.
-  const dirs = ['ai/dashboard/recordings', 'ai/dashboard/recordings/accepted'];
+  const dirs = [RECORDINGS(), ACCEPTED()];
   const keys = new Map<string, number>();
   for (const dir of dirs) {
-    if (!fs.existsSync(path.join(ROOT, dir)))
+    if (!fs.existsSync(dir))
       continue;
-    for (const file of fs.readdirSync(path.join(ROOT, dir)).filter(name => name.endsWith('.spec.ts'))) {
-      const text = fs.readFileSync(path.join(ROOT, dir, file), 'utf8');
+    for (const file of fs.readdirSync(dir).filter(name => name.endsWith('.spec.ts'))) {
+      const text = fs.readFileSync(path.join(dir, file), 'utf8');
       for (const call of text.matchAll(/\.(getBy[A-Za-z]+|locator)\(([^\n]*?)\)(?=\s*[.;)]|$)/g)) {
         const brace = call[2].indexOf('{');
         if (brace < 0)

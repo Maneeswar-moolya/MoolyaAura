@@ -475,6 +475,27 @@ export interface SessionMetrics {
   authRequired: boolean;
 }
 
+/**
+ * What the SEMANTIC RESOLVER spent on this case.
+ *
+ * Additive and optional. Null when no exchange happened, which is the ordinary case and
+ * must stay distinguishable from "an exchange that cost nothing".
+ */
+export interface SemanticSpend {
+  /** Exchanges opened - one per eligible proposal that was actually asked about. */
+  exchanges: number;
+  /** Transport calls made. The number the wall clock is proportional to. */
+  calls: number;
+  /** Attempts recorded across every exchange, including malformed and timed-out ones. */
+  attempts: number;
+  /** Wall clock across every exchange, measured at the exchange boundary. */
+  totalMs: number;
+  accepted: number;
+  rejected: number;
+  /** Exchanges that stopped on a VALIDATED TERMINAL answer rather than a spent budget. */
+  terminalStops: number;
+}
+
 export interface AttemptMetrics {
   kind: 'attempt';
   schema: number;
@@ -524,9 +545,24 @@ export interface AttemptMetrics {
   authMs: null;
   /** Read/Grep/Glob happen inside the agent process, invisible from outside. */
   repoDiscoveryMs: null;
-  /** Not separable from thinking. `agentNonBrowserMs` is the bound. */
-  generationMs: null;
+  /**
+   * Null on the AGENT path, where it is not separable from thinking -
+   * `agentNonBrowserMs` is the bound there, and that is why this was declared `null`.
+   *
+   * A NUMBER on the deterministic recorded path, which does not think: there it is
+   * assembly time, measured directly by `from-recording.ts`. Widening the type states
+   * what the two writers already do rather than letting one of them contradict it.
+   */
+  generationMs: number | null;
 
+  /**
+   * The resolver's spend, or null when it was never engaged.
+   *
+   * Deliberately beside `gate` rather than inside `recorded`: an exchange is not a
+   * property of the recording, it is a cost of the run, and a reader comparing two cases
+   * needs it whichever path produced them.
+   */
+  semantic?: SemanticSpend | null;
   gate: GateMetrics | null;
 
   status: 'accepted' | 'declined' | 'quarantined' | 'failed';
@@ -613,6 +649,24 @@ export interface RunMetrics {
   schema: number;
   runId: string;
   workbook: string;
+  /**
+   * WHICH APPLICATION THIS RUN WAS FOR.
+   *
+   * `ai/reports/*` is deliberately GLOBAL - one append-only log per machine, because
+   * these answer "what has the generator been doing", which is a question about this
+   * checkout rather than about a project. Physically partitioning them would make a
+   * simple `tail` into a directory walk for no gain.
+   *
+   * But a global log needs each record to say whose it is, or two projects' work is
+   * indistinguishable the moment both generate TC_LOGIN_001. This is the run record,
+   * and every other report - page-object-lifecycle.jsonl, generation-metrics.jsonl's
+   * own attempt rows, generation-browse.jsonl - joins to it by `runId`, so stamping it
+   * here labels the whole set from one place rather than seven.
+   *
+   * Optional, so records written before this read as unknown rather than as belonging
+   * to anybody.
+   */
+  applicationId?: string;
   model: string;
   startedAt: string;
   finishedAt: string;

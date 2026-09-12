@@ -70,7 +70,7 @@ npx tsx ai/autocode/abstraction/writer.ts           # apply APPROVED proposals o
 Or as part of a generation run — **off by default**:
 
 ```bash
-npm run excel:autocode -- excel/login-test-cases.xlsx --create-page-objects
+npm run excel:autocode -- excel/<applicationId>-test-cases.xlsx --create-page-objects
 ```
 
 Without that flag, generation behaves exactly as it always has: no ledger, no Page Object,

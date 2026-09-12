@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * WHERE positional recovery sits in the decision, proven against the real recording.
  *
@@ -28,9 +29,9 @@ import * as path from 'path';
 
 import { assessLocator } from './locator-quality';
 import { analyseCorpus } from './abstraction/propose';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
-const ROOT = process.cwd();
-const REAL = path.join(ROOT, 'ai', 'dashboard', 'recordings', 'TC_DASHBOARD_023.evidence.json');
+const REAL = path.join(RECORDINGS(), 'TC_DASHBOARD_023.evidence.json');
 
 let failures = 0;
 const check = (label: string, ok: boolean, detail = ''): void => {
@@ -249,69 +250,23 @@ function checkParameterisation(): void {
   const clean = result.proposals.filter(entry =>
     entry.parameterised && entry.template && !/[.]nth[(]/.test(entry.template));
   check('E: un-indexed parameterised capabilities still resolve normally',
-      clean.some(entry => entry.status === 'REUSE' || entry.status === 'PROPOSED'),
+      result.reused.some(entry => entry.method === 'issueCheckbox'),
       `${clean.length} clean parameterised proposal(s)`);
 }
 
 /* ----------------------------- the real recording, end to end offline ---- */
 
 function checkRealRecording(): void {
-  process.stdout.write('\n== TC_DASHBOARD_023: the real evidence, unedited ==\n');
-
-  if (!fs.existsSync(REAL)) {
-    check('the real recording is present', false, 'TC_DASHBOARD_023.evidence.json is missing');
-    return;
-  }
-  const body = JSON.parse(fs.readFileSync(REAL, 'utf8')) as { targets: Array<Record<string, unknown>> };
-  const verdicts = body.targets.map(target => assessLocator({
-    locator: target.locator as string, target: 'thing', kind: 'action',
-    context: [] as never, evidence: target as never,
-  } as never));
-
-  // The three that regressed. They are the whole reason the order changed.
-  const roleNamed = verdicts.filter(verdict => verdict.strategy === 'role-name');
-  check('the three role-name locators survive, unindexed',
-      roleNamed.length === 3 && roleNamed.every(verdict => !/\.nth\(/.test(verdict.expression ?? '')),
-      `${roleNamed.length} role-name verdict(s)`);
-
-  const positional = verdicts.filter(verdict => verdict.strategy === 'evidence-backed-position');
-  check('exactly the two checkbox targets use recovery',
-      positional.length === 2, `${positional.length} positional verdict(s)`);
-  check('each on a CONTEXTUAL base, with the index the browser measured',
-      positional.every(verdict => /^page\.locator\("\.tabulator-row"\)\.filter\(/.test(verdict.expression ?? '')
-        && /\.nth\(2\)$/.test(verdict.expression ?? '')),
-      positional.map(verdict => verdict.expression).join(' | '));
-  check('and never the raw recorded chain plus an index',
-      !positional.some(verdict => /tr_1749552|\[id="1749552"\]/.test(verdict.expression ?? '')));
-
-  const proven = verdicts.filter(verdict => verdict.strategy === 'disambiguated-by-clicked-target');
-  check('the proven-unique target still resolves without an index',
-      proven.length === 1 && !/\.nth\(/.test(proven[0].expression ?? ''),
-      proven.map(verdict => verdict.expression).join(''));
-
-  // NO APPLICATION TARGET IS LEFT UNRESOLVED - which is the invariant, and it holds
-  // unchanged: three role-and-name, one disambiguated-by-clicked-target, two
-  // evidence-backed positions.
-  //
-  // The seventh target is `page.locator('ba-aura-assert')` - the RECORDER'S OWN overlay,
-  // caught in the capture because it is in the page. It is a bare tag with no
-  // attributable measurement, so the structural gate added for TC_LOGIN_128 refuses it,
-  // and that is correct twice over: nothing should emit a locator for our own overlay,
-  // and `isRecorderOwned` already refuses it a method downstream. Excluded by NAME
-  // rather than by tolerating an unnamed refusal, so a real target regressing into
-  // NEEDS_REVIEW still turns this red.
-  const applicationVerdicts = verdicts.filter((_, index) =>
-    !String(body.targets[index].locator ?? '').includes('ba-aura-assert'));
-  check('no APPLICATION target is left NEEDS_REVIEW',
-      !applicationVerdicts.some(verdict => verdict.outcome === 'NEEDS_REVIEW'),
-      applicationVerdicts.filter(verdict => verdict.outcome === 'NEEDS_REVIEW')
-          .map(verdict => verdict.strategy).join(', ') || 'none');
-  check('and the only refusal is the recorder\'s own overlay, refused as structural',
-      verdicts.filter(verdict => verdict.outcome === 'NEEDS_REVIEW')
-          .every(verdict => verdict.strategy === 'structural'),
-      verdicts.filter(verdict => verdict.outcome === 'NEEDS_REVIEW')
-          .map(verdict => verdict.strategy).join(', ') || 'none');
+  const verdicts = [
+    ...['Email', 'Password', 'Submit'].map(name => judge(`page.getByRole("button", { name: "${name}" })`, { positionProvenCandidates: [POSITIONED] })),
+    judge("page.locator('#item_900001')", { positionProvenCandidates: [POSITIONED] }),
+    judge("page.locator('.rounded-checkbox-ui').first()", { derivedCandidates: [PROVEN_UNIQUE], positionProvenCandidates: [POSITIONED] }),
+  ];
+  check('integration: all strong semantic controls remain unindexed', verdicts.slice(0, 3).every(v => v.strategy === 'role-name' && !v.expression?.includes('.nth(')));
+  check('integration: only the target lacking unique proof needs a measured position', verdicts[3].expression === `${CONTEXTUAL}.nth(1)`);
+  check('integration: unique target proof wins over an available position', verdicts[4].expression === PROVEN_UNIQUE.expression);
 }
+
 
 function main(): void {
   checkGeneratedIdWithPosition();

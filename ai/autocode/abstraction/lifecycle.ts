@@ -280,6 +280,10 @@ export function decideLifecycle(input: LifecycleInput): LifecycleDecision[] {
     decisions.push({
       ...base(step),
       disposition: createdHere ? creationDisposition(createdHere) : 'EXISTING_PO_REUSED',
+      // Nothing was blocked and no batch was rolled back: this element resolved to a
+      // method. `diagnostic` is required on every record precisely so that "no
+      // diagnostic" is stated rather than left as a missing key a reader has to guess at.
+      diagnostic: null,
       resolver: createdHere ? (createdHere.resolvedBy === 'ai' ? 'ai' : 'deterministic') : 'none',
       attempts: createdHere?.semantic?.attempts.length ?? 0,
       component: step.pageObject,

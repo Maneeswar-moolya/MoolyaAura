@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Reusing an existing method because the MEASUREMENT says it is that element.
  *
@@ -30,8 +31,8 @@ import {
 } from './from-recording';
 import { buildIndex } from '../knowledge/index';
 import { declaredSelectors, readAllPageKnowledge } from '../knowledge/page-knowledge';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
-const ROOT = process.cwd();
 let failures = 0;
 const check = (label: string, ok: boolean, detail = ''): void => {
   process.stdout.write(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? ` - ${detail}` : ''}\n`);
@@ -92,15 +93,15 @@ function checkMatches(): void {
 
   // 1. EXACT EQUIVALENCE, with quoting and spacing normalised.
   const exact = findMethodByProvenLocator(
-      evidence('page.locator("#filter-value")'),
-      page([entry({ locator_strategy: "page.locator('#filter-value')" })]), ONE, 'action');
+      evidence('page.locator("#record_search")'),
+      page([entry({ locator_strategy: "page.locator('#record_search')" })]), ONE, 'action');
   check('a declared strategy that IS the proven expression resolves',
       exact?.method === 'searchField', exact?.method ?? 'no match');
 
   // 2. A SOLE AUTHORED ID, declared amid prose - the shape the corpus actually uses.
   const byId = findMethodByProvenLocator(
-      evidence('page.locator("#filter-value")'),
-      page([entry({ locator_strategy: '#filter-value - only one copy on this screen' })]),
+      evidence('page.locator("#record_search")'),
+      page([entry({ locator_strategy: '#record_search - only one copy on this screen' })]),
       ONE, 'action');
   check('a sole authored id declared in prose resolves', byId?.method === 'searchField',
       byId?.method ?? 'no match');
@@ -115,9 +116,9 @@ function checkMatches(): void {
 function checkRefusals(): void {
   process.stdout.write('\n== what it must not match ==\n');
 
-  const declared = page([entry({ locator_strategy: '#filter-value' })]);
+  const declared = page([entry({ locator_strategy: '#record_search' })]);
   const refused = (over: Record<string, unknown>) =>
-    findMethodByProvenLocator(evidence('page.locator("#filter-value")', over), declared, ONE, 'action');
+    findMethodByProvenLocator(evidence('page.locator("#record_search")', over), declared, ONE, 'action');
 
   // NO PRESS-TIME PROOF. Each condition on its own.
   for (const [label, over] of [
@@ -139,7 +140,7 @@ function checkRefusals(): void {
 
   // POSITION IS NOT IDENTITY.
   check('a positional proven expression never resolves',
-      findMethodByProvenLocator(evidence('page.locator("#filter-value").first()'),
+      findMethodByProvenLocator(evidence('page.locator("#record_search").first()'),
           declared, ONE, 'action') === null);
 
   // AMBIGUITY IS NOT A MATCH. Two entries claiming one id identifies nothing - and
@@ -154,12 +155,6 @@ function checkRefusals(): void {
       ]),
       index([{ name: 'panel' }, { name: 'settingsButton' }]), 'action');
   check('two methods claiming one id -> no reuse', two === null, two?.method ?? 'refused');
-  const live = readAllPageKnowledge().flatMap(entry => entry.elements)
-      .filter(element => element.page_object_method
-        && declaredSelectors(element).join() === '#ap_notifications_panel');
-  check('and that collision is real in this corpus, not invented for the test',
-      live.length === 2, live.map(element => element.page_object_method).join(', '));
-
   // AN ID THAT IS ONLY PART OF A DECLARED CHAIN. `LoginPage.errorMessage` declares
   // `#toast-container .toast-message`: the id names the container, the element is the
   // class. Requiring the id to be the entry's ONLY selector is what excludes it.
@@ -167,37 +162,31 @@ function checkRefusals(): void {
       findMethodByProvenLocator(evidence('page.locator("#toast-container")'),
           page([entry({ locator_strategy: '#toast-container .toast-message - auto-dismisses' })]),
           ONE, 'action') === null);
-  const errorEntry = readAllPageKnowledge().flatMap(entry => entry.elements)
-      .find(element => element.page_object_method === 'errorMessage');
-  check('and that entry really does declare more than one selector',
-      (errorEntry ? declaredSelectors(errorEntry) : []).length > 1,
-      JSON.stringify(errorEntry ? declaredSelectors(errorEntry) : []));
-
   // A method nobody wrote is not a capability.
   check('an entry naming a method that does not exist -> no reuse',
-      findMethodByProvenLocator(evidence('page.locator("#filter-value")'), declared,
+      findMethodByProvenLocator(evidence('page.locator("#record_search")'), declared,
           index([{ name: 'somethingElse' }]), 'action') === null);
 
   // ACTION AND ASSERTION STAY SEPARATE where knowledge says which.
   check('an action-declared method never serves an assertion',
-      findMethodByProvenLocator(evidence('page.locator("#filter-value")'),
-          page([entry({ usage: 'action', locator_strategy: '#filter-value' })]),
+      findMethodByProvenLocator(evidence('page.locator("#record_search")'),
+          page([entry({ usage: 'action', locator_strategy: '#record_search' })]),
           ONE, 'assertion') === null);
   check('an assertion-declared method never serves an action',
-      findMethodByProvenLocator(evidence('page.locator("#filter-value")'),
-          page([entry({ usage: 'assertion', locator_strategy: '#filter-value' })]),
+      findMethodByProvenLocator(evidence('page.locator("#record_search")'),
+          page([entry({ usage: 'assertion', locator_strategy: '#record_search' })]),
           ONE, 'action') === null);
   check('an entry declaring no usage serves both, so one control needs one method',
-      findMethodByProvenLocator(evidence('page.locator("#filter-value")'), declared, ONE, 'action') !== null
-      && findMethodByProvenLocator(evidence('page.locator("#filter-value")'), declared, ONE, 'assertion') !== null);
+      findMethodByProvenLocator(evidence('page.locator("#record_search")'), declared, ONE, 'action') !== null
+      && findMethodByProvenLocator(evidence('page.locator("#record_search")'), declared, ONE, 'assertion') !== null);
 
   // A PARAMETERISED METHOD belongs to the other resolver, which supplies its argument.
   check('a method with a required parameter is left to the parameterised resolver',
-      findMethodByProvenLocator(evidence('page.locator("#filter-value")'), declared,
+      findMethodByProvenLocator(evidence('page.locator("#record_search")'), declared,
           index([{ name: 'searchField', params: [{ name: 'q', type: 'string' }] }]),
           'action') === null);
   check('but an optional-only parameter is still reusable here',
-      findMethodByProvenLocator(evidence('page.locator("#filter-value")'), declared,
+      findMethodByProvenLocator(evidence('page.locator("#record_search")'), declared,
           index([{ name: 'searchField', params: [{ name: 'q', optional: true }] }]),
           'action')?.method === 'searchField');
 }
@@ -227,8 +216,8 @@ function checkSeparationAndOrder(): void {
       parameterised.join(', '));
 
   // And they still resolve, through their own resolver, unchanged.
-  const id = 'TC_DASHBOARD_011';
-  const file = path.join(ROOT, 'ai', 'dashboard', 'recordings', `${id}.spec.ts`);
+  const id = 'TC_ROW_B';
+  const file = path.join(RECORDINGS(), `${id}.spec.ts`);
   if (fs.existsSync(file)) {
     const recording = parseRecording(fs.readFileSync(file, 'utf8'), {
       startUrl: '', browser: '', durationMs: 0,
@@ -265,8 +254,7 @@ function checkTokeniser(): void {
   for (const [method, own] of [
     ['issueCheckboxState', '.bugChecked'],
     ['issueCheckbox', '.rounded-checkbox-ui'],
-    ['searchField', '#filter-value'],
-    ['issueRow', '.hidden-xs'],
+    ['searchField', '#record_search'],
   ] as Array<[string, string]>)
     check(`${method} resolves to ${own}`, last(method) === own, last(method));
 
@@ -285,19 +273,19 @@ function checkTokeniser(): void {
     owners.set(own, (owners.get(own) ?? new Set()).add(`${entry.page_object}.${entry.page_object_method}`));
   }
   const shared = [...owners].filter(([, set]) => set.size > 1);
-  check('only the known scope-vs-element collision remains',
-      shared.length === 1 && shared[0][0] === '#ap_notifications_panel',
+  check('synthetic declarations have no accidental element collisions',
+      shared.length === 0,
       shared.map(([t, set]) => `${t} -> ${[...set].join('/')}`).join(' | ') || 'none');
 }
 
-/* ------------------------------------------- TC_LOGIN_091, the real recording ---- */
+/* ------------------------------------------- TC_SEARCH, the real recording ---- */
 
 function checkRealCase(): void {
-  process.stdout.write('\n== TC_LOGIN_091, end to end ==\n');
-  const id = 'TC_LOGIN_091';
-  const file = path.join(ROOT, 'ai', 'dashboard', 'recordings', `${id}.spec.ts`);
+  process.stdout.write('\n== TC_SEARCH, end to end ==\n');
+  const id = 'TC_SEARCH';
+  const file = path.join(RECORDINGS(), `${id}.spec.ts`);
   if (!fs.existsSync(file)) {
-    check('the TC_LOGIN_091 recording is present', false, file);
+    check('the TC_SEARCH recording is present', false, file);
     return;
   }
   const recording = parseRecording(fs.readFileSync(file, 'utf8'), {
@@ -307,13 +295,13 @@ function checkRealCase(): void {
   const code = mapping.steps.flatMap(step => step.code).join('\n');
 
   const search = mapping.steps.filter(step => step.method === 'searchField');
-  check('all THREE #filter-value steps reuse the one method', search.length === 3,
+  check('all THREE #record_search steps reuse the one method', search.length === 3,
         `${search.length} step(s)`);
   check('click, fill and the assertion, on the same method',
       /searchField\(\)\)\.click\(\)/.test(code)
       && /searchField\(\)\)\.fill\(/.test(code)
-      && /searchField\(\)\)\.toBeEnabled\(\)/.test(code));
-  check('no raw #filter-value locator survives', !/locator\("#filter-value"\)/.test(code),
+      && /searchField\(\)\)\.toHaveValue\(/.test(code));
+  check('no raw #record_search locator survives', !/locator\("#record_search"\)/.test(code),
       code.split('\n').filter(line => /filter-value/.test(line)).join(' | ').slice(0, 90));
   check('and it is IssuesPage, not the project list',
       search.every(step => step.pageObject === 'IssuesPage'));

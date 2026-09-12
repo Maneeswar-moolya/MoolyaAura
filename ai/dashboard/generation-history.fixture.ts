@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * The Generation tab must stop forgetting - and must stop at five.
  *
@@ -65,7 +66,7 @@ const DECISIONS: LifecycleDecision[] = [
   {
     testCaseId: 'TC_LOGIN_071', generationId: 'RUN_A', timestamp: '2026-08-21T09:00:00.000Z',
     from: 'click Close', target: 'Close', role: 'action',
-    disposition: 'EXISTING_PO_REUSED', resolver: 'deterministic', attempts: 0,
+    disposition: 'EXISTING_PO_REUSED', diagnostic: null, resolver: 'deterministic', attempts: 0,
     component: 'notifications-panel', pageObject: 'NotificationsPage', method: 'close',
     parameters: [], evidenceStatus: 'measured', validationStatus: 'passed',
     reason: 'an existing method already declares this element',
@@ -74,7 +75,8 @@ const DECISIONS: LifecycleDecision[] = [
   {
     testCaseId: 'TC_LOGIN_071', generationId: 'RUN_A', timestamp: '2026-08-21T09:00:01.000Z',
     from: 'assert checked 1749558', target: '.bugChecked', role: 'assertion',
-    disposition: 'REFUSED_NO_ADMISSIBLE_EVIDENCE', resolver: 'none', attempts: 0,
+    disposition: 'REFUSED_NO_ADMISSIBLE_EVIDENCE', diagnostic: 'EVIDENCE_INSUFFICIENT',
+    resolver: 'none', attempts: 0,
     component: null, pageObject: null, method: null, parameters: [],
     evidenceStatus: 'measured', validationStatus: 'not-attempted',
     reason: 'the measured locator matched three elements, so identity is not proven',
@@ -110,7 +112,7 @@ function recordFor(id: string, overrides: Partial<GenerationRecord> = {}): Gener
   return {
     id,
     runId: 'RUN_A',
-    workbook: 'excel/login-test-cases.xlsx',
+    workbook: 'excel/fixture-cases.xlsx',
     requestedIds: ['TC_LOGIN_071', 'TC_LOGIN_072'],
     cases: [
       { testCaseId: 'TC_LOGIN_071', scenario: 'Close the notifications panel', status: 'ACCEPTED', reason: 'passed as written and failed with its assertions broken' },

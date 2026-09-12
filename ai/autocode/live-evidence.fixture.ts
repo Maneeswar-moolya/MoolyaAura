@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Phase 8C: what live DOM evidence changes, and what must survive without it.
  *
@@ -77,11 +78,11 @@ function main(): void {
   process.stdout.write('\n== D — TC_LOGIN_036: the expectation belongs to the parent ==\n');
   const retarget = assessLocator({
     locator: "page.getByRole('strong')", target: 'strong', kind: 'assertion',
-    value: 'Welcome to Bugasura',
+    value: 'Welcome to FixturePortal',
     evidence: evidence({
       locator: "page.getByRole('strong')",
-      target: { tag: 'strong', text: 'Bugasura' },
-      parent: { tag: 'h2', text: 'Welcome to Bugasura' },
+      target: { tag: 'strong', text: 'FixturePortal' },
+      parent: { tag: 'h2', text: 'Welcome to FixturePortal' },
       identifier: undefined, matchCount: 1,
       derivedCandidates: [{ strategy: 'scoped-tag', expression: `page.locator("#login_area h2")`, matchCount: 1 }],
     }),
@@ -90,14 +91,14 @@ function main(): void {
   check('D: to the counted parent selector',
       retarget.expression === `page.locator("#login_area h2")`, String(retarget.expression));
   check('D: the reason names both texts',
-      retarget.reason.includes('Bugasura') && retarget.reason.includes('Welcome to Bugasura'));
+      retarget.reason.includes('FixturePortal') && retarget.reason.includes('Welcome to FixturePortal'));
   check('D: the expected VALUE is never rewritten', !/rewrit/i.test(String(retarget.expression)));
 
   const noCandidate = assessLocator({
     locator: "page.getByRole('strong')", target: 'strong', kind: 'assertion',
-    value: 'Welcome to Bugasura',
+    value: 'Welcome to FixturePortal',
     evidence: evidence({
-      target: { tag: 'strong', text: 'Bugasura' }, parent: { tag: 'h2', text: 'Welcome to Bugasura' },
+      target: { tag: 'strong', text: 'FixturePortal' }, parent: { tag: 'h2', text: 'Welcome to FixturePortal' },
       identifier: undefined, matchCount: 1, derivedCandidates: [],
     }),
   });
@@ -132,7 +133,7 @@ function main(): void {
   process.stdout.write('\n== G — the action stream parser ==\n');
   const script = `import { test, expect } from '@playwright/test';
 test('test', async ({ page }) => {
-  await page.goto('https://my.bugasura.io/');
+  await page.goto('https://portal.fixture.invalid/');
   await page.getByRole('textbox', { name: 'Email' }).fill('a@b.com');
   await expect(page.locator('#project_banner')).toContainText('hello');
   await page.locator('#tc_summary_1').click();

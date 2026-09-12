@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * P1.2d — the assertion picker must be invisible to the recorded action stream.
  *
@@ -55,7 +56,7 @@ const HOST = `page.locator('${PICKER_NAMESPACE}')`;
 const SCRIPT = `import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://my.bugasura.io/');
+  await page.goto('https://portal.fixture.invalid/');
   await page.getByRole('textbox', { name: 'Email' }).fill('someone@example.com');
   await page.getByRole('textbox', { name: 'Password' }).fill('[type=password]');
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
@@ -71,7 +72,7 @@ test('test', async ({ page }) => {
   await ${HOST}.click();
 });`;
 
-const LABEL = 'page.getByLabel("Enable Notifications Receive notifications for activity across Bugasura.")';
+const LABEL = 'page.getByLabel("Enable Notifications Receive notifications for activity across FixturePortal.")';
 
 /** ON, recorded before the toggle. `afterActions` counts RAW script lines. */
 const asserted = (expected: boolean, afterActions: number): RecordedAssertion => ({

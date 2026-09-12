@@ -188,8 +188,8 @@ worth knowing before you read a generated spec:
 ## 7. From recording to spec
 
 ```bash
-npm run excel:autocode -- excel/login-test-cases.xlsx --dry-run   # what needs code, and why
-npm run excel:autocode -- excel/login-test-cases.xlsx --ids TC_LOGIN_001
+npm run excel:autocode -- excel/<applicationId>-test-cases.xlsx --dry-run   # what needs code, and why
+npm run excel:autocode -- excel/<applicationId>-test-cases.xlsx --ids TC_LOGIN_001
 ```
 
 A recorded case is assembled **deterministically** — no model is asked — and gets its own file at
@@ -209,7 +209,7 @@ Status becomes `Generated`, never `Automated` — that is earned by a green run 
 ```bash
 npm run excel:test                          # the whole Excel suite
 npm run excel:test -- --grep TC_LOGIN_001   # one case
-npm run excel:run -- excel/login-test-cases.xlsx   # workbook drives it, results written back
+npm run excel:run -- excel/<applicationId>-test-cases.xlsx   # workbook drives it, results written back
 ```
 
 A bare `npx playwright test` runs the **upstream MCP suite**, not this one, and will report

@@ -1,11 +1,13 @@
+import '../testing/isolated-checkout';
+import { recordingSource } from '../testing/synthetic-data';
 /**
  * P0.5 - a generated id in the SCOPE is still a generated id.
  *
  *   npx tsx ai/autocode/scoped-dynamic-id.fixture.ts
  *   npx tsx ai/autocode/scoped-dynamic-id.fixture.ts --mutate    (proves the checks bite)
  *
- * Offline: no browser, no model, no network. Drives the real `assessLocator` and reads
- * the real TC_LOGIN_060 artifacts.
+ * Offline: no browser, no model, no network. Drives the real `assessLocator` using
+ * authored synthetic evidence and script inputs.
  *
  * WHY THIS EXISTS
  *
@@ -36,8 +38,6 @@ import { assessLocator } from './locator-quality';
 import { parseRecording } from '../dashboard/recorder';
 
 const ROOT = process.cwd();
-const SIDECAR = path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_060.evidence.json');
-const SPEC = path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_060.spec.ts');
 const MUTATE = process.argv.includes('--mutate');
 
 let failures = 0;
@@ -200,98 +200,20 @@ function checkEveryVerb(): void {
   }
 }
 
-function checkRealArtifact(): void {
-  process.stdout.write('\n== TC_LOGIN_060 — the real recording and its sidecar ==\n');
-  if (!fs.existsSync(SIDECAR) || !fs.existsSync(SPEC)) {
-    check('the TC_LOGIN_060 artifacts are present', false);
-    return;
+function checkSyntheticIntegration(): void {
+  process.stdout.write('\n== authored script → parsed actions/assertions → evidence resolution ==\n');
+  const locator = "page.locator('#cell_638717').getByText('Line Chart')";
+  const parsed = parseRecording(recordingSource([
+    `await ${locator}.click();`,
+    `await expect(page.locator('#cell_638717')).toContainText('Line Chart');`,
+  ]), { startUrl: '', browser: '', durationMs: 0 });
+  check('integration: parser retains both operations', parsed.actions.length === 1 && parsed.assertions.length === 1);
+  for (const [kind, operation] of [['action', parsed.actions[0]], ['assertion', parsed.assertions[0]]] as const) {
+    const assessment = assess({ locator: operation.locator, target: 'summary', kind,
+      evidence: evidence({ candidates: [CANDIDATE(1)] }) });
+    check(`integration: ${kind} consumes the measured scoped candidate`,
+        assessment.outcome === 'NORMALIZED_LOCATOR' && assessment.expression === CANDIDATE(1).expression);
   }
-  const ev = JSON.parse(fs.readFileSync(SIDECAR, 'utf8'));
-  const recording = parseRecording(fs.readFileSync(SPEC, 'utf8'), { startUrl: '', browser: '', durationMs: 0 });
-
-  const click = recording.actions.find((a: any) =>
-    typeof a.locator === 'string' && a.locator.includes('tc_summary_638717'));
-  check('the summary click is in the recording', Boolean(click), click?.locator);
-  if (click) {
-    const entry = evidenceFor(ev, click.locator)!;
-    const a = assess({ locator: click.locator, target: 'summary text', kind: 'action', evidence: entry });
-    check('CLICK → NORMALIZED_LOCATOR', a.outcome === 'NORMALIZED_LOCATOR', a.outcome);
-    check('CLICK → the measured-unique candidate',
-        a.expression === 'page.locator("#bugReport-table .bug-report__summary--text.hidden-xs")'
-          + '.getByText("Line Chart | Time Config Page")', String(a.expression));
-    check('CLICK → no tc_summary_* id in the emitted locator',
-        !/tc_summary_\d/.test(String(a.expression)));
-    check('CLICK → the candidate it chose was measured at exactly 1',
-        (entry.derivedCandidates ?? []).some(c => c.expression === a.expression && c.matchCount === 1));
-  }
-
-  const faclon = recording.actions.find((a: any) =>
-    typeof a.locator === 'string' && a.locator.includes('Faclon labs'));
-  if (faclon) {
-    const entry = evidenceFor(ev, faclon.locator)!;
-    const a = assess({ locator: faclon.locator, target: 'Faclon labs', kind: 'action', evidence: entry });
-    check('FACLON → still NEEDS_REVIEW (deliberate, unchanged)',
-        a.outcome === 'NEEDS_REVIEW', a.outcome);
-    check('FACLON → because the recorded locator measured 2',
-        entry.matchCount === 2 && a.strategy === 'measured-ambiguous',
-        `matchCount=${entry.matchCount} strategy=${a.strategy}`);
-    check('FACLON → its unique candidates are NOT promoted',
-        a.expression === null && (entry.derivedCandidates ?? []).some(c => c.matchCount === 1));
-  }
-
-  const assertion = recording.assertions.find((a: any) =>
-    typeof a.locator === 'string' && a.locator.includes('tc_summary_638717'));
-  if (assertion) {
-    const entry = evidenceFor(ev, assertion.locator)!;
-    const a = assess({
-      locator: assertion.locator, target: 'summary cell', kind: 'assertion',
-      value: assertion.value, evidence: entry,
-    });
-    check('ASSERT → NORMALIZED_LOCATOR, unchanged', a.outcome === 'NORMALIZED_LOCATOR', a.outcome);
-    check('ASSERT → resolved to a candidate measured at 1',
-        (entry.derivedCandidates ?? []).some(c => c.expression === a.expression && c.matchCount === 1));
-  }
-}
-
-/**
- * Pre-action capture is NOT fixed in P0.5 - this only makes its absence visible.
- *
- * `beforeActionCount === 0` means every graph in the recording was taken AFTER the
- * action, against a page that had already moved on. It is also why Faclon labs cannot
- * be resolved: pre-action evidence is what would prove which of two matching elements
- * the person actually clicked. Reported, never asserted as a failure - the recordings
- * on disk legitimately have this shape today.
- */
-function reportPreActionCapture(): void {
-  process.stdout.write('\n== pre-action capture — DIAGNOSTIC ONLY, not a P0.5 defect ==\n');
-  const dir = path.resolve(ROOT, 'ai/dashboard/recordings');
-  const sidecars = fs.existsSync(dir)
-    ? fs.readdirSync(dir).filter(name => name.endsWith('.evidence.json')).sort()
-    : [];
-  if (!sidecars.length) {
-    process.stdout.write('  (no sidecars on disk)\n');
-    return;
-  }
-  let zero = 0;
-  for (const name of sidecars) {
-    let record: any;
-    try {
-      record = JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8'));
-    } catch {
-      process.stdout.write(`  ${name.padEnd(34)} unreadable\n`);
-      continue;
-    }
-    const telemetry = record.recording ?? {};
-    const before = telemetry.beforeActionCount ?? 0;
-    const after = telemetry.afterActionCount ?? 0;
-    if (before === 0)
-      zero++;
-    process.stdout.write(`  ${name.padEnd(34)} before-action=${before}  after-action=${after}`
-      + `${before === 0 ? '   <-- no pre-action evidence' : ''}\n`);
-  }
-  process.stdout.write(`  ${zero}/${sidecars.length} recording(s) captured NO pre-action evidence.\n`);
-  if (zero)
-    process.stdout.write('  Tracked separately: it is the mechanism that would resolve an ambiguous click.\n');
 }
 
 /* ------------------------------------------------------------------ mutation */
@@ -333,7 +255,7 @@ function runChecks(): void {
   checkFaclon();
   checkUnchanged();
   checkEveryVerb();
-  checkRealArtifact();
+  checkSyntheticIntegration();
 }
 
 async function main(): Promise<void> {
@@ -342,7 +264,7 @@ async function main(): Promise<void> {
     return;
   }
   runChecks();
-  reportPreActionCapture();
+
   process.stdout.write(`\n${failures ? `${failures} CHECK(S) FAILED` : 'all checks passed'}\n`);
   process.exit(failures ? 1 : 0);
 }

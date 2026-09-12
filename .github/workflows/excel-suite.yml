@@ -1,150 +1,49 @@
-# Excel-sourced test suite against my.bugasura.io.
-#
-# Deliberately separate from ci.yml. That workflow gates the Playwright roll and
-# must stay hermetic; this one talks to a live third-party application over the
-# network, so a Bugasura outage must never be able to block a roll.
-#
-# Two jobs, split by what they need:
-#
-#   workbook   no browser, no credentials, no network. Runs on every push and PR,
-#              and is the only job a fork can run.
-#   suite      the real thing. Scheduled and manual only - never on push - because
-#              it needs secrets, hits a live product, and costs a couple of minutes.
-name: Excel suite
-
+# Generic workbook validation, independent of the upstream MCP suite.
+# Live application CI bindings are configured when an application is onboarded.
+name: Excel workbook contracts
 on:
   push:
     branches: [ main ]
-    paths: [ 'excel/**', 'tests-e2e/**', 'ai/excel/**', 'playwright.excel.config.ts', '.github/workflows/excel-suite.yml' ]
+    paths: [ 'excel/**', 'tests-e2e/**', 'ai/**', 'playwright.excel.config.ts', '.github/workflows/excel-suite.yml' ]
   pull_request:
     branches: [ main ]
-    paths: [ 'excel/**', 'tests-e2e/**', 'ai/excel/**', 'playwright.excel.config.ts', '.github/workflows/excel-suite.yml' ]
-  schedule:
-    # 06:30 UTC = midday IST, so a failure is waiting when the team starts.
-    - cron: '30 6 * * 1-5'
+    paths: [ 'excel/**', 'tests-e2e/**', 'ai/**', 'playwright.excel.config.ts', '.github/workflows/excel-suite.yml' ]
   workflow_dispatch:
-    inputs:
-      workbook:
-        description: 'Workbook to run'
-        default: 'excel/login-test-cases.xlsx'
-      sheet:
-        description: 'Single sheet to run (blank = whatever the Run column selects)'
-        default: ''
-
-# my.bugasura.io returns ERR_EMPTY_RESPONSE when several browsers hit it at once
-# from one host. Two overlapping CI runs would do exactly that, so they queue.
-concurrency:
-  group: excel-suite
-  cancel-in-progress: false
-
 jobs:
   workbook:
-    name: Validate workbook
+    name: Validate registered workbooks
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v5
-    - name: Use Node.js 20
-      uses: actions/setup-node@v5
+    - uses: actions/setup-node@v5
       with:
         node-version: '20'
         cache: 'npm'
     - run: npm ci
-
-    # Fails the build. A row that declares an unreadable data-driven contract is
-    # an authoring mistake that would fail the suite anyway - catching it here
-    # takes seconds instead of a browser run.
-    - name: Data-driven contracts are readable
-      run: npm run excel:sync-data -- excel/login-test-cases.xlsx --strict
-
-    # Reports, never fails. Ambiguous and malformed rows are findings for the
-    # workbook's author, not build breakages - and the workbook is expected to
-    # carry some at any given time.
-    - name: Test case quality report
-      run: npm run excel:quality -- excel/login-test-cases.xlsx
-    - name: Publish quality report to the run summary
-      if: always()
-      run: cat ai/reports/test-case-quality-report.md >> "$GITHUB_STEP_SUMMARY"
-    - name: Upload quality report
+    - name: Validate each workbook in its declared application scope
+      run: |
+        node --import tsx <<'NODE'
+        const { readRegistry } = require('./ai/projects/registry.ts');
+        const { spawnSync } = require('node:child_process');
+        const registry = readRegistry();
+        if (!registry.applications.length) console.log('No applications registered; nothing to validate.');
+        for (const app of registry.applications) {
+          for (const workbook of app.workbooks) {
+            for (const [command, flags] of [['sync-data', ['--strict']], ['quality', []]]) {
+              const result = spawnSync(process.execPath, ['node_modules/tsx/dist/cli.mjs',
+                'ai/excel/cli.ts', command, workbook, ...flags], {
+                stdio: 'inherit', env: { ...process.env, AURA_APPLICATION: app.applicationId },
+              });
+              if (result.error || result.status !== 0) process.exit(result.status || 1);
+            }
+          }
+        }
+        NODE
+    - name: Upload quality reports
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: quality-report
+        name: quality-reports
         path: ai/reports/
-
-  suite:
-    name: Run against Bugasura
-    # Never on push or PR: the secrets are not available to forks, and a green
-    # run that only means "everything skipped" is worse than no run at all.
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      BUGASURA_EMAIL: ${{ secrets.BUGASURA_EMAIL }}
-      BUGASURA_PASSWORD: ${{ secrets.BUGASURA_PASSWORD }}
-      # Intentionally NOT setting BUGASURA_ALLOW_DATA_MUTATION. Tests that create
-      # projects in the live workspace skip, because nothing deletes what they
-      # make and a nightly job would litter a real team's board.
-      EXCEL_WORKERS: '1'
-    steps:
-    - uses: actions/checkout@v5
-    - name: Use Node.js 20
-      uses: actions/setup-node@v5
-      with:
-        node-version: '20'
-        cache: 'npm'
-    - run: npm ci
-
-    # Without credentials every authenticated case skips with a reason, which
-    # reports as a pass. Stop instead of publishing a green run that proves nothing.
-    - name: Credentials are present
-      run: |
-        if [[ -z "$BUGASURA_EMAIL" || -z "$BUGASURA_PASSWORD" ]]; then
-          echo "::error::BUGASURA_EMAIL / BUGASURA_PASSWORD are not set. Add them as repository secrets."
-          exit 1
-        fi
-
-    - name: Install Chromium
-      run: npx playwright install --with-deps chromium
-
-    # --no-in-place: CI must not write results into the git-tracked workbook.
-    # The reports below carry everything the write-back would have added.
-    - name: Run the suite
-      run: |
-        # An array, not string interpolation: sheet names contain spaces
-        # ("Create Project"), and an unquoted expansion would split them into
-        # two arguments and silently select nothing.
-        args=("${WORKBOOK:-excel/login-test-cases.xlsx}")
-        if [[ -n "$SHEET" ]]; then
-          args+=(--sheet "$SHEET")
-        fi
-        npm run excel:run -- "${args[@]}" --no-in-place
-      env:
-        WORKBOOK: ${{ inputs.workbook }}
-        SHEET: ${{ inputs.sheet }}
-
-    - name: Generate Allure report
-      if: always()
-      continue-on-error: true
-      run: npm run excel:allure
-
-    - name: Upload reports
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: excel-execution-report
-        # The .xlsx is the one a test lead opens; the .html is the one with
-        # per-case anchors; allure/ is the dashboard.
-        path: |
-          reports/
-        retention-days: 30
-
-    # Traces, screenshots and video. Only worth keeping when something failed,
-    # and they are the difference between "it went red" and knowing why.
-    - name: Upload failure evidence
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: failure-evidence
-        path: test-results-excel/
-        retention-days: 14
+        if-no-files-found: ignore

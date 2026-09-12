@@ -1,3 +1,5 @@
+import '../testing/isolated-checkout';
+import { writeFixtureFile } from '../testing/synthetic-data';
 /**
  * P1 Phase 2B — the live assertion picker.
  *
@@ -27,6 +29,7 @@ import {
 import { isRecorderOwnAction, locatorFor, pickerModel, recordPickedAssertion, refusesAttribute } from './live-recorder';
 import { parseRecording, type RecordedAssertion } from './recorder';
 import { mapRecording, readAssertions } from '../autocode/from-recording';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -245,7 +248,9 @@ function checkRecording(): void {
       !code.some(line => /force|\.first\(\)|\.nth\(|dispatchEvent|waitForTimeout|xpath/i.test(line)));
 
   process.stdout.write('\n== 18-20 — nothing else moved ==\n');
-  const dir = path.resolve(ROOT, 'ai/dashboard/recordings');
+  writeFixtureFile('ai/dashboard/recordings/fixtureapp/TC_PICKER_FILTER.spec.ts', source);
+  writeFixtureFile('ai/dashboard/recordings/fixtureapp/TC_PICKER_FILTER.assertions.json', JSON.stringify(picked));
+  const dir = RECORDINGS();
   const files = fs.readdirSync(dir).filter(name => name.endsWith('.spec.ts'));
   let total = 0;
   // What survives PARSING, which is the only stream anything downstream sees.
@@ -319,7 +324,7 @@ function checkRecording(): void {
  * P1.2 diagnosed a real recording in which the picker was installed, injected,
  * visible and clickable - and no assertion was recorded, because the dashboard
  * told the person to use PLAYWRIGHT's Assert toolbar and the pill was rendering
- * underneath Bugasura's chat bubble. All three checks here are about the gap
+ * underneath FixturePortal's chat bubble. All three checks here are about the gap
  * between "it works" and "it was found".
  */
 function checkDiscoverability(): void {
@@ -342,7 +347,7 @@ function checkDiscoverability(): void {
   // reserved area, so the clearance can be stated as a number.
   const measured = { left: 1536 - 85, top: 824 - 90, right: 1536 - 15, bottom: 824 - 15 };
   const pill = pillRect({ width: 1536, height: 824 });
-  check('J: and it clears the launcher as actually measured on my.bugasura.io',
+  check('J: and it clears the launcher in the synthetic launcher geometry',
       !overlaps(pill, measured), `${measured.top - pill.bottom}px of clearance`);
 
   // The declaration and the stylesheet must not drift apart: the CSS is what

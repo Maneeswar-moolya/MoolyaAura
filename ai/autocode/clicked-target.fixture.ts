@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * P0.7 — an ambiguous recorded action is settled by the element the person CLICKED.
  *
@@ -104,7 +105,7 @@ class Node {
 }
 
 /** The /apps screen as TC_LOGIN_063 recorded it, plus the copy that made it ambiguous. */
-function bugasuraApps(): { document: any; clicked: Node; twin: Node; title: Node } {
+function fixtureappApps(): { document: any; clicked: Node; twin: Node; title: Node } {
   const clicked = new Node('span', { classes: ['title', 'handel-over-flow'], text: 'Faclon labs' });
   const title = new Node('h4', { classes: ['handel-over-flow', 'answer__reports-title'] }).add(clicked);
   const other = new Node('h4', { classes: ['handel-over-flow', 'answer__reports-title'] })
@@ -452,7 +453,7 @@ function caseTenOneClaim(): void {
 
 function checkTheMeasurementItself(): void {
   process.stdout.write('\n== 11 — the GENERATED in-page measurement, run against a stub DOM ==\n');
-  const { document, clicked, twin, title } = bugasuraApps();
+  const { document, clicked, twin, title } = fixtureappApps();
   const window = installHook(document);
   check('11: the hook exposes a document identity', typeof window.__auraDocument === 'string'
     && window.__auraDocument.length > 0, String(window.__auraDocument));

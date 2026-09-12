@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * The assertion picker as a floating tool: collapsed, expanded, draggable, clamped.
  *

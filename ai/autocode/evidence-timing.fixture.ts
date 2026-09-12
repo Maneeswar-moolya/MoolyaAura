@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Phase 9A: when evidence is taken, and what it says about scrolling.
  *
@@ -13,6 +14,7 @@
  *     to say so - a scrollbar alone is explicitly not enough.
  */
 
+import { recordingSource } from '../testing/synthetic-data';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -21,6 +23,7 @@ import { locatorMetrics, mapRecording } from './from-recording';
 import { literalsIn } from '../dashboard/live-recorder';
 import { parseRecording } from '../dashboard/recorder';
 import { ELEMENT_CAPTURE, PREACTION_HOOK } from './dom-capture-source';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -56,7 +59,10 @@ function main(): void {
   check('A: absent timing stays absent (never defaulted)', silent.targets[0].captureTiming === undefined);
 
   const mapped = (evidenceTargets: TargetEvidence[]) => {
-    const script = fs.readFileSync(path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_040.spec.ts'), 'utf8');
+    const script = recordingSource([
+      "await expect(page.locator('#tc_summary_638717')).toContainText('Summary');",
+      "await expect(page.locator('#project_banner')).toContainText('Ready');",
+    ]);
     return locatorMetrics(mapRecording(parseRecording(script, {
       startUrl: '', browser: '', durationMs: 0,
       evidence: sanitiseEvidence(evidenceTargets, 'x'),

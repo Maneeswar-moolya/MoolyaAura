@@ -511,9 +511,26 @@
       </div>
       <div class="grow"></div>
       <div class="env">
+        <!--
+          PROJECT FIRST, then environment, then workbook. The order is the decision
+          order: which application, then which of its environments, then which of that
+          application's workbooks. A workbook chosen before a project would be a
+          workbook chosen without knowing whose it is.
+        -->
+        <div class="item">
+          <label class="k" for="project">Project</label>
+          <select id="project" style="min-width:150px"></select>
+          <button id="addProjectOpen" class="ghost" type="button"
+                  title="Create a new project: its own workbook, artefacts and history">+ Add Project</button>
+        </div>
+        <div class="item">
+          <label class="k" for="environment">Environment</label>
+          <select id="environment" style="min-width:120px"></select>
+        </div>
         <div class="item">
           <label class="k" for="workbook">Workbook</label>
           <select id="workbook" style="min-width:200px"></select>
+          <span id="workbookNote" class="note"></span>
         </div>
         <div class="item">
           <span class="k">Browser</span>
@@ -535,6 +552,64 @@
     </header>
 
     <div id="uploadNote" class="note" style="margin:var(--s4) var(--s6) 0"></div>
+
+    <!--
+      ADD PROJECT.
+
+      Four fields, because four are what a project needs to exist and be reachable:
+      a name for people, a stable id for every path and key, one environment, and that
+      environment's address. Everything else follows - `ScopePaths` derives the
+      artefact locations from the id, and provisioning creates the workbook.
+
+      THE ID IS NOT DERIVED FROM THE NAME, and the two inputs are deliberately
+      separate. `applicationId` is immutable and is simultaneously a directory name, a
+      mapping-file name and a scope key, so it has to be a decision rather than a
+      slugification somebody can change later by renaming the project. The name is
+      suggested INTO the id field once, as a starting point a person can edit, and
+      never written back over an id they have typed.
+
+      The base URL is configuration, never identity: it names where this environment
+      happens to live and nothing reads a project's identity back out of it.
+    -->
+    <!--
+      NOT `class="note"`. The stylesheet has `.note { display: none }` and
+      `.note.show { display: block }`, and an author `display` rule BEATS the user
+      agent's `[hidden] { display: none }` however the property is set - so a `.note`
+      is toggled by the `show` class and a plain element is toggled by `hidden`, and
+      mixing the two gives an element that is permanently visible or permanently gone.
+      This panel is a panel, so it uses `hidden`; `#apError` below is a note, so it
+      uses `show`.
+    -->
+    <div id="addProject" hidden
+         style="margin:var(--s4) var(--s6) 0;padding:var(--s4);border:1px solid var(--line);border-radius:8px;background:var(--surface,transparent)">
+      <div style="display:flex;flex-wrap:wrap;gap:var(--s4);align-items:flex-end">
+        <div class="item">
+          <label class="k" for="apName">Project name</label>
+          <input id="apName" type="text" placeholder="Demo App" style="min-width:180px">
+        </div>
+        <div class="item">
+          <label class="k" for="apId">Project ID</label>
+          <input id="apId" type="text" placeholder="my-application" style="min-width:150px" spellcheck="false">
+        </div>
+        <div class="item">
+          <label class="k" for="apEnv">Environment</label>
+          <input id="apEnv" type="text" value="qa" style="min-width:100px" spellcheck="false">
+        </div>
+        <div class="item">
+          <label class="k" for="apUrl">Base URL</label>
+          <input id="apUrl" type="text" placeholder="https://demo.example.com/" style="min-width:240px" spellcheck="false">
+        </div>
+        <div class="item">
+          <button id="apCreate" class="primary" type="button">Create project</button>
+          <button id="apCancel" class="ghost" type="button">Cancel</button>
+        </div>
+      </div>
+      <div id="apHint" class="note show" style="margin-top:var(--s3)">
+        The ID is permanent: it names this project's Page Objects, knowledge, recordings,
+        generated specs and mapping. Lower case, letters, digits and hyphens.
+      </div>
+      <div id="apError" class="note bad" style="margin-top:var(--s3)"></div>
+    </div>
 
     <main>
       <!-- ============ OVERVIEW ============ -->
@@ -719,8 +794,7 @@
                     </div>
                   </div>
                   <div id="workersNote" class="note">
-                    my.bugasura.io returns ERR_EMPTY_RESPONSE when several browsers navigate to it at once
-                    from one host. More than one worker is expected to produce spurious failures.
+                    Start with one worker. Increase concurrency only when the selected environment supports parallel tests.
                   </div>
                   <div id="browserNote" class="note">
                     Firefox and WebKit need installing once:
@@ -809,8 +883,15 @@
           <div class="body" id="recSetup">
             <div class="controls">
               <div class="field">
-                <label for="recUrl">Start URL</label>
-                <input type="text" id="recUrl" placeholder="https://my.bugasura.io/" value="https://my.bugasura.io/">
+                <!--
+                  Blank means "the selected environment's own address". It used to be a
+                  hardcoded Bugasura URL, which is a second place the application could
+                  be decided - and the one a person would edit without realising they
+                  had just pointed a Bugasura recording at something else. It narrows
+                  WHERE in the application to start; it never decides WHICH.
+                -->
+                <label for="recUrl">Start URL <span class="hint" id="recUrlHint"></span></label>
+                <input type="text" id="recUrl" placeholder="the selected environment's address">
               </div>
               <div class="field">
                 <label for="recBrowser">Browser</label>
@@ -1078,10 +1159,10 @@
                 </div>
                 <div class="field">
                   <label for="fAuthProfile">Authentication Profile <span class="opt">— a NAME, never an account</span></label>
-                  <input type="text" id="fAuthProfile" placeholder="BUGASURA_QA_USER" list="authProfileList">
+                  <input type="text" id="fAuthProfile" placeholder="APPLICATION_QA_USER" list="authProfileList">
                   <datalist id="authProfileList">
-                    <option>BUGASURA_QA_USER</option><option>BUGASURA_ADMIN</option>
-                    <option>BUGASURA_READ_ONLY</option>
+                    <option>APPLICATION_QA_USER</option><option>APPLICATION_ADMIN</option>
+                    <option>APPLICATION_READ_ONLY</option>
                   </datalist>
                 </div>
               </div>
@@ -1112,7 +1193,7 @@
               <div class="controls" style="margin-top:var(--s3)">
                 <div class="field">
                   <label for="fSteps">Steps <span class="opt">— for people to read</span></label>
-                  <textarea id="fSteps" rows="5" placeholder="Open the Bugasura login page&#10;Enter the email address for this case&#10;Enter the password for this case&#10;Click Sign In"></textarea>
+                  <textarea id="fSteps" rows="5" placeholder="Open the application login page&#10;Enter the email address for this case&#10;Enter the password for this case&#10;Click Sign In"></textarea>
                 </div>
                 <div class="field">
                   <label for="fData">Test Data <span class="opt">— one <code>name = value</code> per line</span></label>
@@ -2140,7 +2221,7 @@ function reportCellFor(run) {
 }
 
 async function loadRuns() {
-  const { runs } = await (await fetch('/api/runs')).json();
+  const { runs } = await (await fetch(`/api/runs${scopeQuery()}`)).json();
   lastRuns = runs;
   $('navRuns').textContent = String(runs.length);
   renderLastRunKpis(runs[0]);
@@ -2341,6 +2422,7 @@ $('run').addEventListener('click', async () => {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
+      ...scopeBody(),
       workbook: $('workbook').value,
       testCaseIds: [...selected],
       browser: $('browser').value,
@@ -2851,7 +2933,7 @@ async function loadGenerations() {
   // a generation already in progress, and a recorder somebody left open - matters more
   // than a history table, so a 404 here is an empty table rather than an abandoned
   // page with a live generation it never noticed.
-  const res = await fetch('/api/generations');
+  const res = await fetch(`/api/generations${scopeQuery()}`);
   const body = res.ok ? await res.json() : {};
   const generations = body.generations ?? [];
   const limit = body.limit ?? GEN_HISTORY_LABEL_LIMIT;
@@ -3065,12 +3147,299 @@ function recProblem(id, message) {
   box.classList.toggle('show', Boolean(message));
 }
 
+
+/* ---------------------------------------------------------------- projects --
+ *
+ * The project is CHOSEN here and travels with every application-specific request.
+ * Nothing downstream re-derives it: the server resolves an ApplicationScope from
+ * `applicationId` + `environmentId` and refuses when it cannot, so a page that forgot
+ * to send them gets a 400 naming the choices rather than a run against the wrong
+ * application.
+ *
+ * `displayName` is what a person reads and `applicationId` is what is sent. They are
+ * deliberately never the same value in the DOM: the option's text is the name, its
+ * value is the id.
+ */
+let PROJECTS = [];
+let SOLE_APPLICATION = true;
+
+function selectedProject() {
+  const id = $('project').value;
+  return PROJECTS.find(project => project.applicationId === id) || null;
+}
+
+function selectedEnvironment() {
+  const project = selectedProject();
+  if (!project) return null;
+  const id = $('environment').value;
+  return project.environments.find(e => e.environmentId === id)
+    || project.environments.find(e => e.isDefault)
+    || project.environments[0] || null;
+}
+
+/** The two fields every application-specific request carries. */
+function scopeBody() {
+  const project = selectedProject();
+  const environment = selectedEnvironment();
+  if (!project) return {};
+  return {
+    applicationId: project.applicationId,
+    ...(environment ? { environmentId: environment.environmentId } : {}),
+  };
+}
+
+/**
+ * `?applicationId=` for a GET, when a project is selected.
+ *
+ * The run and generation histories are GLOBAL stores, so the narrowing is done by the
+ * server on each record's own `applicationId`. Filtering here by workbook or by Test
+ * Case ID would be the collision this whole model removes: two projects' TC_LOGIN_001
+ * are two different executions.
+ */
+function scopeQuery() {
+  const project = selectedProject();
+  return project ? `?applicationId=${encodeURIComponent(project.applicationId)}` : '';
+}
+
+function renderEnvironments() {
+  const project = selectedProject();
+  const select = $('environment');
+  const previous = select.value;
+  select.innerHTML = '';
+  if (!project) return;
+  // ONLY this project's environments. Rebuilt on every project change rather than
+  // filtered in place, so an environment belonging to the previous project cannot
+  // survive as a stale selection.
+  for (const environment of project.environments) {
+    const option = document.createElement('option');
+    option.value = environment.environmentId;
+    option.textContent = environment.environmentId
+      + (environment.isDefault ? ' (default)' : '');
+    option.title = environment.baseUrl;
+    select.appendChild(option);
+  }
+  const keep = project.environments.some(e => e.environmentId === previous);
+  select.value = keep ? previous : (project.defaultEnvironmentId || project.environments[0]?.environmentId || '');
+  renderEnvironmentHint();
+}
+
+function renderEnvironmentHint() {
+  const environment = selectedEnvironment();
+  const hint = $('recUrlHint');
+  if (hint) hint.textContent = environment ? '— blank opens ' + environment.baseUrl : '';
+}
+
+async function loadProjects() {
+  try {
+    const res = await fetch('/api/projects');
+    if (!res.ok) return;
+    const body = await res.json();
+    PROJECTS = body.projects || [];
+    SOLE_APPLICATION = Boolean(body.soleApplication);
+    const select = $('project');
+    const remembered = localStorage.getItem('aura.project') || '';
+    select.innerHTML = '';
+    for (const project of PROJECTS) {
+      const option = document.createElement('option');
+      option.value = project.applicationId;      // the identifier
+      option.textContent = project.displayName;  // what a person reads
+      select.appendChild(option);
+    }
+    if (PROJECTS.some(p => p.applicationId === remembered)) select.value = remembered;
+    renderEnvironments();
+  } catch {
+    // The dashboard still works against a single-application registry with no
+    // selection at all - the server resolves it. A projects endpoint that is not
+    // there is an older server, not a reason to stop.
+  }
+}
+
+/**
+ * The workbooks the SELECTED project owns.
+ *
+ * `/api/workbooks` answers from the registry's ownership declaration, not from a
+ * listing of `excel/`, so this cannot offer another project's workbook. A workbook
+ * nobody declares is reported separately and never selectable - saying so is the
+ * point, because silently attributing it to whoever is selected is the
+ * identity-by-filename this whole model refuses.
+ */
+async function loadWorkbookOptions() {
+  const select = $('workbook');
+  const note = $('workbookNote');
+  if (!PROJECTS.length) {
+    select.innerHTML = '';
+    note.textContent = 'No applications yet. Add a project to get started.';
+    note.className = 'note show';
+    return false;
+  }
+  const previous = select.value;
+  let body = { workbooks: [] };
+  try {
+    body = await (await fetch('/api/workbooks' + scopeQuery())).json();
+  } catch {
+    // Leave the list as it is rather than emptying it on a transport blip.
+    return false;
+  }
+  select.innerHTML = '';
+  for (const file of body.workbooks || []) {
+    const option = document.createElement('option');
+    option.value = file;
+    option.textContent = file.replace(/^excel\//, '');
+    select.appendChild(option);
+  }
+  // STALE SELECTION IS CLEARED, never carried across a project switch: the previous
+  // project's workbook is not in this project's list, and keeping the string would
+  // send its path to an endpoint that would then refuse it as out of scope.
+  const keep = (body.workbooks || []).includes(previous);
+  select.value = keep ? previous : ((body.workbooks || [])[0] || '');
+
+  const problems = [];
+  if (body.error) problems.push(body.error);
+  if (!(body.workbooks || []).length) problems.push('This project has no workbook yet.');
+  if ((body.unowned || []).length) {
+    problems.push((body.unowned.length === 1 ? '1 workbook in excel/ is' : body.unowned.length
+      + ' workbooks in excel/ are') + ' not declared by any project, so not selectable: '
+      + body.unowned.map(w => w.replace(/^excel\//, '')).join(', '));
+  }
+  note.textContent = problems.join(' ');
+  note.className = 'note' + (problems.length ? ' show' : '');
+  return Boolean(select.value);
+}
+
+/**
+ * Switch project: rebuild everything downstream and keep nothing.
+ *
+ * Environments, workbooks and the case table all belong to a project, so each is
+ * rebuilt from the new one. The case list is emptied FIRST - rendering the previous
+ * project's rows under the new project's name for as long as the fetch takes is a
+ * misattribution somebody can act on.
+ */
+async function switchProject() {
+  localStorage.setItem('aura.project', $('project').value);
+  renderEnvironments();
+  cases = [];
+  selected = new Set();
+  try { render(); } catch { /* the table may not be mounted on this view yet */ }
+  const hasWorkbook = await loadWorkbookOptions();
+  if (hasWorkbook) await loadWorkbook();
+}
+
+$('project').addEventListener('change', switchProject);
+$('environment').addEventListener('change', renderEnvironmentHint);
+
+/* ------------------------------------------------------------ Add Project ---- */
+
+function apProblem(message) {
+  const box = $('apError');
+  box.textContent = message || '';
+  // `show`, not `hidden`: `.note` sets `display` in the stylesheet and an author rule
+  // beats `[hidden]`, so a note toggled by the property would never move.
+  box.className = 'note bad' + (message ? ' show' : '');
+}
+
+function apOpen(open) {
+  $('addProject').hidden = !open;
+  if (!open) return;
+  apProblem('');
+  $('apName').focus();
+}
+
+$('addProjectOpen').addEventListener('click', () => apOpen($('addProject').hidden));
+$('apCancel').addEventListener('click', () => apOpen(false));
+
+/**
+ * Suggest the id from the name ONCE, and never overwrite what a person typed.
+ *
+ * The id is immutable and is a directory name, a mapping-file name and a scope key, so
+ * it is a decision rather than a derivation - but an empty box is a worse first
+ * experience than a starting point. `apId.dataset.touched` is set the moment somebody
+ * edits it, and from then on the suggestion stops.
+ */
+$('apName').addEventListener('input', () => {
+  const id = $('apId');
+  if (id.dataset.touched) return;
+  id.value = $('apName').value.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '').replace(/^([0-9])/, 'a$1');
+});
+$('apId').addEventListener('input', () => { $('apId').dataset.touched = '1'; });
+
+$('apCreate').addEventListener('click', async () => {
+  apProblem('');
+  const button = $('apCreate');
+  button.disabled = true;
+  try {
+    const res = await fetch('/api/projects', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        displayName: $('apName').value.trim(),
+        applicationId: $('apId').value.trim(),
+        environmentId: $('apEnv').value.trim(),
+        baseUrl: $('apUrl').value.trim(),
+      }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      // The server's own wording, verbatim. Every refusal here comes from
+      // `validateRegistry` - the same function every READ goes through - so the
+      // message names the actual rule rather than a paraphrase of it.
+      apProblem(body.error || 'The project could not be created.');
+      return;
+    }
+
+    // SELECT WHAT WAS JUST CREATED, all the way down. The server returns the
+    // environment and the workbook it provisioned, so each selection is set from the
+    // response rather than guessed from the form.
+    PROJECTS = body.projects || PROJECTS;
+    SOLE_APPLICATION = PROJECTS.length === 1;
+    const select = $('project');
+    select.innerHTML = '';
+    for (const project of PROJECTS) {
+      const option = document.createElement('option');
+      option.value = project.applicationId;
+      option.textContent = project.displayName;
+      select.appendChild(option);
+    }
+    select.value = body.applicationId;
+    localStorage.setItem('aura.project', body.applicationId);
+    renderEnvironments();
+    if (body.environmentId) $('environment').value = body.environmentId;
+    renderEnvironmentHint();
+
+    cases = [];
+    selected = new Set();
+    try { render(); } catch { /* the table may not be mounted on this view yet */ }
+    await loadWorkbookOptions();
+    if (body.workbook) $('workbook').value = body.workbook;
+    if ($('workbook').value) await loadWorkbook();
+
+    apOpen(false);
+    $('apName').value = '';
+    $('apId').value = '';
+    delete $('apId').dataset.touched;
+    $('apUrl').value = '';
+  } catch (error) {
+    apProblem(String(error && error.message ? error.message : error));
+  } finally {
+    button.disabled = false;
+  }
+});
+
+loadProjects();
+
 $('recStart').addEventListener('click', async () => {
   recProblem('recError', '');
   const res = await fetch('/api/record/start', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ url: $('recUrl').value, browser: $('recBrowser').value }),
+    // The project travels WITH the request. `url` is blank unless somebody wants to
+    // start deeper than the front door, and the server then uses the environment's
+    // own address - so the selection, not the text box, decides where this opens.
+    body: JSON.stringify({
+      ...scopeBody(),
+      url: $('recUrl').value,
+      browser: $('recBrowser').value,
+    }),
   });
   const body = await res.json();
   if (!res.ok || !body.started) {
@@ -3505,6 +3874,7 @@ async function startRunFor(id) {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
+      ...scopeBody(),
       workbook: $('workbook').value,
       testCaseIds: [id],
       browser: $('browser').value,
@@ -3562,14 +3932,10 @@ async function checkServerVersion() {
 (async function init() {
   await checkServerVersion();
   $('envBrowser').textContent = $('browser').selectedOptions[0].textContent;
-  const { workbooks } = await (await fetch('/api/workbooks')).json();
-  const select = $('workbook');
-  for (const file of workbooks) {
-    const option = document.createElement('option');
-    option.value = file; option.textContent = file.replace(/^excel\//, '');
-    select.appendChild(option);
-  }
-  await loadWorkbook();
+  // Project-aware from the first paint: `loadProjects()` has already run and set the
+  // remembered selection, so this asks for THAT project's workbooks rather than for
+  // every file in `excel/`.
+  if (await loadWorkbookOptions()) await loadWorkbook();
   await loadRuns();
   // Generation history is read from disk, so it survives this page being closed and
   // the dashboard process being restarted - which is the whole point of it.

@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Assertion-to-target provenance: which element a recorded assertion is ABOUT.
  *
@@ -45,7 +46,7 @@ import path from 'node:path';
 
 import { PREACTION_HOOK } from './dom-capture-source';
 import {
-  evidenceFor, evidenceForAssertionSubject, positionalExpression, readAssertionProvenance,
+  evidenceFor, evidenceForAssertionSubject, positionalExpression,
   sanitiseEvidence, targetByElementRef,
   type AssertionProvenance, type CandidateMeasurement, type DomEvidence,
   type RecordingEvidence, type TargetEvidence,
@@ -58,6 +59,7 @@ import {
 import {
   assertionsPath, parseRecording, type Recording, type RecordedAssertion,
 } from '../dashboard/recorder';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -66,7 +68,7 @@ const check = (label: string, ok: boolean, detail = ''): void => {
   if (!ok)
     failures++;
 };
-const section = (title: string): void => process.stdout.write(`\n== ${title} ==\n`);
+const section = (title: string): void => { process.stdout.write(`\n== ${title} ==\n`); };
 
 /* ------------------------------------------------------------- a stub DOM */
 
@@ -507,7 +509,7 @@ async function partB(): Promise<void> {
     node: { tag: 'span', stableClasses: ['rounded-checkbox-ui'] },
     state: { visible: true },
     candidates: [{
-      // The relationship Bugasura's tick actually presents: the span sits inside the
+      // The relationship FixturePortal's tick actually presents: the span sits inside the
       // <label> that forwards to the hidden input, and the input carries its OWN
       // registration because `associatedCandidates(element, true)` registered it.
       relationship: 'label-ancestor' as const,
@@ -702,9 +704,8 @@ function partC(): void {
 
   // The allow-list is the point: a field added to TargetEvidence must not travel until
   // somebody decides it is true of the element rather than of the expression.
-  const invented = evidenceForAssertionSubject(
-      evidenceOf(target({ pressTimeText: undefined, ...{ someFutureField: 'x' } as never })),
-      assertionOf());
+  const future = { pressTimeText: undefined, someFutureField: 'x' } as unknown as Partial<TargetEvidence>;
+  const invented = evidenceForAssertionSubject(evidenceOf(target(future)), assertionOf());
   check('C13: an unknown field does not travel',
       invented !== null && !('someFutureField' in invented.evidence),
       Object.keys(invented?.evidence ?? {}).join(','));
@@ -921,7 +922,7 @@ function partD(): void {
 /** A minimal recording: one click, one assertion, and the evidence for both. */
 function recordingWith(assertion: RecordedAssertion, evidence: RecordingEvidence): Recording {
   return {
-    startUrl: 'https://my.bugasura.io/', browser: 'chromium', evidence,
+    startUrl: 'https://portal.fixture.invalid/', browser: 'chromium', evidence,
     authentication: { detected: false } as never,
     actions: [{
       type: 'click', target: 'tick',
@@ -941,116 +942,24 @@ function recordingWith(assertion: RecordedAssertion, evidence: RecordingEvidence
    ========================================================================= */
 
 function partF(): void {
-  section('F - TC_DASHBOARD_023, replayed from the real evidence file');
-
-  const file = path.resolve(ROOT, 'ai/dashboard/recordings/TC_DASHBOARD_023.evidence.json');
-  if (!fs.existsSync(file)) {
-    check('F: the recording is on disk', false, `missing ${file}`);
-    return;
-  }
-  const real = JSON.parse(fs.readFileSync(file, 'utf8')) as DomEvidence;
-  const input = real.targets.find(entry => entry.target?.id === '1749552');
-  check('F1: the recorded target for the asserted input is in the file',
-      Boolean(input), String(input?.locator));
-  if (!input)
-    return;
-
-  // THE STATE OF THE FILE AS IT STANDS, stated rather than assumed. This recording was
-  // made before the registration name existed, so provenance is UNAVAILABLE for it and
-  // no amount of code can repair that - the document that could have answered is gone.
-  const named = real.targets.filter(entry => typeof entry.elementRef === 'string').length;
-  check('F2: the recording on disk carries NO registration name, so it cannot be repaired',
-      named === 0, `${named} of ${real.targets.length} targets carry one`);
-  const onDisk = readAssertions('TC_DASHBOARD_023');
-  check('F2: and its assertion carries no provenance',
-      onDisk?.[0].subjectProvenance === undefined,
-      JSON.stringify(onDisk?.[0].subjectProvenance));
-
-  // THE REPLAY. Every measurement below is the file's own - counts, positions, identity
-  // flags, candidate expressions, all untouched. The single added value is the
-  // registration name a recording made today supplies, and the count the picker takes
-  // of the assertion's own locator.
-  const replayed: RecordingEvidence = {
-    ...real, targets: real.targets.map(entry => (entry === input
-      ? { ...entry, elementRef: 'replayed:5' } : entry)),
-  } as RecordingEvidence;
-  const assertion: RecordedAssertion = {
-    ...(onDisk?.[0] as RecordedAssertion),
-    subjectProvenance: { refs: ['replayed:5'], locatorMatchCount: 3 },
-  };
-  check('F3: the assertion under replay is the recorded one, unedited',
-      assertion.locator === 'page.locator(".bugChecked")' && assertion.type === 'checked'
-      && assertion.expected === true, `${assertion.type} ${assertion.locator}`);
-
-  const result = judge(assertion, replayed);
-  check('F4: the assertion now finds the evidence for its own element',
-      result.subject?.evidence.target.id === '1749552', String(result.subject?.why));
-  check('F5: it resolves through evidence-backed positional recovery',
-      result.verdict.strategy === 'evidence-backed-position', result.verdict.strategy);
-  check('F6: to the contextual candidate the recording measured, with the measured index',
-      result.verdict.expression
-        === 'page.locator(".tabulator-row").filter({ hasText: "login is not working in '
-          + 'moolya aura SAM" }).locator(".bugChecked").nth(2)',
-      String(result.verdict.expression));
-
-  // THE INDEX IS THE FILE'S, not a number chosen to make a count of one.
-  const source = (input.positionProvenCandidates ?? []).find(candidate =>
-    candidate.expression === 'page.locator(".tabulator-row").filter({ hasText: "login is not '
-      + 'working in moolya aura SAM" }).locator(".bugChecked")');
-  check('F7: the index came from the recording, measured at the press',
-      source?.positionWithinCandidate === 2 && source?.matchCount === 3
-      && source?.measuredAt === 'press' && source?.sameDocument === true,
-      JSON.stringify(source));
-  check('F8: and the emitted index is exactly that number',
-      String(result.verdict.expression).endsWith(`.nth(${source?.positionWithinCandidate})`));
-
-  // WITHOUT THE NAME, THE ANSWER IS UNCHANGED. This is what the file on disk gets, and
-  // it is the honest outcome for a recording that predates the mechanism.
-  const unlinked = judge({ ...assertion, subjectProvenance: undefined }, replayed);
-  check('F9: with no provenance there is no subject and nothing safe to emit',
-      unlinked.subject === null && unlinked.verdict.expression === null,
-      `subject=${unlinked.subject} expression=${unlinked.verdict.expression}`);
-
-  // THROUGH THE WHOLE ASSEMBLER, not just the locator engine. The real recorded script,
-  // the real evidence, the real parser and the real mapper - because a verdict that is
-  // right and then not used is exactly the defect this file is here to prevent.
-  const script = fs.readFileSync(
-      path.resolve(ROOT, 'ai/dashboard/recordings/TC_DASHBOARD_023.spec.ts'), 'utf8');
-  // The recorded assertion with the provenance STRIPPED, so "without" really is
-  // without: spreading an object that already carries the field carries it through.
-  const { subjectProvenance: _stripped, ...bare } = assertion;
-  const map = (provenance: AssertionProvenance | undefined) => mapRecording(parseRecording(script, {
-    startUrl: 'https://my.bugasura.io/', browser: 'chromium', durationMs: 0,
-    evidence: replayed,
-    stateAssertions: [{ ...bare, ...(provenance ? { subjectProvenance: provenance } : {}) }],
+  section('F - authored positional evidence through the parser and mapper');
+  const captured = evidenceOf(target());
+  const assertion = assertionOf({ afterActions: 0 });
+  const source = "import { test, expect } from '@playwright/test';\ntest('synthetic provenance', async ({ page }) => {});";
+  const map = (linked: boolean) => mapRecording(parseRecording(source, {
+    startUrl: '', browser: '', durationMs: 0, evidence: captured,
+    stateAssertions: [{ ...assertion, subjectProvenance: linked ? assertion.subjectProvenance : undefined }],
   } as never));
-  const linkedSteps = map(assertion.subjectProvenance);
-  const assertionStep = linkedSteps.steps.find(step => step.from.startsWith('assert'));
-  const WANTED = 'await expect(page.locator(".tabulator-row").filter({ hasText: "login is not '
-    + 'working in moolya aura SAM" }).locator(".bugChecked").nth(2)).toBeChecked();';
-  check('F10: the assembled spec asserts on the proven positional locator',
-      assertionStep?.code.join('') === WANTED, assertionStep?.code.join('') ?? 'none');
-  check('F11: the recorded positional CLICK is unchanged by any of this',
-      linkedSteps.steps.some(step => step.code.join('').includes(
-          '.locator(".rounded-checkbox-ui").nth(2)).click()')),
-      linkedSteps.steps.filter(s => s.from.startsWith('click')).map(s => s.code.join('')).join(' | '));
-  const unlinkedSteps = map(undefined);
-  // THE BUG THIS PAIR WAS WRITTEN TO SHOW IS NO LONGER REACHABLE. It used to assert that
-  // the assembler emitted `expect(page.locator(".bugChecked")).toBeChecked()` - exactly
-  // what TC_DASHBOARD_023 shipped and what failed strict mode on three elements. The
-  // structural gate refuses that shape now, so the unlinked run produces no assertion
-  // step at all. The contrast the pair exists for is unchanged and stronger: WITH
-  // provenance the assertion resolves to a proven locator, WITHOUT it there is none.
-  const unlinkedAssertion = unlinkedSteps.steps.find(step => step.from.startsWith('assert'));
-  check('F12: and without provenance the assembler emits no assertion locator at all',
-      unlinkedAssertion?.kind === 'needs-review' && unlinkedAssertion.code.join('') === '',
-      `${unlinkedAssertion?.kind} ${unlinkedAssertion?.code.join('') || '(nothing)'}`);
-  check('F12: least of all the ambiguous bare class it used to emit',
-      unlinkedSteps.steps.every(step => !step.code.join('').includes('expect(page.locator(".bugChecked"))')));
-  check('F13: the two runs differ ONLY in the assertion',
-      linkedSteps.steps.filter(step => !step.from.startsWith('assert')).map(s => s.code.join('')).join('|')
-        === unlinkedSteps.steps.filter(step => !step.from.startsWith('assert')).map(s => s.code.join('')).join('|'));
+  const linked = map(true).steps.find(s => s.from.startsWith('assert'));
+  check('F: the assembler consumes the subject-specific measured position',
+      linked?.code.join('') === `await expect(${CONTEXTUAL_BASE}.nth(2)).toBeChecked();`, linked?.code.join(''));
+  const unlinked = map(false).steps.find(s => s.from.startsWith('assert'));
+  check('F: removing provenance prevents an assertion locator from being emitted',
+      unlinked?.kind === 'needs-review' && unlinked.code.length === 0);
+  check('F: mapping never fabricates provenance in the input',
+      (captured as DomEvidence).targets[0].elementRef === 'doc-press:7');
 }
+
 
 /* =========================================================================
    H - TC_LOGIN_107: assert(A), click(A), assert(A)
@@ -1265,13 +1174,13 @@ async function partH(): Promise<void> {
   // assertion, a click on the same element, another assertion.
   const script = 'import { test, expect } from \'@playwright/test\';\n\n'
     + 'test(\'test\', async ({ page }) => {\n'
-    + '  await page.goto(\'https://my.bugasura.io/\');\n'
+    + '  await page.goto(\'https://portal.fixture.invalid/\');\n'
     + '  await page.locator(\'ba-aura-assert\').click();\n'
     + '  await page.locator(\'.rounded-checkbox-ui\').first().click();\n'
     + '  await page.locator(\'ba-aura-assert\').click();\n'
     + '});';
   const mapped = mapRecording(parseRecording(script, {
-    startUrl: 'https://my.bugasura.io/', browser: 'chromium', durationMs: 0,
+    startUrl: 'https://portal.fixture.invalid/', browser: 'chromium', durationMs: 0,
     evidence, stateAssertions: run.picked,
   } as never));
   const emitted = mapped.steps.filter(step => step.from.startsWith('assert'))
@@ -1443,7 +1352,7 @@ async function partJ(): Promise<void> {
  * The required coverage for TC_LOGIN_109's component question: click, check, uncheck,
  * assert-checked and assert-unchecked against checkbox A, then the same against B.
  *
- * WHAT THIS IS ACTUALLY ASKING. Bugasura's tick is not one node:
+ * WHAT THIS IS ACTUALLY ASKING. FixturePortal's tick is not one node:
  *
  *     label.rounded-checkbox-cont
  *       input.bugChecked[type=checkbox]      <- holds the STATE

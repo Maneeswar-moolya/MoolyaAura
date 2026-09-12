@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * P1.2b — interaction target vs assertion subject.
  *
@@ -8,7 +9,7 @@
  * `clicked-target.fixture.ts` runs the generated capture hook - reading the
  * source proves nothing about what reaches the page.
  *
- * The shape under test is Bugasura's notification toggle, which is what the
+ * The shape under test is FixturePortal's notification toggle, which is what the
  * whole change is for:
  *
  *   span.ba-switch
@@ -253,8 +254,8 @@ function payloadFor(root: El, selector: string): {
 
 /* --------------------------------------------------------------- the shapes */
 
-/** Bugasura's notification toggle, as the evidence file records it. */
-function bugasuraSwitch(): El {
+/** FixturePortal's notification toggle, as the evidence file records it. */
+function fixtureappSwitch(): El {
   const input = new El('input', {
     id: 'notif_master', classes: ['ba-switch__input', 'js-notif-master'],
     attrs: { type: 'checkbox' }, checked: false, invisible: true,
@@ -268,7 +269,7 @@ function bugasuraSwitch(): El {
 }
 
 /**
- * The same toggle as Bugasura actually serves it - verified against the live
+ * The same toggle as FixturePortal actually serves it - verified against the live
  * application, and different from the shape above in the one way that mattered.
  *
  * The thumb is inside a <label>, so the subject resolves by `label-ancestor`
@@ -277,7 +278,7 @@ function bugasuraSwitch(): El {
  * answering the second with the first offered "Checked/Unchecked" for a toggle
  * on the real page.
  */
-function bugasuraLabelledSwitch(): El {
+function fixtureappLabelledSwitch(): El {
   const input = new El('input', {
     classes: ['ba-switch__input', 'js-notif-setting', 'js-notif-master'],
     attrs: { type: 'checkbox' }, checked: true, invisible: true,
@@ -330,7 +331,7 @@ function checkAssociation(): void {
       fromLabel?.semantics === 'radio');
 
   // ---- C: the switch wrapper
-  const thumb = payloadFor(bugasuraSwitch(), '.ba-switch__thumb');
+  const thumb = payloadFor(fixtureappSwitch(), '.ba-switch__thumb');
   check('C: the thumb itself proves nothing - it is a bare span',
       classify(thumb.node).semantics === 'generic', classify(thumb.node).reason);
   const subject = resolveAssertionSubject(thumb.node, thumb.candidates);
@@ -347,7 +348,7 @@ function checkAssociation(): void {
       JSON.stringify(thumb.candidates.map(entry => entry.relationship)));
 
   // ---- C: the shape the live application actually serves
-  const live = payloadFor(bugasuraLabelledSwitch(), '.ba-switch__thumb');
+  const live = payloadFor(fixtureappLabelledSwitch(), '.ba-switch__thumb');
   check('C: the real markup reaches the control by BOTH routes',
       live.candidates.some(entry => entry.relationship === 'label-ancestor')
       && live.candidates.some(entry => entry.relationship === 'switch-wrapper'),
@@ -371,7 +372,7 @@ function checkAssociation(): void {
 
   // The same markup with the switch wrapper renamed: the label still resolves
   // the control, and it is now a plain checkbox. One variable, two answers.
-  const plainWrapper = bugasuraLabelledSwitch();
+  const plainWrapper = fixtureappLabelledSwitch();
   const inner = plainWrapper.querySelector('.ba-switch')!;
   inner.classList = ['ap-notif-settings-widget'];
   const plain = payloadFor(plainWrapper, '.ba-switch__thumb');
@@ -467,7 +468,7 @@ function checkRefusals(): void {
 
 function checkRecording(): void {
   process.stdout.write('\n== F-I — what is offered and what is recorded ==\n');
-  const thumb = payloadFor(bugasuraSwitch(), '.ba-switch__thumb');
+  const thumb = payloadFor(fixtureappSwitch(), '.ba-switch__thumb');
   const model = pickerModel(thumb);
 
   check("G: the card is headed with the control's name, not <span>",

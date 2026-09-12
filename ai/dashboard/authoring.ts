@@ -65,7 +65,7 @@ export interface CaseDraft {
   businessRisk: string;
   environment: string;
   userRole: string;
-  /** A profile NAME (`BUGASURA_QA_USER`). Never a credential - validated below. */
+  /** A profile NAME (`APPLICATION_QA_USER`). Never a credential - validated below. */
   authenticationProfile: string;
   testOwner: string;
 }
@@ -88,7 +88,7 @@ export interface CaseDraft {
  * type promises is actually there. An optional field somebody did not fill in
  * is empty, which is exactly what an optional field means - and never a
  * plausible-looking default, because "Recorded test" in a Description or a
- * guessed BUGASURA_QA_USER in an Authentication Profile is business information
+ * guessed APPLICATION_QA_USER in an Authentication Profile is business information
  * nobody authored.
  *
  * `run` is the one non-string: absent means yes, which is what both forms send
@@ -401,9 +401,9 @@ function referenceProblems(draft: CaseDraft): string[] {
   if (profile) {
     if (profile.includes('@') || /\s/.test(profile)) {
       problems.push('Authentication Profile is a profile NAME, not an account. '
-        + 'Use something like BUGASURA_QA_USER; the address and password stay in the environment.');
+        + 'Use something like APPLICATION_QA_USER; the address and password stay in the environment.');
     } else if (!AUTH_PROFILE_PATTERN.test(profile)) {
-      problems.push('Authentication Profile must look like BUGASURA_QA_USER - '
+      problems.push('Authentication Profile must look like APPLICATION_QA_USER - '
         + 'capitals, digits and underscores, at least three characters.');
     }
   }

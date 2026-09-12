@@ -36,11 +36,12 @@ import os from 'node:os';
 import path from 'node:path';
 
 import {
-  candidateRejection, candidateSelectorsFor, evidenceUnavailable, isProvenAgainstClickedTarget,
+  candidateRejection, candidateSelectorsFor, evidenceUnavailable, implicitRole,
+  isProvenAgainstClickedTarget,
   isProvenAtPick, sanitiseEvidence, usableCandidateText, type AssertionProvenance,
   type CandidateMeasurement, type MatchCount,
-  type RecordingEvidence, type RelatedNode, type TargetEvidence,
-  isPositionProven, isPositionProvenAgainstClickedTarget, isPositionProvenAtPick,
+  type RecordingEvidence, type RelatedNode, type SelectorCandidate, type TargetEvidence,
+  isPositionProven,
 } from '../autocode/dom-evidence';
 import { ELEMENT_CAPTURE, PREACTION_HOOK } from '../autocode/dom-capture-source';
 import { FORBIDDEN_VALUE_KEYS } from '../autocode/dom-evidence';
@@ -54,6 +55,8 @@ import {
 } from './associated-control';
 import type { RecordedAssertion } from './recorder';
 import { parseChain } from '../autocode/locator-quality';
+import { readAllPageKnowledge } from '../knowledge/page-knowledge';
+import { activeScopePath } from '../projects/scope';
 
 const ROOT = process.cwd();
 
@@ -182,7 +185,12 @@ export async function startLiveRecording(options: {
     return null;
   }
 
-  const engine = (playwright as any)[options.browser] ?? playwright.chromium;
+  // The browser name is a string chosen at run time, so the launcher has to be looked
+  // up by key. Typed as the record it actually is rather than as `any`: an `any` here
+  // spreads to `browser` below, which then never narrows away its `null` initialiser -
+  // so every use of it downstream was unchecked by the compiler for no reason.
+  const engines = playwright as unknown as Record<string, typeof playwright.chromium>;
+  const engine = engines[options.browser] ?? playwright.chromium;
   const outputFile = path.join(os.tmpdir(),
       `live-recording-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.spec.ts`);
 
@@ -229,19 +237,8 @@ export async function startLiveRecording(options: {
       // happened in, and that frame is the only place the press-time document can
       // still be measured. `exposeFunction` gave us the entry and nothing to measure
       // it against.
-      await context.exposeBinding('__auraPark', (source: any, entry: any) => {
-        if (parkedEntries.length >= MAX_PARKED)
-          parkedEntries.shift();
-        parkedEntries.push(entry);
-        metrics.parkedCount++;
-        // Fire and forget, deliberately. The page called this from a passive
-        // pointerdown listener and does not await it; awaiting here would put this
-        // process in the path of the person's own click. The measurement races the
-        // navigation that a click may start, and losing that race costs nothing: the
-        // entry simply carries no press measurement and the resolver behaves as it
-        // did before P0.7.
-        void measureAtPress(source?.frame ?? source?.page, entry, metrics);
-      });
+      await context.exposeBinding('__auraPark', (source: any, entry: any) =>
+        recordParkedEntry(source?.frame ?? source?.page, entry, metrics));
       await context.addInitScript({ content: PREACTION_HOOK });
       metrics.preActionHook = true;
 
@@ -438,7 +435,11 @@ function watchForTargets(file: string, onTarget: (locator: string) => void): { s
  * recording as evidence - "this matched zero at record time" is a fact a resolver
  * needs, and inventing 1 would be the exact error `MatchCount` exists to prevent.
  */
-async function captureFor(page: any, expression: string, metrics?: LiveMetrics): Promise<TargetEvidence | null> {
+// Exported so the claim path - the pipeline's settled point, where the accessible-name
+// stability comparison happens - can be driven against a real page without Codegen. Same
+// reason `measureAtPress` and `splitCandidates` are exported; `startLiveRecording` remains
+// its only production caller.
+export async function captureFor(page: any, expression: string, metrics?: LiveMetrics): Promise<TargetEvidence | null> {
   // The graph the page parked when the person pressed on this element, BEFORE the
   // interaction took effect. Preferred whenever one matches, because reading the page
   // now reads a page that has already navigated, closed a modal or re-rendered a row.
@@ -537,15 +538,56 @@ async function captureFor(page: any, expression: string, metrics?: LiveMetrics):
  * Never throws: a lost race, a destroyed context and a missing hook are all recorded
  * on the entry as "not measured", which is the state the resolver already handles.
  */
-async function measureAtPress(frame: any, entry: any, metrics: LiveMetrics): Promise<void> {
+// Exported so the press-time path can be driven against a real page without a person
+// recording, the same reason `splitCandidates` is exported. `startLiveRecording` remains
+// its only production caller.
+export async function measureAtPress(frame: any, entry: any, metrics: LiveMetrics): Promise<void> {
   if (!frame || !entry?.graph || typeof entry.targetIndex !== 'number')
     return;
-  const candidates = candidateSelectorsFor({ ...entry.graph }, looksGenerated);
+
+  // THE BROWSER'S NAME, BEFORE ANY CANDIDATE IS DERIVED FROM IT.
+  //
+  // The capture cannot compute an accessible name - no DOM API exposes one - so it
+  // records `aria-label`/`title` and stamps them unverified. This is the only moment the
+  // real answer can be had: the node is parked, its document still stands, and CDP can
+  // be asked about that exact node. Applied here rather than at claim time because
+  // `candidateSelectorsFor` runs on the next line and a name that arrives afterwards
+  // would describe candidates nobody generated.
+  //
+  // Failure is silent and total: no session, no object id, no name, a navigation
+  // mid-call - the approximation stays exactly as the page recorded it, still marked
+  // unverified, and the recording continues.
+  const computed = await browserAccessibleName(frame, entry);
+  if (computed && entry.graph?.target) {
+    entry.graph.target.accessibleName = computed.name;
+    entry.graph.target.accessibleNameSource = 'browser-computed';
+    entry.graph.target.accessibleNameVerified = true;
+  }
+
+  const generated = candidateSelectorsFor({ ...entry.graph }, looksGenerated);
+  // TWO MEASUREMENT PATHS, AND THE SPLIT IS NOT A PREFERENCE.
+  //
+  // `__auraMeasure` evaluates a CSS selector with `querySelectorAll`, which cannot
+  // express `getByRole` or `getByLabel` at all - no accessible-name computation exists
+  // in that string, and putting one there would be a second locator engine. So the
+  // semantic families are rebuilt with `buildLocator` on this side instead and
+  // identity-checked against the same parked node, in the same document, at the same
+  // moment. Both paths produce `measuredAt: 'press'` because both are the press.
+  const candidates = generated.filter(candidate => candidate.measuredBy !== 'expression');
+  const expressions = generated.filter(candidate => candidate.measuredBy === 'expression');
   // The element's own text, through the same filter a candidate's text passes: a
   // secret-shaped value never leaves the page, here or anywhere else.
   const ownText = usableCandidateText(entry.graph?.target?.text, looksGenerated);
+  const byExpression = await measureExpressionCandidates(frame, entry, expressions);
+  // THE CAPABILITY QUESTION, asked at the same moment and kept apart from the answer to
+  // the candidate one. It is parked on the entry rather than merged into
+  // `pressMeasurement.measured`, because everything in that list is a candidate for
+  // emission and none of these ever is.
+  entry.capabilityMeasurement = await measureDeclaredCapabilities(frame, entry);
   if (!candidates.length && !ownText) {
-    entry.pressMeasurement = { measured: [], sameDocument: true, attempted: 0 };
+    entry.pressMeasurement = {
+      measured: byExpression, sameDocument: true, attempted: expressions.length,
+    };
     return;
   }
   try {
@@ -564,7 +606,13 @@ async function measureAtPress(frame: any, entry: any, metrics: LiveMetrics): Pro
       })),
     });
     if (!answer) {
-      entry.pressMeasurement = { failed: 'the page carried no measurement hook', attempted: candidates.length };
+      // The CSS half could not be taken. Anything already measured by expression is
+      // still a real measurement and is kept - a failure of one path is not a verdict
+      // about the other.
+      entry.pressMeasurement = {
+        measured: byExpression, failed: 'the page carried no measurement hook',
+        attempted: candidates.length + expressions.length,
+      };
       metrics.pressMeasureFailures++;
       return;
     }
@@ -572,7 +620,7 @@ async function measureAtPress(frame: any, entry: any, metrics: LiveMetrics): Pro
     // expression each one belongs to is the one at the same index. The strategy is
     // carried too and compared, so a future change to either side fails loudly here
     // rather than quietly attributing a count to the wrong selector.
-    const measured: CandidateMeasurement[] = [];
+    const measured: CandidateMeasurement[] = [...byExpression];
     (answer.results ?? []).forEach((result: any, index: number) => {
       const candidate = candidates[index];
       if (!candidate || (result.strategy && result.strategy !== candidate.strategy))
@@ -599,7 +647,7 @@ async function measureAtPress(frame: any, entry: any, metrics: LiveMetrics): Pro
       measured.push(entryMeasurement);
     });
     entry.pressMeasurement = {
-      measured, attempted: candidates.length,
+      measured, attempted: candidates.length + expressions.length,
       sameDocument: answer.sameDocument === true,
       targetPresent: answer.targetPresent === true,
       ...(ownText && answer.ownText
@@ -617,9 +665,516 @@ async function measureAtPress(frame: any, entry: any, metrics: LiveMetrics): Pro
   } catch (error) {
     // The document went while we were asking - a click that navigated fast. Recorded,
     // not raised: this is the normal cost of measuring a page somebody else is driving.
-    entry.pressMeasurement = { failed: String(error).slice(0, 120), attempted: candidates.length };
+    entry.pressMeasurement = {
+      measured: byExpression, failed: String(error).slice(0, 120),
+      attempted: candidates.length + expressions.length,
+    };
     metrics.pressMeasureFailures++;
   }
+}
+
+/* ------------------------------------------------- the browser's accessible name */
+
+/**
+ * One CDP session per page, or a remembered null. A CAPABILITY, never a requirement.
+ *
+ * `newCDPSession` exists on Chromium only, so Firefox and WebKit resolve to null once
+ * and are never asked again. A recording is NEVER refused for want of it: the capture's
+ * own `aria-label`/`title` approximation stands, marked unverified, and every candidate
+ * built from it is measured and refused exactly as before. Nothing about the gate moves.
+ */
+const cdpSessions = new WeakMap<object, Promise<any | null>>();
+
+function accessibilitySession(page: any): Promise<any | null> {
+  const existing = cdpSessions.get(page);
+  if (existing)
+    return existing;
+  const opened = (async () => {
+    try {
+      const session = await page.context().newCDPSession(page);
+      await session.send('Accessibility.enable');
+      return session;
+    } catch {
+      // Not Chromium, or the session could not be opened. Remembered as "no", so the
+      // cost of asking is paid once per page rather than once per press.
+      return null;
+    }
+  })();
+  cdpSessions.set(page, opened);
+  return opened;
+}
+
+/**
+ * The BROWSER'S computed accessible name for one parked node - or null.
+ *
+ * Reached through the registry rather than through a Playwright handle, because
+ * `window.__auraTargets[slot]` is already the expression both sides agree names this
+ * element, and `Runtime.evaluate` hands back the object id
+ * `Accessibility.getPartialAXTree` needs. Converting an ElementHandle would need an
+ * internal Playwright id that is not part of its API.
+ *
+ * THE DOCUMENT GUARD IS FREE HERE. `__auraTargets` belongs to the document that parked
+ * the node; after a navigation the array is fresh and the slot is empty, so a name can
+ * never be attributed to an element from a page the person did not act on.
+ *
+ * `fetchRelatives: false` keeps this to the node itself - no subtree, no ancestors, no
+ * page-level accessibility snapshot. Measured at 66 bytes for the name and role.
+ */
+async function browserAccessibleName(
+  frame: any,
+  entry: any,
+): Promise<{ name: string; role?: string } | null> {
+  const page = typeof frame?.page === 'function' ? frame.page() : frame;
+  if (!page || typeof entry?.targetIndex !== 'number')
+    return null;
+  const session = await accessibilitySession(page);
+  if (!session)
+    return null;
+  let objectId: string | undefined;
+  try {
+    const evaluated: any = await session.send('Runtime.evaluate', {
+      expression: `window.__auraTargets && window.__auraTargets[${Number(entry.targetIndex)}]`,
+      returnByValue: false,
+    });
+    objectId = evaluated?.result?.objectId;
+    if (!objectId)
+      return null;
+    const tree: any = await session.send('Accessibility.getPartialAXTree', {
+      objectId, fetchRelatives: false,
+    });
+    const node = (tree?.nodes ?? [])[0];
+    const name = typeof node?.name?.value === 'string' ? node.name.value.trim() : '';
+    if (!name)
+      return null;
+    const role = typeof node?.role?.value === 'string' ? node.role.value : undefined;
+    return { name: name.slice(0, 120), role };
+  } catch {
+    // A navigation mid-call, a detached node, a domain that refused. Not a verdict.
+    return null;
+  } finally {
+    if (objectId)
+      await session.send('Runtime.releaseObject', { objectId }).catch(() => {});
+  }
+}
+
+/**
+ * Is the slot still holding the very element the press parked, in the press's document?
+ *
+ * THE GUARD PHASE 6 PROVED IS NOT OPTIONAL. Two reads of a stale slot agree with each
+ * other and mean nothing: the experiment measured Flipkart's Mobiles link as `stable`
+ * carrying the login modal's name, because the newest slot still held an earlier element.
+ * Equal strings are not evidence of stability - equal strings ABOUT THE SAME ELEMENT are.
+ *
+ * What makes the slot a safe key at all is that `allocate` never reuses an index: it
+ * increments a counter and NULLS the slot MAX presses ago, so `targets[slot]` holds either
+ * the original node or nothing. That is why this can be answered without keeping a
+ * reference to the node across the two moments - a reference nothing here could hold.
+ *
+ * Three things are checked and all three must hold: the document is the one that parked
+ * it, the slot is still populated, and the node is still attached. Anything else is a
+ * refusal, which the caller turns into `unknown`.
+ */
+const SLOT_STILL_HOLDS_TARGET = new Function('payload', `
+  if (typeof window.__auraDocument !== 'string') return false;
+  if (payload.documentId && window.__auraDocument !== payload.documentId) return false;
+  var targets = window.__auraTargets;
+  if (!Array.isArray(targets)) return false;
+  var node = targets[payload.index];
+  if (!node || node.nodeType !== 1) return false;
+  return node.isConnected === true;
+`) as any;
+
+/**
+ * The settled-point half of the accessible-name stability measurement.
+ *
+ * COLLECTION ONLY - the result is written to evidence and read by nothing that decides a
+ * locator. Called at the point the pipeline already treats as settled: when Codegen has
+ * written its line and `takePreAction` is claiming the entry. No sleep is introduced and
+ * no new lifecycle point is invented; if that moment cannot answer, the answer is
+ * `unknown`.
+ *
+ * Reuses the per-page CDP session opened at the press - one session per page, never one
+ * per measurement.
+ */
+async function measureNameStability(
+  page: any,
+  claimed: any,
+  sameDocument: boolean,
+): Promise<'stable' | 'changed' | 'unknown'> {
+  const target = claimed?.graph?.target;
+  const pressName: string | undefined = target?.accessibleName;
+  const pressVerified: boolean = target?.accessibleNameVerified === true;
+
+  // Everything the classifier needs is gathered first, and every failure to gather one
+  // simply leaves it in the shape the classifier already refuses.
+  let slotHoldsTarget = false;
+  let settledName: string | null = null;
+  if (pressVerified && pressName && sameDocument && typeof claimed.targetIndex === 'number') {
+    try {
+      slotHoldsTarget = await page.evaluate(SLOT_STILL_HOLDS_TARGET, {
+        index: claimed.targetIndex,
+        documentId: claimed.documentId ?? null,
+      }) === true;
+      if (slotHoldsTarget)
+        settledName = (await browserAccessibleName(page, claimed))?.name ?? null;
+    } catch {
+      // A navigation mid-measurement, a destroyed context, a domain that refused. Not a
+      // verdict about the name - the classifier reads this as unproven.
+      slotHoldsTarget = false;
+      settledName = null;
+    }
+  }
+  return classifyNameStability({
+    pressName, pressVerified, sameDocument, slotHoldsTarget, settledName,
+  });
+}
+
+/**
+ * Compare the two names, or refuse to. THE WHOLE DECISION, in one pure function.
+ *
+ * Separated from the measurement so every refusal can be tested without a browser - the
+ * refusals are the part that matters, and the part that was got wrong in Phase 6.
+ *
+ * FAIL CLOSED, IN ORDER. Each guard below answers a question that must be YES before two
+ * strings mean anything:
+ *
+ *   - was the press-time name the BROWSER'S? An in-page approximation reads one attribute;
+ *     two equal reads of it say the attribute held still, which is not the question.
+ *   - is this the same DOCUMENT? Two names from two pages are never compared.
+ *   - does the slot still hold that element, attached? Two reads of a stale slot agree
+ *     with each other and mean nothing - Phase 6 measured exactly that and got a
+ *     confident, false `stable`.
+ *   - did the settled read produce a name at all?
+ *
+ * Only then does equality decide, and `changed` remains a statement about the NAME rather
+ * than a verdict about any locator built from it.
+ */
+export function classifyNameStability(input: {
+  pressName?: string;
+  pressVerified?: boolean;
+  sameDocument: boolean;
+  slotHoldsTarget: boolean;
+  settledName: string | null;
+}): 'stable' | 'changed' | 'unknown' {
+  if (input.pressVerified !== true || !input.pressName)
+    return 'unknown';
+  if (!input.sameDocument)
+    return 'unknown';
+  if (!input.slotHoldsTarget)
+    return 'unknown';
+  if (input.settledName === null || input.settledName === undefined)
+    return 'unknown';
+  return input.settledName === input.pressName ? 'stable' : 'changed';
+}
+
+/**
+ * Does this candidate still identify the SAME element after the screen changed state?
+ *
+ * A DIFFERENT QUESTION FROM `classifyNameStability`, and the two are deliberately not
+ * derived from one another. That one asks whether the browser-computed accessible NAME
+ * held still; this asks whether a specific LOCATOR still names the element that was
+ * pressed. Measured on Bugasura, they come apart in both directions: the email field's
+ * name changes when its validation message appears, and `getByRole('textbox', { name:
+ * 'Email' })` still matches exactly that field - a changed name with a durable locator;
+ * and a name can hold perfectly still while a second element appears whose name contains
+ * it, which makes the same locator ambiguous without the name moving at all.
+ *
+ * PURE, so every refusal is testable without a browser - the refusals are the whole of
+ * it. FAIL CLOSED, in this order, because each guard answers a question that must be YES
+ * before a count means anything:
+ *
+ *   - was the candidate PROVEN at the press? Durability is a statement about a candidate
+ *     that identified the target; a candidate that never did cannot survive anything.
+ *   - is this the same DOCUMENT? A count taken on another page is not about this element.
+ *   - does the slot still hold that element, attached? A released or detached target
+ *     makes the identity answer meaningless rather than false.
+ *   - was a count taken at all? `null` is "not measured" everywhere here and is never
+ *     read as zero.
+ *
+ * Then, and only then: 0 is `unresolved`, more than one is `ambiguous` (whether or not
+ * the target is among them - a locator matching several is not a locator), exactly one
+ * WITH identity is `durable`, exactly one WITHOUT it is `wrong-target`, and exactly one
+ * whose identity was never asked is `unknown`. One element is never durable on its own.
+ *
+ * COLLECTION ONLY. Nothing in the recording path calls this, no evidence field carries
+ * its verdict, and no locator is chosen or rejected by it.
+ */
+export function classifyDurability(input: {
+  pressProven: boolean;
+  sameDocument: boolean;
+  slotHoldsTarget: boolean;
+  matchCount: number | null | undefined;
+  identityMatched?: boolean | null;
+}): 'durable' | 'ambiguous' | 'wrong-target' | 'unresolved' | 'unknown' {
+  if (input.pressProven !== true)
+    return 'unknown';
+  if (input.sameDocument !== true)
+    return 'unknown';
+  if (input.slotHoldsTarget !== true)
+    return 'unknown';
+  if (input.matchCount === null || input.matchCount === undefined)
+    return 'unknown';
+  if (input.matchCount === 0)
+    return 'unresolved';
+  if (input.matchCount > 1)
+    return 'ambiguous';
+  if (input.identityMatched === true)
+    return 'durable';
+  if (input.identityMatched === false)
+    return 'wrong-target';
+  return 'unknown';
+}
+
+/**
+ * The parked node for one slot, in the document that parked it - or null.
+ *
+ * Compiled with `new Function` for the same reason every other page-side helper here
+ * is: tsx rewrites a literal to add a `__name` helper the page does not have.
+ *
+ * THE DOCUMENT CHECK IS INSIDE, not outside. A node read from a document that has since
+ * been replaced is a node from a different page, and comparing a candidate against it
+ * would produce an identity answer about something nobody clicked. Refusing here means
+ * the caller cannot forget.
+ */
+const READ_PARKED_TARGET = new Function('payload', `
+  if (typeof window.__auraDocument !== 'string') return null;
+  if (payload.documentId && window.__auraDocument !== payload.documentId) return null;
+  var targets = window.__auraTargets;
+  if (!Array.isArray(targets)) return null;
+  var node = targets[payload.index];
+  return node && node.nodeType === 1 ? node : null;
+`) as any;
+
+/** Node identity, asked of the page. Only the page can compare two nodes. */
+const SAME_NODE_IN_PAGE = new Function('pair', 'return pair[0] === pair[1];') as any;
+
+/**
+ * How many matches are worth walking to find WHICH one was pressed.
+ *
+ * A unique candidate costs one comparison; an ambiguous one costs its whole match list,
+ * and a bare tag on a large page matches hundreds. The page-side measurement is a single
+ * batched evaluate and can afford `indexOf`; this side pays a round trip per handle, so
+ * the position is measured for a bounded list and honestly left unmeasured above it -
+ * never guessed, and never a reason to skip the count itself.
+ */
+const EXPRESSION_POSITION_LIMIT = 30;
+
+/**
+ * How many declared capabilities one interaction may be measured against.
+ *
+ * A bound on the person's own click, not a correctness knob. The measurement is fire and
+ * forget and races the navigation a click may start; asking about two hundred locators
+ * would lose that race and produce nothing at all. What is beyond the bound is simply not
+ * measured, and an unmeasured capability is NOT PROVEN - which is the answer the analyser
+ * already gives for every capability nobody asked about.
+ */
+const MAX_CAPABILITY_MEASUREMENTS = 40;
+
+/**
+ * The capabilities of the ACTIVE application whose declared locator can be resolved.
+ *
+ * Read from knowledge, which is scoped: a capability belonging to another application is
+ * not in this list and can never be measured, let alone matched. Read once per recording
+ * process - knowledge does not change while a person is recording - and re-read if the
+ * scope is reset, because the fixtures do exactly that.
+ *
+ * A DECLARED LOCATOR IS PROSE UNTIL IT IS AN EXPRESSION. Most entries describe their
+ * element in words ("an authored id; its classes are state"), and words cannot be
+ * resolved against anything. Only an expression is taken, and only one with no parameter
+ * standing where a value belongs: a template is instantiated by the caller, so it is not
+ * a locator until somebody supplies the argument. Both exclusions fail closed - the
+ * capability is simply not measured, and therefore not proven.
+ */
+let capabilityCache: { key: string; entries: SelectorCandidate[];
+  owners: Array<{ owner: string; method: string }> } | null = null;
+
+export function resetCapabilityCache(): void {
+  capabilityCache = null;
+}
+
+function declaredCapabilities(): { entries: SelectorCandidate[];
+    owners: Array<{ owner: string; method: string }> } {
+  let key = '';
+  try {
+    key = activeScopePath('knowledgePageDir');
+  } catch {
+    // No resolvable scope means no application, and an application is what owns a
+    // capability. Nothing is measured rather than something being guessed.
+    return { entries: [], owners: [] };
+  }
+  if (capabilityCache?.key === key)
+    return capabilityCache;
+  const entries: SelectorCandidate[] = [];
+  const owners: Array<{ owner: string; method: string }> = [];
+  try {
+    for (const page of readAllPageKnowledge()) {
+      for (const element of page.elements) {
+        if (entries.length >= MAX_CAPABILITY_MEASUREMENTS)
+          break;
+        const owner = element.page_object;
+        const method = element.page_object_method;
+        const declared = (element.locator_strategy ?? '').trim();
+        if (!owner || !method || !/^page\s*\./.test(declared))
+          continue;
+        // A parameter standing where a quoted value belongs. `buildLocator` would refuse
+        // it anyway - this only avoids spending a measurement to be told so.
+        if (/(hasText|hasNotText)\s*:\s*[^'"\s)]/.test(declared) || /getBy\w+\(\s*[^'"]/.test(declared))
+          continue;
+        entries.push({ strategy: 'capability', selector: '', expression: declared,
+          measuredBy: 'expression' });
+        owners.push({ owner, method });
+      }
+    }
+  } catch {
+    // Unreadable knowledge is not an error here: it means nothing can be proven, and
+    // nothing is.
+    return { entries: [], owners: [] };
+  }
+  capabilityCache = { key, entries, owners };
+  return capabilityCache;
+}
+
+/**
+ * DOES ANY ESTABLISHED CAPABILITY'S DECLARED LOCATOR RESOLVE TO THIS VERY ELEMENT?
+ *
+ * The measurement Phase 13.5 proved the framework did not have. Before it, the analyser
+ * compared a trailing selector TOKEN between two expressions and called agreement
+ * identity - which is not identity in either direction, and was wrong 8 times in 9 on the
+ * corpus. This asks the browser instead, at the interaction, in the interaction's own
+ * document, and takes its answer.
+ *
+ * Every result carries the capability it was taken for, so an answer can be attributed at
+ * all; nothing else about the measurement differs from any other expression measurement,
+ * including the bar it must clear to prove anything.
+ */
+export async function measureDeclaredCapabilities(
+  frame: any,
+  entry: any,
+  measuredAt: 'press' | 'pick' = 'press',
+): Promise<CandidateMeasurement[]> {
+  const declared = declaredCapabilities();
+  if (!declared.entries.length)
+    return [];
+  const measured = await measureExpressionCandidates(frame, entry, declared.entries, measuredAt);
+  // Results come back one per input, in order, exactly as the candidate path relies on.
+  // A short list would misattribute every answer after the gap, so it is refused whole.
+  if (measured.length !== declared.entries.length)
+    return [];
+  return measured.map((candidate, index) => ({ ...candidate, capability: declared.owners[index] }));
+}
+
+/**
+ * Measure Playwright-expressed candidates at the press, against the pressed node.
+ *
+ * The same bar as the in-page path, reached differently: exactly one element, in the
+ * press's own document, and that element is the one acted on. `buildLocator` rebuilds
+ * the expression faithfully or refuses it - a refusal is `matchCount: null`, which means
+ * "not measured" everywhere downstream and is never read as ambiguity.
+ *
+ * Never throws. A navigation mid-measurement, a destroyed context and a released slot
+ * all end as "not measured", which is a state the resolver already handles.
+ */
+export async function measureExpressionCandidates(
+  frame: any,
+  entry: any,
+  candidates: SelectorCandidate[],
+  /**
+   * WHEN this measurement was taken. `press` for an action, `pick` for an assertion -
+   * the same distinction the in-page path already states, and for the same reason: an
+   * assertion is a claim about the page as it stood when the person made it, so the
+   * pick is the right moment rather than a weaker one.
+   */
+  measuredAt: 'press' | 'pick' = 'press',
+): Promise<CandidateMeasurement[]> {
+  if (!frame || !candidates.length || typeof entry?.targetIndex !== 'number')
+    return [];
+  let target: any = null;
+  try {
+    const handle = await frame.evaluateHandle(READ_PARKED_TARGET, {
+      index: entry.targetIndex,
+      documentId: entry.documentId ?? null,
+    });
+    target = handle?.asElement?.() ?? null;
+  } catch {
+    return [];
+  }
+  // No parked node means the document moved on or the slot was released. Measuring the
+  // count alone would produce a candidate with no identity answer at all, which
+  // `splitCandidates` would then judge on cardinality - the pre-P0.7 bar this whole
+  // mechanism exists to replace. Nothing is better than that.
+  if (!target)
+    return [];
+
+  const measured: CandidateMeasurement[] = [];
+  try {
+    for (const candidate of candidates) {
+      const locator = buildLocator(frame, candidate.expression);
+      if (!locator) {
+        measured.push({
+          strategy: candidate.strategy, expression: candidate.expression, matchCount: null,
+          sameDocument: true, measuredAt,
+          measurementError: 'the expression could not be rebuilt faithfully',
+        });
+        continue;
+      }
+      let count: number | null = null;
+      try {
+        count = await locator.count();
+      } catch {
+        count = null;
+      }
+      if (count === null) {
+        measured.push({
+          strategy: candidate.strategy, expression: candidate.expression, matchCount: null,
+          sameDocument: true, measuredAt,
+          measurementError: 'the expression could not be counted',
+        });
+        continue;
+      }
+      let identityMatched = false;
+      let position: number | null = null;
+      if (count > 0 && count <= EXPRESSION_POSITION_LIMIT) {
+        try {
+          const handles = await locator.elementHandles();
+          for (let index = 0; index < handles.length; index++) {
+            if (await frame.evaluate(SAME_NODE_IN_PAGE, [handles[index], target])) {
+              // IDENTITY, not similarity - and only ever claimed for a unique match, so
+              // this side and the in-page side answer the same question the same way.
+              if (count === 1)
+                identityMatched = true;
+              else
+                position = index;
+              break;
+            }
+          }
+          for (const handle of handles)
+            await handle.dispose().catch(() => {});
+        } catch {
+          // The page moved while we were asking. The count stands; identity does not.
+        }
+      }
+      measured.push({
+        strategy: candidate.strategy,
+        expression: candidate.expression,
+        matchCount: count,
+        // Guaranteed by READ_PARKED_TARGET, which refuses to hand back a node from any
+        // document but the one that parked it. A node in hand IS the same document.
+        sameDocument: true,
+        measuredAt,
+        identityMatched,
+        ...(position === null ? {} : { positionWithinCandidate: position }),
+      });
+    }
+  } finally {
+    await target.dispose?.().catch?.(() => {});
+  }
+  return measured;
+}
+
+/** The capability measurements a claimed entry carries, if any. */
+function capabilityMeasurementsOf(claimed: any): CandidateMeasurement[] {
+  const measured = claimed?.capabilityMeasurement;
+  return Array.isArray(measured) ? measured as CandidateMeasurement[] : [];
 }
 
 /** The press-time measurements a claimed entry carries, if any. */
@@ -706,6 +1261,28 @@ export function splitCandidates(all: CandidateMeasurement[], metrics?: LiveMetri
  * A claimed entry is removed from the queue, so the same graph cannot be handed to
  * two different locators.
  */
+/**
+ * Everything the `__auraPark` binding does, in one place.
+ *
+ * Extracted verbatim from the binding so the parked-entry mirror and the press
+ * measurement stay a single behaviour rather than two that a caller has to remember to
+ * perform together - the claim path reads the MIRROR, and an entry measured without being
+ * mirrored is an entry `takePreAction` will re-read from the page, losing the
+ * browser-computed name that `measureAtPress` wrote onto this copy.
+ */
+export function recordParkedEntry(frame: any, entry: any, metrics: LiveMetrics): void {
+  if (parkedEntries.length >= MAX_PARKED)
+    parkedEntries.shift();
+  parkedEntries.push(entry);
+  metrics.parkedCount++;
+  // Fire and forget, deliberately. The page called this from a passive pointerdown
+  // listener and does not await it; awaiting here would put this process in the path of
+  // the person's own click. The measurement races the navigation that a click may start,
+  // and losing that race costs nothing: the entry simply carries no press measurement and
+  // the resolver behaves as it did before P0.7.
+  void measureAtPress(frame, entry, metrics);
+}
+
 /** Entries pushed out of the page by `window.__auraPark`, newest last. Bounded. */
 const parkedEntries: any[] = [];
 const MAX_PARKED = 120;
@@ -762,27 +1339,16 @@ const OBSERVE_IN_PAGE = new Function('payload',
  * Playwright's recorder writes `getByRole('listitem')`, but the DOM stores no `role`
  * attribute on an `<li>` - the role is implicit in the tag. The capture records
  * attributes, so the literal was unanswerable and every `getByRole` chain failed to
- * claim. Only the mappings that are unambiguous from tag plus type are listed; anything
- * else returns null and the literal simply goes unsatisfied. A guessed role would pair a
- * parked element with a locator that describes a different one.
+ * claim.
+ *
+ * THE TABLE ITSELF NOW LIVES IN `dom-evidence.ts` and is re-exported here, unchanged,
+ * because generation needs the identical mapping: claiming reads it to decide whether a
+ * parked element satisfies a `getByRole` Codegen wrote, and `semanticCandidatesFor`
+ * reads it to propose a `getByRole` of its own. Two copies would drift, and a role that
+ * means one thing when claiming and another when generating pairs a graph with a
+ * locator describing a different element.
  */
-export function implicitRole(node: { tag?: string; type?: string } | undefined): string | null {
-  const tag = (node?.tag ?? '').toLowerCase();
-  const type = (node?.type ?? '').toLowerCase();
-  if (tag === 'li') return 'listitem';
-  if (tag === 'button') return 'button';
-  if (tag === 'a') return 'link';                       // only emitted for a linked anchor
-  if (tag === 'textarea') return 'textbox';
-  if (tag === 'select') return 'combobox';
-  if (/^h[1-6]$/.test(tag)) return 'heading';
-  if (tag === 'input') {
-    if (type === 'checkbox') return 'checkbox';
-    if (type === 'radio') return 'radio';
-    if (['', 'text', 'email', 'tel', 'url', 'password'].includes(type)) return 'textbox';
-    return null;                                        // submit, file, range, date…
-  }
-  return null;
-}
+export { implicitRole } from '../autocode/dom-evidence';
 
 /** Everything a node can be named by, lowercased. */
 function namesOf(node: any): string[] {
@@ -1090,8 +1656,44 @@ async function takePreAction(page: any, expression: string, metrics?: LiveMetric
   // person acted on, which is the whole error this phase exists to remove.
   const claimTime = sameDocument ? await measureCandidates(page, raw, expression) : [];
   const press = pressMeasurements(claimed);
+
+  // THE RECORDED LOCATOR IS A CANDIDATE LIKE ANY OTHER, and until now it was the only
+  // measured expression in the file that never had its identity asked.
+  //
+  // `matchCount` above counts it, and a count is not an identity: it says the expression
+  // names one element, never that it names the element the person acted on. So across
+  // the whole recorded corpus - 1058 targets - `identityMatched` was absent on every
+  // single recorded locator, and 137 targets that have no proven candidate at all carry
+  // a recorded locator already counted at exactly one element in the press's own
+  // document. Codegen's `getByRole('link', { name: 'Mobiles' })` is the case: measured
+  // at one element, in the right document, and refused for want of an answer nobody
+  // asked for.
+  //
+  // Measured HERE rather than in `measureAtPress` because this is the first moment the
+  // expression exists - Codegen writes its line after the action. Everything else about
+  // it is the press: the same document (guarded by `sameDocument`), the same parked
+  // node, the same `===`. Nothing is asked of Codegen; identity comes from the graph the
+  // page parked when the person pressed.
+  const recorded = sameDocument
+    ? await measureExpressionCandidates(page, claimed, [{
+      strategy: 'recorded-locator', selector: '', expression, measuredBy: 'expression',
+    }])
+    : [];
+
+  // THE SETTLED-POINT MEASUREMENT. This is the moment the pipeline already treats as
+  // settled - Codegen has written its line, the entry is being claimed - so no new
+  // lifecycle point and no delay is introduced. Written to the graph before the evidence
+  // is built, and read by nothing that selects a locator.
+  const stability = await measureNameStability(page, claimed, sameDocument);
+  if (raw.target)
+    raw.target.accessibleNameStable = stability;
+
   const seen = new Set(press.map(candidate => candidate.expression));
-  const split = splitCandidates([...press, ...claimTime.filter(c => !seen.has(c.expression))], metrics);
+  const withRecorded = [...press, ...recorded.filter(c => !seen.has(c.expression))];
+  for (const candidate of recorded)
+    seen.add(candidate.expression);
+  const split = splitCandidates(
+      [...withRecorded, ...claimTime.filter(c => !seen.has(c.expression))], metrics);
   return {
     locator: expression,
     target: raw.target,
@@ -1112,6 +1714,11 @@ async function takePreAction(page: any, expression: string, metrics?: LiveMetric
     // Measured in the document of the press, or not measured at all.
     matchCount,
     matchCountDocument,
+    // NEVER THROUGH `splitCandidates`. That function decides which candidates may be
+    // emitted; these are not candidates and are not emitted, so they travel whole and
+    // are judged only by the reader that asks about identity.
+    ...(capabilityMeasurementsOf(claimed).length
+      ? { capabilityMeasurements: capabilityMeasurementsOf(claimed) } : {}),
     ...(pressDocumentId ? { documentId: pressDocumentId } : {}),
     // The NAME of the registration this graph came from, carried straight through.
     // It is what lets an assertion recorded later find THIS row without sharing a
@@ -1120,6 +1727,9 @@ async function takePreAction(page: any, expression: string, metrics?: LiveMetric
     ...(typeof claimed.elementRef === 'string' && claimed.elementRef
       ? { elementRef: claimed.elementRef }
       : {}),
+    // The screen the press happened on, as the document stated it at that moment.
+    // Carried straight through: it is read in the page and never derived here.
+    ...(typeof claimed.route === 'string' && claimed.route ? { route: claimed.route } : {}),
     ...(claimed.pressMeasurement?.ownText && claimed.pressMeasurement.sameDocument
       ? { pressTimeText: claimed.pressMeasurement.ownText }
       : {}),
@@ -1413,6 +2023,16 @@ async function measureCandidates(
   // the PARENT's classes. The recorded locator goes with it, because the text Codegen
   // used to find the element is a better discriminator than anything derived.
   for (const candidate of candidateSelectorsFor({ ...raw, locator: locatorExpression }, looksGenerated)) {
+    // A SEMANTIC CANDIDATE IS PRESS-TIME ONLY, and that is a refusal rather than an
+    // omission. This path runs after the action against whatever page is showing, with
+    // no parked node to compare against, so it can produce a COUNT and nothing else -
+    // and a claim-time candidate is promoted on its count alone (the pre-P0.7 bar kept
+    // for recordings that predate identity). Letting `getByRole(...)` in here would
+    // therefore promote a semantic locator on cardinality, which is exactly the
+    // unverified promotion the whole mechanism exists to prevent. It is measured at the
+    // press, where identity can be asked, or not at all.
+    if (candidate.measuredBy === 'expression')
+      continue;
     try {
       let locator = page.locator(candidate.selector);
       // Wiring only: WHICH shape a candidate takes was decided in
@@ -1573,8 +2193,12 @@ export function buildLocator(page: any, expression: string): any | null {
   return rebuilt === methods.length && rebuilt > 0 ? current : null;
 }
 
-/** Where a live recording's temporary script lives, for diagnostics. */
-export const LIVE_RECORDING_DIR = path.join(ROOT, 'ai', 'dashboard', 'recordings');
+// REMOVED: `LIVE_RECORDING_DIR`, a third hardcoded spelling of the recordings
+// directory. It had no importer and no use in this file - the live recorder writes
+// nothing there, which its own doc comment ("where a live recording's temporary script
+// lives") got wrong - so it was a location declaration that could drift from the two
+// real ones without anything failing. `recorder.ts recordingsDir()` is the only
+// declaration now; anything here that needs the directory takes it from there.
 
 
 /* ------------------------------------------------- the assertion picker */
@@ -1727,7 +2351,7 @@ export function refusesAttribute(name: string): boolean {
  * was made rather than at the end.
  */
 export function recordPickedAssertion(
-  payload: PickerPayload & { capabilityId: string; value?: string | null },
+  payload: PickerPayload & { capabilityId: string; value?: string | null; context?: PickerContext },
   into: RecordedAssertion[],
   outputFile: string,
   metrics?: LiveMetrics,
@@ -2014,8 +2638,31 @@ async function captureAssertionTarget(
     return null;
 
   // The same derivation the press path uses. Two copies of "which shapes are worth
-  // measuring" is how the two would drift, so there is one.
-  const candidates = candidateSelectorsFor({ ...raw }, looksGenerated);
+  // measuring" is how the two would drift, so there is one - including the same split
+  // into what `querySelectorAll` can evaluate and what only Playwright can. A pick has
+  // a registered node, so a semantic candidate CAN be identity-checked here, and it is.
+  // The same capability at the other capture site, for the same reason: a candidate is
+  // about to be derived from the name, so the browser's answer has to arrive first.
+  const computedName = await browserAccessibleName(frame, { targetIndex: subject.slot });
+  if (computedName && raw.target) {
+    raw.target.accessibleName = computedName.name;
+    raw.target.accessibleNameSource = 'browser-computed';
+    raw.target.accessibleNameVerified = true;
+  }
+
+  const derived = candidateSelectorsFor({ ...raw }, looksGenerated);
+  const candidates = derived.filter(candidate => candidate.measuredBy !== 'expression');
+  const byExpression = await measureExpressionCandidates(
+      frame,
+      { targetIndex: subject.slot, documentId: observed.documentId ?? null },
+      derived.filter(candidate => candidate.measuredBy === 'expression'),
+      'pick',
+  );
+  // THE SAME QUESTION AT A PICK. An assertion is a claim about the page as it stood
+  // when the person made it, and "which capability is this element?" is as answerable
+  // then as at a press - by the same measurement, at the pick's own moment.
+  const capabilityMeasurements = await measureDeclaredCapabilities(
+      frame, { targetIndex: subject.slot, documentId: observed.documentId ?? null }, 'pick');
   const ownText = usableCandidateText(raw.target?.text, looksGenerated);
   let answer: any = null;
   if (candidates.length || ownText) {
@@ -2036,7 +2683,7 @@ async function captureAssertionTarget(
     }
   }
 
-  const measured: CandidateMeasurement[] = [];
+  const measured: CandidateMeasurement[] = [...byExpression];
   (answer?.results ?? []).forEach((result: any, index: number) => {
     const candidate = candidates[index];
     if (!candidate || (result.strategy && result.strategy !== candidate.strategy))
@@ -2071,6 +2718,9 @@ async function captureAssertionTarget(
     ...(typeof observed.elementRef === 'string' && observed.elementRef
       ? { elementRef: observed.elementRef }
       : {}),
+    // The screen the person was looking at when they made the claim - the same fact,
+    // read the same way, at the moment that is right for an assertion.
+    ...(typeof observed.route === 'string' && observed.route ? { route: observed.route } : {}),
     captureTiming: 'assertion-pick',
     target: raw.target,
     ...(raw.parent ? { parent: raw.parent } : {}),
@@ -2104,6 +2754,7 @@ async function captureAssertionTarget(
     attached: raw.attached,
     viewport: raw.viewport,
     ...(identifier ? { identifier: { raw: identifier.value, dynamic: identifier.dynamic, normalised: identifier.normalised } } : {}),
+    ...(capabilityMeasurements.length ? { capabilityMeasurements } : {}),
     ...splitCandidates(measured, metrics),
   };
 }

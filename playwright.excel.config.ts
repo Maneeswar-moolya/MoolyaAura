@@ -4,7 +4,7 @@
  * Deliberately separate from the repository's own playwright.config.ts. That
  * config drives the MCP server's tests and is what `npm test` and the roll
  * workflow run; mixing application tests into it would make an upstream roll
- * depend on Bugasura being reachable.
+ * depend on a configured application being reachable.
  *
  *   npm run excel:test
  *   npm run excel:test -- --grep TC_LOGIN_001
@@ -15,19 +15,31 @@ import { defineConfig, devices } from '@playwright/test';
 // env.ts loads .env itself (see support/load-env.ts), so importing it is all
 // that is needed here - credentials are read lazily by the fixtures.
 import { BASE_URL } from './tests-e2e/support/env';
+import { collectionIgnoreFor } from './tests-e2e/support/collection-scope';
 
 export default defineConfig({
   testDir: './tests-e2e',
+  /**
+   * COLLECTION IS SCOPED TO ONE APPLICATION, BECAUSE `--grep` IS NOT.
+   *
+   * `excel:run` and the falsification gate both run Playwright as
+   * `test --grep <TC_ID>` with no path restriction, and `testDir` is the whole
+   * suite. A Test Case ID is unique WITHIN an application and deliberately
+   * reusable across them - `alpha/TC_SAME` and `beta/TC_SAME`
+   * are different cases - so with two applications collected at once that grep
+   * matches two tests, runs both, and `results.ts` (which recovers the ID from
+   * the test TITLE) attributes them to one workbook row.
+   *
+   * So the collection is narrowed to the active application before the grep is
+   * applied. Registry cardinality never grants ownership.
+   */
+  testIgnore: collectionIgnoreFor(),
   // Discards healing records from the previous run so the execution report
   // never credits a heal that did not happen this time.
   globalSetup: './tests-e2e/support/global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  // Observed on 2026-08-10: my.bugasura.io returns ERR_EMPTY_RESPONSE when
-  // several browsers navigate to it at once from one host, while the same
-  // tests pass serially. Until that is confirmed as a rate limit and raised,
-  // the suite runs one worker by default. Override once it is safe:
-  //   EXCEL_WORKERS=4 npm run excel:test
+  // Conservative default; EXCEL_WORKERS explicitly controls concurrency.
   workers: Number(process.env.EXCEL_WORKERS) || 1,
   // One retry absorbs a transient network blip; it does not hide a real
   // failure, because a retried pass is reported as "flaky", not "passed".
@@ -52,7 +64,7 @@ export default defineConfig({
       environmentInfo: {
         Application: BASE_URL,
         Suite: 'Excel-sourced test cases',
-        Source: 'excel/login-test-cases.xlsx',
+        Source: process.env.EXCEL_WORKBOOK || 'Selected application workbook',
         Workers: String(Number(process.env.EXCEL_WORKERS) || 1),
       },
     }],

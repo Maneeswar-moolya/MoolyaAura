@@ -125,7 +125,7 @@ scopes the write-back to the rows it covered, and refuses to report from a stale
 Never hand-write `--grep "A\|B"` — on Windows the shell eats the pipe and the run matches
 nothing while still printing a summary from the previous run's results.
 
-Credentials come from `BUGASURA_EMAIL` / `BUGASURA_PASSWORD`. Tests needing them skip with a
+Credentials come from `APPLICATION_EMAIL` / `APPLICATION_PASSWORD`. Tests needing them skip with a
 clear reason when they are absent — that is a skip, never a failure.
 
 ### 6. Analyse failures, heal only when safe

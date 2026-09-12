@@ -1,0 +1,19 @@
+# Line endings for YAML, and only YAML.
+#
+# `ai/knowledge/page/*.yaml` is parsed line by line by ai/knowledge/yaml.ts. That
+# parser is now CRLF-tolerant, so this file is not what keeps the generator
+# running - it is what stops the bytes from diverging by platform in the first
+# place. Without it, `core.autocrlf=true` (the Git for Windows installer default)
+# checks a file committed as LF out as CRLF, and every one of these files reads as
+# fully rewritten to any tool that compares bytes rather than lines.
+#
+# Deliberately narrow. A blanket `* text=auto` would invite Git to sniff and
+# rewrite the .xlsx workbooks, .png evidence, .docx/.pptx documents, .pem keys and
+# .dat report blobs this repository also tracks. Line endings are only ever a
+# question for files something reads as lines; nothing here needs that but YAML.
+#
+# Existing working copies keep whatever they were checked out with - Git converts
+# on checkout, not on demand. `git add --renormalize .` refreshes them if you want
+# the on-disk bytes to match; with the parser fix in place it is cosmetic.
+*.yaml text eol=lf
+*.yml  text eol=lf

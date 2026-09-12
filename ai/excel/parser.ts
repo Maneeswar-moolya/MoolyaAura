@@ -19,8 +19,8 @@ import {
   type ParseResult,
   type Priority,
   type TestCase,
-  type TestType,
-  type BusinessRisk,
+  
+  
   BUSINESS_RISKS,
   TEST_TYPES,
   type WorksheetReport,
@@ -43,7 +43,10 @@ function cellText(value: CellValue): string {
   if (value instanceof Date)
     return value.toISOString();
   if (typeof value === 'object') {
-    const record = value as Record<string, unknown>;
+    // Through `unknown` because ExcelJS's cell union and a plain record do not
+    // overlap structurally - this is the conversion TypeScript itself prescribes,
+    // and every property read below remains typed.
+    const record = value as unknown as Record<string, unknown>;
     if (Array.isArray(record.richText))
       return (record.richText as Array<{ text?: string }>).map(part => part.text ?? '').join('').trim();
     if (typeof record.text === 'string')

@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Accepting a test must not destroy the evidence that explains it.
  *
@@ -26,7 +27,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import {
-  ACCEPTED_DIR, RECORDINGS_DIR, archiveArtifact, archivedPath, artifactPath, assertionsPath,
+  acceptedDir, recordingsDir, archiveArtifact, archivedPath, artifactPath, assertionsPath,
   discardArtifact, evidencePath, readArchivedArtifact, readArtifact,
 } from './recorder';
 import { acceptRecording, readAssertions, readEvidence } from '../autocode/from-recording';
@@ -75,17 +76,17 @@ const ASSERTIONS = [{
 const AUTHORING = { testCaseId: ID, recordingFingerprint: 'fixture', at: new Date(0).toISOString() };
 
 function write(): void {
-  fs.mkdirSync(RECORDINGS_DIR, { recursive: true });
+  fs.mkdirSync(recordingsDir(), { recursive: true });
   fs.writeFileSync(artifactPath(ID), SPEC, 'utf8');
   fs.writeFileSync(evidencePath(ID), JSON.stringify(EVIDENCE, null, 2), 'utf8');
   fs.writeFileSync(assertionsPath(ID), JSON.stringify(ASSERTIONS, null, 2), 'utf8');
-  fs.writeFileSync(path.join(RECORDINGS_DIR, `${ID}.authoring.json`),
+  fs.writeFileSync(path.join(recordingsDir(), `${ID}.authoring.json`),
       JSON.stringify(AUTHORING, null, 2), 'utf8');
 }
 
 function cleanUp(): void {
   discardArtifact(ID);
-  fs.rmSync(path.join(RECORDINGS_DIR, `${ID}.authoring.json`), { force: true });
+  fs.rmSync(path.join(recordingsDir(), `${ID}.authoring.json`), { force: true });
   for (const suffix of ['.spec.ts', '.evidence.json', '.assertions.json', '.authoring.json'])
     fs.rmSync(archivedPath(ID, suffix), { force: true });
 }
@@ -100,7 +101,7 @@ function checkRetention(): void {
     spec: fs.readFileSync(artifactPath(ID), 'utf8'),
     evidence: fs.readFileSync(evidencePath(ID), 'utf8'),
     assertions: fs.readFileSync(assertionsPath(ID), 'utf8'),
-    authoring: fs.readFileSync(path.join(RECORDINGS_DIR, `${ID}.authoring.json`), 'utf8'),
+    authoring: fs.readFileSync(path.join(recordingsDir(), `${ID}.authoring.json`), 'utf8'),
   };
 
   acceptRecording(ID);
@@ -131,7 +132,7 @@ function checkRetention(): void {
       && !fs.existsSync(assertionsPath(ID)));
   check('and the generation queue cannot see it',
       readArtifact(ID) === null, 'readArtifact reads the live directory only');
-  const queue = fs.readdirSync(RECORDINGS_DIR).filter(name => name.endsWith('.spec.ts'));
+  const queue = fs.readdirSync(recordingsDir()).filter(name => name.endsWith('.spec.ts'));
   check('a directory scan of the queue does not recurse into the archive',
       !queue.some(name => name.startsWith(ID)), queue.length + ' file(s) in the queue');
 
@@ -193,7 +194,7 @@ function checkIdempotent(): void {
   check('re-accepting replaces the archive rather than adding to it',
       fs.readFileSync(archivedPath(ID, '.evidence.json'), 'utf8') === replaced);
 
-  const archived = fs.readdirSync(ACCEPTED_DIR).filter(name => name.startsWith(ID));
+  const archived = fs.readdirSync(acceptedDir()).filter(name => name.startsWith(ID));
   check('exactly one archived file per artefact kind', archived.length === 4,
       archived.sort().join(', '));
   check('and no duplicate/suffixed copies were created',

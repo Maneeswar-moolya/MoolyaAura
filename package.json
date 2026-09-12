@@ -29,7 +29,6 @@
     "docker-run": "docker run -it -p 8080:8080 --name playwright-mcp-dev playwright-mcp-dev:latest",
     "roll": "node roll.js",
     "excel": "tsx ai/excel/cli.ts",
-    "excel:demo": "tsx ai/excel/make-demo-workbook.ts",
     "excel:list": "tsx ai/excel/cli.ts list",
     "excel:quality": "tsx ai/excel/cli.ts quality",
     "excel:mapping": "tsx ai/excel/cli.ts mapping",

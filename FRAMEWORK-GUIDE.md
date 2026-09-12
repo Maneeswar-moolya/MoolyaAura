@@ -17,7 +17,7 @@ of the skill in maintaining it.
 | Layer | Lives in | Owns | Changes when |
 | --- | --- | --- | --- |
 | **Toolkit** (deterministic) | `ai/excel/*.ts` | Parsing, column mapping, filtering, quality checks, traceability, reporting | Rarely — it is application-agnostic |
-| **Framework** (application) | `tests-e2e/` | Page Objects, fixtures, locators, specs | Whenever Bugasura's UI changes |
+| **Framework** (application) | `tests-e2e/` | Page Objects, fixtures, locators, specs | When a registered application's UI changes |
 | **Dashboard** (control surface) | `ai/dashboard/` | Choosing what runs and how, authoring data-driven rows, keeping each execution's evidence | When the toolkit gains an option worth exposing |
 | **Agent** (judgement) | `.claude/skills/excel-automation/` | Reading intent, choosing Page Objects, writing specs, deciding what is safe to heal | When conventions change |
 
@@ -109,7 +109,7 @@ deliberate failed sign-in attempts, which can trip lockout on a personal account
 git-ignored and must never be committed.
 
 ```bash
-npm run excel:list -- excel/login-test-cases.xlsx   # 4. verify, touching nothing
+npm run excel:list -- excel/<applicationId>-test-cases.xlsx   # 4. verify, touching nothing
 ```
 
 ### Environment variables
@@ -118,29 +118,28 @@ Only the first two are needed to record and run. Everything else has a working d
 
 | Variable | Required | Purpose | Format | Where |
 | --- | --- | --- | --- | --- |
-| `BUGASURA_EMAIL` | **Yes** | The account tests sign in as | `<your-qa-email>` | `.env` |
-| `BUGASURA_PASSWORD` | **Yes** for sign-in tests | Its password | `<your-password>` | `.env` |
+| `APPLICATION_EMAIL` | **Yes** | The account tests sign in as | `<your-qa-email>` | `.env` |
+| `APPLICATION_PASSWORD` | **Yes** for sign-in tests | Its password | `<your-password>` | `.env` |
 | `RECORDER_TRANSPORT` | **For recording** | `live` enables DOM evidence + the assertion picker | `live` | command line |
-| `BUGASURA_BASE_URL` | No | Override the application URL | URL | `.env` |
+| `APPLICATION_BASE_URL` | No | Override the application URL | URL | `.env` |
 | `EXCEL_DASHBOARD_HOST` | No | Dashboard hostname (default `moolyaautomationreport.com`) | hostname | command line |
 | `EXCEL_DASHBOARD_PORT` | No | Dashboard port (default `80`, falls back to `4321`) | number | command line |
-| `EXCEL_WORKERS` | No | Parallel workers (default 1 — Bugasura refuses concurrent navigation) | number | `.env` |
+| `EXCEL_WORKERS` | No | Parallel workers (default 1 — choose concurrency for the environment) | number | `.env` |
 | `EXCEL_SCREENSHOT` / `EXCEL_VIDEO` / `EXCEL_TRACE` | No | Capture mode | `on` / `only-on-failure` / `off` | command line |
 | `EXCEL_ALL_BROWSERS` | No | Adds Firefox and WebKit | `1` | command line |
-| `BUGASURA_ALLOW_DATA_MUTATION` + `BUGASURA_TEAM` | No | Allows tests that create real data. **Both** required | `1` / team name | `.env` |
-| `BUGASURA_EXPLORATION_PROFILE` / `_USER` | No | A separate account for the generator's browser | name / email | `.env` |
+| `APPLICATION_ALLOW_DATA_MUTATION` + `APPLICATION_TEAM` | No | Allows tests that create real data. **Both** required | `1` / team name | `.env` |
+| `APPLICATION_EXPLORATION_PROFILE` / `_USER` | No | A separate account for the generator's browser | name / email | `.env` |
 | `CLAUDE_CLI` | No | Only if `excel:autocode` cannot find Claude Code | path | `.env` |
 
 Never put a real password in `.env.example`, a spec, a workbook or a report.
 
 ```bash
-npm run excel:demo            # optional: regenerates the sample workbook
 ```
 
 Verify the install without touching the application:
 
 ```bash
-npm run excel:list -- excel/login-test-cases.xlsx
+npm run excel:list -- excel/<applicationId>-test-cases.xlsx
 ```
 
 You should see the workbook parse: the `Read Me` sheet skipped as prose, and one malformed row
@@ -171,8 +170,8 @@ npm run excel:dashboard          # live transport not needed for authoring
 4. **Generate:**
 
 ```bash
-npm run excel:autocode -- excel/login-test-cases.xlsx --ids TC_LOGIN_050
-npm run excel:autocode -- excel/login-test-cases.xlsx --dry-run   # what needs code, and why
+npm run excel:autocode -- excel/<applicationId>-test-cases.xlsx --ids TC_LOGIN_050
+npm run excel:autocode -- excel/<applicationId>-test-cases.xlsx --dry-run   # what needs code, and why
 ```
 
 5. **Run** it, and read the result in the dashboard.
@@ -249,7 +248,7 @@ npm install
 npx playwright install chromium
 cp .env.example .env                 # fill in the placeholders
 
-npm run excel:list -- excel/login-test-cases.xlsx     # workbook parses?
+npm run excel:list -- excel/<applicationId>-test-cases.xlsx     # workbook parses?
 npx tsx ai/autocode/locator-safety.fixture.ts        # framework healthy? (offline)
 
 RECORDER_TRANSPORT=live npm run excel:dashboard      # record something
@@ -314,10 +313,10 @@ npm run excel:mapping -- review TC_X_001 --reason "why it cannot be automated as
 Never invent a selector. Open the page and look:
 
 ```bash
-npx playwright codegen https://my.bugasura.io/
+npx playwright codegen https://app.example.com/
 ```
 
-This is where most wasted effort comes from. Bugasura mounts three forms at
+This is where most wasted effort comes from. Some applications mount several forms at
 once, so a plausible-looking `input[type=password]` silently targets the hidden
 sign-up field. Check what is actually there.
 
@@ -353,12 +352,12 @@ an option, which is what keeps healing safe.
 Two non-negotiables: the title format and `trace()`.
 
 ```ts
-test('TC_LOGIN_001 - Valid Login', async ({ loginPage, workspacePage, bugasuraCredentials }) => {
+test('TC_LOGIN_001 - Valid Login', async ({ loginPage, workspacePage, appCredentials }) => {
   trace({ ...SOURCE, testCaseId: 'TC_LOGIN_001', scenario: 'Valid Login', priority: 'P0' });
-  requireCredentials(bugasuraCredentials);
+  requireCredentials(appCredentials);
 
   await loginPage.open();
-  await loginPage.signIn(bugasuraCredentials.email, bugasuraCredentials.password);
+  await loginPage.signIn(appCredentials.email, appCredentials.password);
 
   // Expected result: "User is signed in and the workspace dashboard is displayed"
   await expect(await workspacePage.signedInMarker()).toBeVisible();
@@ -372,7 +371,7 @@ Guidelines that have already paid for themselves:
 - **Assert the expected result as written.** If you cannot express it faithfully,
   assert what you can and name in a comment what must be confirmed. Never quietly
   weaken it into something that always passes.
-- **Prefer a failure message that quotes the application.** `Bugasura said: "Your
+- **Prefer a failure message that quotes the application.** `The application said: "Your
   account does not exist."` diagnoses itself; a 20-second timeout does not.
 - **Gate destructive tests.** Anything that writes to the workspace calls
   `requireDataMutationOptIn()` so a routine run never leaves debris.
@@ -414,7 +413,7 @@ written back into the workbook.
 ### Driving it from the spreadsheet
 
 ```bash
-npm run excel:run -- excel/login-test-cases.xlsx
+npm run excel:run -- excel/<applicationId>-test-cases.xlsx
 ```
 
 The workbook becomes the control surface: a `Run` column (`Yes`/`No`) chooses what executes,
@@ -428,8 +427,8 @@ row marked `Yes` that has never been automated tells you why.
 ### Running just one sheet
 
 ```bash
-npm run excel:run -- excel/login-test-cases.xlsx --sheet "Create Project"
-npm run excel:run -- excel/login-test-cases.xlsx --sheet "Create Project" --dry-run
+npm run excel:run -- excel/<applicationId>-test-cases.xlsx --sheet "Create Project"
+npm run excel:run -- excel/<applicationId>-test-cases.xlsx --sheet "Create Project" --dry-run
 ```
 
 Filters (`--sheet --module --feature --priority --tag --status --id`) **AND** with the `Run`
@@ -499,7 +498,7 @@ between runs and it charts pass-rate and flakiness over time. In CI, restore the
 report's `history/` directory into `allure-results/` before generating, or the trend graph
 starts from scratch every run.
 
-Defaults worth knowing: **one worker** (Bugasura rejects concurrent navigation
+Defaults worth knowing: **one worker** (concurrency depends on the environment
 from one host — raise with `EXCEL_WORKERS=4` once that is confirmed lifted), and
 **one retry**, where a retried pass is reported as `flaky`, not `passed`.
 
@@ -578,7 +577,7 @@ Worked example — adding a Customers module:
 3. **Explore the screens** with `npx playwright codegen`.
 4. **Create** `tests-e2e/pages/customers.page.ts` extending `BasePage`, with
    candidate-strategy locators.
-5. **Register a fixture** in `tests-e2e/fixtures.ts`:
+5. **Register a fixture** in the selected application's `tests-e2e/<applicationId>.fixtures.ts` (the Page Object lifecycle provisions it):
    ```ts
    customersPage: async ({ page, healing }, use) => {
      await use(new CustomersPage(page, healing));
@@ -634,44 +633,12 @@ back and make it flag the case.
 
 ## 8. CI
 
-`.github/workflows/excel-suite.yml` — deliberately **not** part of `ci.yml`, which
-gates the Playwright roll and must stay hermetic. A Bugasura outage must never be
-able to block a roll.
-
-Two jobs, split by what they need:
-
-| Job | Runs on | Needs | Fails the build when |
-| --- | --- | --- | --- |
-| **Validate workbook** | every push and PR touching `excel/`, `tests-e2e/`, `ai/excel/` | nothing — no browser, no secrets, no network | a data-driven row declares a contract that cannot be read (`sync-data --strict`) |
-| **Run against Bugasura** | nightly at 06:30 UTC, plus manual dispatch | `BUGASURA_EMAIL` / `BUGASURA_PASSWORD` secrets | a test case fails |
-
-The validate job also publishes the quality report into the run summary, but never
-fails on it: ambiguous and malformed rows are findings for the workbook's author,
-and the workbook is expected to carry some at any time.
-
-Set the two secrets in **Settings → Secrets and variables → Actions**. Real
-environment variables override `.env`, so CI secrets are never shadowed by a stale
-local file.
-
-Four decisions worth keeping if you adapt this:
-
-- **The suite never runs on push or PR.** Fork PRs have no access to secrets, and a
-  green run that only means "everything skipped" is worse than no run at all. The
-  job checks the secrets are present and fails loudly if they are not.
-- **`BUGASURA_ALLOW_DATA_MUTATION` is not set.** Tests that create projects skip.
-  Nothing deletes what they create, and a nightly job would litter a real team's
-  workspace. Only set it with a disposable workspace and cleanup.
-- **`--no-in-place`.** CI must not write results into the git-tracked workbook. The
-  uploaded `reports/` artifact carries everything the write-back would have added,
-  including the `.xlsx` a test lead can open.
-- **`concurrency: excel-suite`.** Two overlapping runs would navigate to
-  `my.bugasura.io` from two hosts at once, which is exactly what produces
-  `ERR_EMPTY_RESPONSE`. Runs queue instead of racing.
-
-Manual dispatch takes a workbook and an optional sheet, so you can run one module
-from the Actions tab without editing the `Run` column.
-
----
+The Excel workflow validates all registered workbooks under their application scope. With
+an empty registry it reports that there is nothing to validate. This remains separate from
+upstream MCP CI. Live application execution requires a project owner's explicit CI binding,
+credentials and schedule; the former application's scheduled job has been removed.
+Keep `--no-in-place`, explicit mutation opt-in and application-scoped collection when setting
+up live CI. Dashboard onboarding itself requires no framework source changes.
 
 ## 9. Troubleshooting
 

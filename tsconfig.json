@@ -1,0 +1,86 @@
+{
+  // WHAT THIS FILE IS FOR, AND WHAT IT DELIBERATELY IS NOT.
+  //
+  // Nothing in this repository is COMPILED by tsc. `npm run build` is `echo OK`, there
+  // is no `typescript` in node_modules, and every `.ts` file here is executed by `tsx`
+  // (esbuild), which STRIPS types without checking them. So this file emits nothing and
+  // gates nothing at run time.
+  //
+  // It exists because an editor with no tsconfig.json falls back to an INFERRED project
+  // and has to guess every option. Measured with tsc 5.9 over all 218 project files:
+  // guessing produced 305 diagnostics, of which 155 were `esModuleInterop` alone
+  // (TS1192 "no default export" + TS1259 "can only be default-imported") and 124 were a
+  // guessed ES5 target (TS2802/TS1501/TS2550, "can only be iterated with
+  // downlevelIteration"). Not one of those 279 was a defect: `tsx` applies exactly the
+  // interop and the target declared below, which is why the same code runs green.
+  //
+  // Every option here therefore DESCRIBES how the repository already executes. None of
+  // them was chosen to make a diagnostic go away, and no strictness flag beyond
+  // `strictNullChecks` is switched on - that would be a new standard, not a description.
+  "compilerOptions": {
+    // Node 20 (package.json engines: >=18). Verified rather than assumed: a class field
+    // declared with no initialiser over a base-constructor assignment reads `undefined`
+    // under `tsx` both with and without this file, so DEFINE semantics are already in
+    // force and pinning the target changes no runtime behaviour.
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+
+    // package.json declares no "type", so every file is CommonJS. 895 ESM `import`
+    // statements against 18 `require()` calls, all interop-ed by esbuild.
+    "module": "CommonJS",
+    // `moduleResolution` is deliberately ABSENT rather than set to "node".
+    //
+    // "node" (a.k.a. "node10") is what `module: CommonJS` already implies, so naming it
+    // changes nothing - except that naming it EXPLICITLY is what newer TypeScript
+    // deprecates, which is why an `"ignoreDeprecations": "6.0"` appeared here. That
+    // value is rejected by the toolchain this repository actually runs (`tsc 5.9.3`
+    // answers TS5103 "Invalid value for '--ignoreDeprecations'") and it took the WHOLE
+    // project down with it: 1 config error and not one file checked.
+    //
+    // Dropping the deprecated option instead of suppressing the warning about it is
+    // correct on every version - verified byte-for-byte, same 8 diagnostics and the same
+    // 219 resolved files with it present-and-suppressed or absent.
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+
+    // esbuild transpiles one file at a time and never sees the program, which is what
+    // `isolatedModules` describes. Verified to add zero diagnostics.
+    "isolatedModules": true,
+
+    // The one checking flag that is not a new standard but a correction. Without it
+    // TypeScript strips `null` and `undefined` from every type, and six pieces of
+    // CORRECT production code are then reported as errors - a discriminated union
+    // cannot be narrowed by its own discriminant (ai/autocode/abstraction/semantic.ts,
+    // ai/autocode/from-recording.ts). The codebase is written in `| null` unions, `??`
+    // and `?.` throughout; this is the mode it was already written for.
+    "strictNullChecks": true,
+
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": [
+    "ai/**/*.ts",
+    "tests/**/*.ts",
+    "tests-e2e/**/*.ts",
+    "*.ts"
+  ],
+  // GENERATED ARTEFACTS ONLY. Every path below is git-ignored output, not source, and
+  // every one of them holds real `.ts` files an editor would otherwise type-check:
+  // 120 raw codegen recordings and 125 report snapshots, none of which anybody edits.
+  // No source directory and no fixture is excluded - the fixtures ARE the regression
+  // suite and have to stay under the same diagnostics as the code they pin.
+  "exclude": [
+    "node_modules",
+    "ai/dashboard/recordings",
+    "ai/dashboard/generations",
+    "ai/dashboard/runs",
+    "ai/reports",
+    "ai/autocode/quarantine",
+    // Written by a mutation fixture and deleted again in its `finally`. It exists only
+    // for the seconds that fixture is running, so an editor must not index it.
+    "**/*.mutant.ts"
+  ]
+}

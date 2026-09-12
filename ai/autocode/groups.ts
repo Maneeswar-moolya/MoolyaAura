@@ -110,6 +110,7 @@
  */
 
 import { BASE_URL, explorationIdentity } from '../../tests-e2e/support/env';
+import { activeApplicationId } from '../knowledge/canonical';
 import { isActionVerb, isObserveVerb } from '../knowledge/requirements';
 import type { TestCase } from '../excel/types';
 import type { WorkItem } from './work';
@@ -268,13 +269,13 @@ function screenOf(testCase: TestCase): string {
  * sequence identically, and a benchmark is comparable to the one before it.
  */
 export function groupWork(items: WorkItem[]): Group[] {
+  // IDENTITY IS DECLARED, NOT PARSED OUT OF THE URL. This read
+  // `new URL(BASE_URL).host`, which is a host name wearing the word `application`:
+  // two applications behind one host would have shared a grouping key, and one
+  // application on a staging domain would have had two. `environment` stays the base
+  // URL, which is what a base URL genuinely is.
   const environment = BASE_URL;
-  let application: string;
-  try {
-    application = new URL(BASE_URL).host;
-  } catch {
-    application = BASE_URL;
-  }
+  const application = activeApplicationId();
 
   const groups = new Map<string, Group>();
   for (const item of items) {

@@ -1,10 +1,11 @@
+import '../testing/isolated-checkout';
 /**
  * P1 — the enterprise authoring model: what a row may say, and what it may not.
  *
  *   npx tsx ai/excel/authoring-model.fixture.ts
  *
  * Offline: no browser, no model, no network. Synthetic workbooks are built in a
- * temp directory; the real workbook and the real recordings are READ and never
+ * temp directory; the synthetic workbook and synthetic recordings are READ and never
  * written. The credential checks compare against the real `.env` secret and
  * never print one - a failure names the surface, never the value.
  *
@@ -26,13 +27,13 @@ import { Workbook } from 'exceljs';
 import { parseWorkbook } from './parser';
 import { assessReadiness, credentialsIn, FREE_TEXT_FIELDS } from './readiness';
 import { BUSINESS_RISKS, TEST_TYPES, type TestCase } from './types';
-import { authoringFingerprint, fingerprint, recordingFingerprint } from '../autocode/work';
+import { authoringFingerprint, fingerprint } from '../autocode/work';
 import { rowFacts } from '../autocode/agent';
 import { saveCase, validateDraft, SYSTEM_MANAGED_FIELDS, type CaseDraft } from '../dashboard/authoring';
 import { recordingStatus, rememberRecordingFingerprint, describeRecording } from '../dashboard/case-status';
 
 const ROOT = process.cwd();
-const WORKBOOK = 'excel/login-test-cases.xlsx';
+const WORKBOOK = 'excel/fixture-cases.xlsx';
 let failures = 0;
 const check = (label: string, ok: boolean, detail = '') => {
   process.stdout.write(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? ` — ${detail}` : ''}\n`);
@@ -61,11 +62,11 @@ function draft(over: Partial<CaseDraft> = {}): CaseDraft {
     scenario: 'Verify user can filter project issues by status',
     description: 'Verify project users can search issues and filter them by status.',
     preconditions: 'User has access to Faclon Labs.\nAt least one issue exists.',
-    steps: 'Open Bugasura.\nSign in.\nOpen Faclon Labs.', testData: 'search = fac11',
+    steps: 'Open FixturePortal.\nSign in.\nOpen Faclon Labs.', testData: 'search = fac11',
     expectedResult: 'The matching issue is displayed with status New',
     assertOutcome: '', assertMessage: '', priority: 'P1', tags: 'regression', run: true,
     requirementId: 'PROJ-1234', testType: 'Functional', businessRisk: 'High',
-    environment: 'QA', userRole: 'Project User', authenticationProfile: 'BUGASURA_QA_USER',
+    environment: 'QA', userRole: 'Project User', authenticationProfile: 'FIXTUREAPP_QA_USER',
     testOwner: 'QA', ...over,
   };
 }
@@ -75,12 +76,12 @@ function testCase(over: Partial<TestCase> = {}): TestCase {
     testCaseId: 'TC_P1_001', module: 'Projects', feature: 'Issue Search',
     scenario: 'Verify user can filter project issues by status',
     description: 'Business intent', preconditions: 'Access to Faclon Labs',
-    steps: ['Open Bugasura.', 'Sign in.', 'Open Faclon Labs.'], testData: 'search = fac11',
+    steps: ['Open FixturePortal.', 'Sign in.', 'Open Faclon Labs.'], testData: 'search = fac11',
     expectedResult: 'The matching issue is displayed', priority: 'P1', tags: ['regression'],
     automationStatus: 'Not Automated', automationNotes: '', execute: true,
     expectedOutcome: '', expectedMessage: '',
     requirementId: 'PROJ-1234', testType: 'Functional', businessRisk: 'High',
-    environment: 'QA', userRole: 'Project User', authenticationProfile: 'BUGASURA_QA_USER',
+    environment: 'QA', userRole: 'Project User', authenticationProfile: 'FIXTUREAPP_QA_USER',
     testOwner: 'QA',
     source: { workbookPath: 'x', workbook: 'x.xlsx', worksheet: 'Cases', row: 2 },
     extra: {}, issues: [], ...over,
@@ -95,7 +96,7 @@ async function checkParsing(): Promise<void> {
       [...CLASSIC_HEADERS, 'Requirement ID', 'Test Type', 'Business Risk', 'Environment',
         'User Role', 'Auth Profile', 'Test Owner', 'Test Case Description', 'Pre-Requisite'],
       [['TC_A_1', 'A title', 'Open the app', 'It opens', 'PROJ-77', 'Regression', 'Critical',
-        'QA', 'Project Admin', 'BUGASURA_ADMIN', 'Maya', 'Why this exists', 'Signed in']]);
+        'QA', 'Project Admin', 'FIXTUREAPP_ADMIN', 'Maya', 'Why this exists', 'Signed in']]);
   const parsed = await parseWorkbook(file);
   const row = parsed.testCases[0];
   check('A: requirementId', row.requirementId === 'PROJ-77', row.requirementId);
@@ -103,7 +104,7 @@ async function checkParsing(): Promise<void> {
   check('A: businessRisk', row.businessRisk === 'Critical', row.businessRisk);
   check('A: environment', row.environment === 'QA', row.environment);
   check('A: userRole', row.userRole === 'Project Admin', row.userRole);
-  check('A: authenticationProfile', row.authenticationProfile === 'BUGASURA_ADMIN', row.authenticationProfile);
+  check('A: authenticationProfile', row.authenticationProfile === 'FIXTUREAPP_ADMIN', row.authenticationProfile);
   check('A: testOwner', row.testOwner === 'Maya', row.testOwner);
   check('A: description and preconditions still parse',
       row.description === 'Why this exists' && row.preconditions === 'Signed in');
@@ -238,9 +239,9 @@ async function checkCredentials(): Promise<void> {
   check('E: the profile field refuses a password-shaped value',
       problems({ authenticationProfile: 'hunter2 secret' }).some(p => /profile NAME/.test(p)));
   check('E: a valid profile reference passes',
-      problems({ authenticationProfile: 'BUGASURA_READ_ONLY' }).length === 0);
+      problems({ authenticationProfile: 'FIXTUREAPP_READ_ONLY' }).length === 0);
 
-  const secret = process.env.BUGASURA_PASSWORD ?? '';
+  const secret = process.env.FIXTUREAPP_PASSWORD ?? '';
   if (secret.length >= 4) {
     const surfaces: Array<[string, string]> = [
       ['the workbook', fs.readFileSync(path.resolve(ROOT, WORKBOOK)).toString('latin1')],
@@ -254,7 +255,7 @@ async function checkCredentials(): Promise<void> {
         !rowFacts({ testCase: testCase(), workbook: WORKBOOK, specFile: 'x', runId: 'r' } as never)
             .includes(secret));
   } else {
-    check('E: a real password is available to scan for', false, 'BUGASURA_PASSWORD is not set');
+    check('E: a real password is available to scan for', false, 'FIXTUREAPP_PASSWORD is not set');
   }
 }
 
@@ -269,7 +270,7 @@ function checkFingerprints(): void {
   check('F: expected result invalidates', moved({ expectedResult: 'Something else' }));
   check('F: environment invalidates', moved({ environment: 'PROD' }));
   check('F: user role invalidates', moved({ userRole: 'Project Admin' }));
-  check('F: authentication profile invalidates', moved({ authenticationProfile: 'BUGASURA_ADMIN' }));
+  check('F: authentication profile invalidates', moved({ authenticationProfile: 'FIXTUREAPP_ADMIN' }));
   check('F: test type invalidates', moved({ testType: 'Security' }));
   check('F: tags invalidate - they choose the pipeline', moved({ tags: ['recorded'] }));
   check('F: requirement id does NOT', !moved({ requirementId: 'PROJ-999' }));
@@ -308,7 +309,7 @@ function checkRecordingPolicy(): void {
     ['test data', { testData: 'search = other' }],
     ['environment', { environment: 'PROD' }],
     ['user role', { userRole: 'Project Admin' }],
-    ['authentication profile', { authenticationProfile: 'BUGASURA_ADMIN' }],
+    ['authentication profile', { authenticationProfile: 'FIXTUREAPP_ADMIN' }],
   ];
   for (const [label, over] of invalidating)
     check(`G: editing ${label} marks it stale`, recordingStatus(testCase(over), dir).stale === true);
@@ -334,7 +335,7 @@ function checkRecordingPolicy(): void {
   check('G: a stale recording says what to do',
       /Re-record it, or undo the edit/.test(describeRecording(recordingStatus(testCase({ steps: ['x'] }), dir))));
 
-  process.stdout.write('   and the real recordings are untouched by any of this\n');
+  process.stdout.write('   and the isolated reference recordings are untouched by any of this\n');
   const realOne = testCase({ testCaseId: 'TC_LOGIN_065' });
   check('G: a pre-P1 recording reports unknown, never stale',
       recordingStatus(realOne).stale === undefined);
@@ -362,9 +363,9 @@ function checkSystemAndContext(): void {
     ['Preconditions', 'Access to Faclon Labs']] as Array<[string, string]>)
     check(`I: ${label} reaches the generator`, facts.includes(`${label}: ${value}`), label);
   check('I: the authentication profile is sent as a NAME',
-      facts.includes('Authentication Profile: BUGASURA_QA_USER'));
+      facts.includes('Authentication Profile: FIXTUREAPP_QA_USER'));
   check('I: and nothing that looks like an account or a secret is',
-      !/@|password|BUGASURA_PASSWORD/i.test(facts.split('Authentication Profile:')[1] ?? ''));
+      !/@|password|FIXTUREAPP_PASSWORD/i.test(facts.split('Authentication Profile:')[1] ?? ''));
   check('I: an empty optional field is simply absent',
       !rowFacts({ testCase: testCase({ requirementId: '' }), workbook: WORKBOOK, specFile: 'x', runId: 'r' } as never)
           .includes('Requirement:'));
@@ -390,9 +391,9 @@ async function checkAcceptance(): Promise<void> {
     description: 'Verify project users can search issues and filter them by status.',
     requirementId: 'PROJ-1234', module: 'Projects', feature: 'Issue Search',
     testType: 'Functional', priority: 'P1', businessRisk: 'High',
-    environment: 'QA', userRole: 'Project User', authenticationProfile: 'BUGASURA_QA_USER',
+    environment: 'QA', userRole: 'Project User', authenticationProfile: 'FIXTUREAPP_QA_USER',
     preconditions: 'User has access to Faclon Labs.\nAt least one issue exists.',
-    steps: ['Open Bugasura.', 'Sign in.', 'Open Faclon Labs.', 'Search for "fac11".',
+    steps: ['Open FixturePortal.', 'Sign in.', 'Open Faclon Labs.', 'Search for "fac11".',
       'Select status "New".', 'Verify the matching issue is displayed.'].join('\n'),
     testData: 'search = fac11\nstatus = New',
     expectedResult: 'The issue list shows exactly the matching issue, with status New.',
@@ -446,7 +447,7 @@ async function checkAcceptance(): Promise<void> {
       facts.includes('Requirement: PROJ-1234') && facts.includes('Business Risk: High')
       && facts.includes('User Role: Project User'));
   check('J: and the profile by name only',
-      facts.includes('Authentication Profile: BUGASURA_QA_USER') && !facts.includes('@'));
+      facts.includes('Authentication Profile: FIXTUREAPP_QA_USER') && !facts.includes('@'));
   check('J: the seed row written before any of this is untouched',
       reread.testCases.some(c => c.testCaseId === 'TC_SEED_1' && c.scenario === 'Seed'));
   check('J: and it has empty new fields, not missing ones',

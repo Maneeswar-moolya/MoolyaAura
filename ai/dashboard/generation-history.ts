@@ -137,6 +137,21 @@ export interface GenerationRecord {
    */
   runId: string | null;
   workbook: string;
+  /**
+   * WHICH APPLICATION THIS GENERATION WAS FOR.
+   *
+   * The history is deliberately GLOBAL - one directory, the newest five records,
+   * whatever project they belong to - because it answers "what did the generator do
+   * recently", which is a question about this machine rather than about a project.
+   * Retention is unchanged.
+   *
+   * But a global list needs each record to say whose it is, or the UI shows two
+   * indistinguishable rows the moment two applications both generate TC_LOGIN_001:
+   * `cases[].testCaseId` alone cannot tell them apart, and `workbook` only can while
+   * no two projects have similarly named workbooks. Optional, so records written
+   * before this read as unknown rather than as belonging to anybody.
+   */
+  applicationId?: string;
   /** The ids the dashboard asked for. Empty means "whatever needs code". */
   requestedIds: string[];
   /** The rows the generator actually reported on, in the order it reported them. */
@@ -157,6 +172,15 @@ export interface GenerationSummary {
   id: string;
   runId: string | null;
   workbook: string;
+  /**
+   * Whose generation this was, carried onto the SUMMARY and not only the record.
+   *
+   * The list is what the dashboard renders, so an identity that exists only inside the
+   * full record cannot be filtered on without opening all five files. Undefined for
+   * records written before the field existed - shown as unknown, never guessed from
+   * the workbook.
+   */
+  applicationId?: string;
   startedAt: string;
   finishedAt: string;
   exitCode: number | null;
@@ -300,6 +324,7 @@ export function listGenerations(dir = GENERATIONS_DIR): GenerationSummary[] {
       id: record.id,
       runId: record.runId ?? null,
       workbook: record.workbook,
+      applicationId: record.applicationId,
       startedAt: record.startedAt,
       finishedAt: record.finishedAt,
       exitCode: record.exitCode ?? null,

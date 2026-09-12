@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * P0 — a recorded assertion must mean what the person recorded.
  *
@@ -30,8 +31,8 @@ import path from 'node:path';
 
 import { parseExpectReceiver, parseRecording, assertionPhrase, type RecordedAssertion } from './recorder';
 import { mapRecording } from '../autocode/from-recording';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
-const ROOT = process.cwd();
 let failures = 0;
 const check = (label: string, ok: boolean, detail = '') => {
   process.stdout.write(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? ` — ${detail}` : ''}\n`);
@@ -196,7 +197,7 @@ function checkPhrasing(): void {
 
 function checkExistingRecordings(): void {
   process.stdout.write('\n== the 20+ recordings on disk ==\n');
-  const dir = path.resolve(ROOT, 'ai/dashboard/recordings');
+  const dir = RECORDINGS();
   const files = fs.readdirSync(dir).filter(name => name.endsWith('.spec.ts'));
   let parsed = 0;
   let negatives = 0;

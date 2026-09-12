@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * The identity contract: a derived title and an authored Scenario are different
  * strings that must resolve to the SAME workbook row.

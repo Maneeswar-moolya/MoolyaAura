@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * P1 regression — a draft that predates a field must still save.
  *
@@ -53,7 +54,7 @@ const RECORDED_DRAFT = {
   module: '',
   feature: '',
   scenario: 'Faclon labs — the issue summary is displayed',
-  steps: 'Open https://my.bugasura.io/\nSign in\nClick Faclon labs',
+  steps: 'Open https://portal.fixture.invalid/\nSign in\nClick Faclon labs',
   testData: 'Email = someone@moolya.com\nPassword = <valid-password>',
   expectedResult: 'The issue summary is displayed',
   assertOutcome: '',
@@ -67,11 +68,11 @@ const MANUAL_FULL: CaseDraft = {
   worksheet: 'Cases', testCaseId: '', module: 'Projects', feature: 'Issue Search',
   scenario: 'Verify user can filter project issues by status',
   description: 'Business intent.', preconditions: 'User has access.',
-  steps: 'Open Bugasura.\nSign in.', testData: 'search = fac11',
+  steps: 'Open FixturePortal.\nSign in.', testData: 'search = fac11',
   expectedResult: 'The matching issue is displayed.',
   assertOutcome: '', assertMessage: '', priority: 'P1', tags: 'regression', run: true,
   requirementId: 'PROJ-1234', testType: 'Functional', businessRisk: 'High',
-  environment: 'QA', userRole: 'Project User', authenticationProfile: 'BUGASURA_QA_USER',
+  environment: 'QA', userRole: 'Project User', authenticationProfile: 'FIXTUREAPP_QA_USER',
   testOwner: 'QA',
 };
 

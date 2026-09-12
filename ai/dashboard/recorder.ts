@@ -55,6 +55,11 @@ import { NEEDS_CONFIRMATION, RECORDED_INTERACTION } from './placeholders';
 import {
   evidenceUnavailable, type AssertionProvenance, type RecordingEvidence, type TargetEvidence,
 } from '../autocode/dom-evidence';
+import {
+  type ApplicationScope, activeAcceptedDir, activeRecordingsDir, resolveScope,
+} from '../projects/scope';
+import type { RecordingOrigin } from '../autocode/dom-evidence';
+import { readRegistry, registryFile } from '../projects/registry';
 import { classify } from './assertion-capabilities';
 import { resolveAssertionSubject, sameElement } from './associated-control';
 import {
@@ -237,6 +242,24 @@ interface Session {
   browser: string;
   startedAt: string;
   startedMs: number;
+  /**
+   * WHICH APPLICATION THIS RECORDING BELONGS TO, decided before the browser opened.
+   *
+   * Captured at `startRecording` and never rewritten for the life of the session -
+   * that immutability is the point of holding it here rather than deriving it later.
+   * A recording navigates: sign-in, then /apps, then an issue, then settings, and a
+   * person may type any address into the browser the recorder handed them. If identity
+   * were re-derived from wherever the browser ended up, a single navigation could
+   * silently move the recording into another application's namespace, and the evidence
+   * would be filed there - correctly formed, provably measured, and about the wrong
+   * product.
+   *
+   * So the URL is what the session STARTED at (navigation evidence), and `scope` is
+   * what the session IS (identity). The two are never the same question.
+   */
+  scope: ApplicationScope;
+  /** The row this recording is being made for, when the person named one. */
+  testCaseId?: string;
   /** Set when the recorder exits on its own, i.e. the person closed the browser. */
   exited: boolean;
   error?: string;
@@ -257,7 +280,26 @@ let session: Session | null = null;
  * safe to open. A failed generation may leave one behind on purpose - that is the
  * one case where somebody needs to look at it - but it can never be committed.
  */
-export const RECORDINGS_DIR = path.join(ROOT, 'ai', 'dashboard', 'recordings');
+/**
+ * APPLICATION-OWNED, and the artefacts are what make it so.
+ *
+ * The recorder ENGINE is a SHARED_CAPABILITY - one implementation, used by every
+ * application - but the script and the three sidecars it writes for each case are
+ * `recordings`, an APPLICATION_ARTEFACT. Test Case IDs are unique within an
+ * application and meaningless across them, so two applications that both have
+ * TC_LOGIN_001 write to one set of file names in one flat directory: the second
+ * recording overwrites the first's evidence, and the gate then judges one
+ * application's spec against another application's measurements.
+ *
+ * The suffixes are deliberately not named here. Each is spelled EXACTLY ONCE in this
+ * file, in the helper that owns it, and `evidence-persistence.fixture.ts` counts those
+ * literals to prove no second path convention has appeared - a doc comment that
+ * repeated them would be a second spelling that can drift from the first.
+ *
+ * Resolved per call, never memoised into a module constant, because the dashboard is
+ * one process that can switch applications between recordings.
+ */
+export const recordingsDir = activeRecordingsDir;
 
 /**
  * The recording waiting to be claimed by the next save. One at a time.
@@ -272,10 +314,32 @@ export const RECORDINGS_DIR = path.join(ROOT, 'ai', 'dashboard', 'recordings');
  */
 let pending: {
   source: string; recording: Recording; stateAssertions?: RecordedAssertion[];
+  /**
+   * The session's LOCKED application context, carried across the Stop/Save gap.
+   *
+   * `stopRecording` clears `session`, so by the time `keepArtifactFor` runs there is
+   * nothing left to ask. Re-deriving it at save time is exactly the mistake this phase
+   * removes - the only evidence still available then is the recorded URL. So the
+   * decision travels with the recording instead.
+   */
+  origin?: RecordingOrigin;
 } | null = null;
 
-export function artifactPath(testCaseId: string): string {
-  return path.join(RECORDINGS_DIR, `${testCaseId.toUpperCase()}.spec.ts`);
+/**
+ * `dir` defaults to the ACTIVE scope's store, and the default is not always right.
+ *
+ * The dashboard is one process serving many requests, so the ambient scope and the
+ * scope a particular RECORDING was made in are different questions. A save resolves
+ * the directory from the recording's own locked origin and passes it here; everything
+ * else - reading an existing artefact, the CLI, the gates - legitimately means "the
+ * application this process is working in" and takes the default.
+ *
+ * Without the parameter a person who selected Flipkart in a process whose ambient
+ * application was Bugasura would have their recording written into Bugasura's store:
+ * correctly formed, provably measured, and filed under the wrong product.
+ */
+export function artifactPath(testCaseId: string, dir = recordingsDir()): string {
+  return path.join(dir, `${testCaseId.toUpperCase()}.spec.ts`);
 }
 
 /**
@@ -287,8 +351,8 @@ export function artifactPath(testCaseId: string): string {
  * lifecycle: the ID is the pairing key, so a sidecar can never be read against a
  * different recording.
  */
-export function evidencePath(testCaseId: string): string {
-  return path.join(RECORDINGS_DIR, `${testCaseId.toUpperCase()}.evidence.json`);
+export function evidencePath(testCaseId: string, dir = recordingsDir()): string {
+  return path.join(dir, `${testCaseId.toUpperCase()}.evidence.json`);
 }
 
 /**
@@ -304,8 +368,8 @@ export function evidencePath(testCaseId: string): string {
  * save wrote the script and the evidence; generation re-read the script, found no
  * `expect(` in it, and reported "the recording contains no assertion".
  */
-export function assertionsPath(testCaseId: string): string {
-  return path.join(RECORDINGS_DIR, `${testCaseId.toUpperCase()}.assertions.json`);
+export function assertionsPath(testCaseId: string, dir = recordingsDir()): string {
+  return path.join(dir, `${testCaseId.toUpperCase()}.assertions.json`);
 }
 
 /**
@@ -319,7 +383,8 @@ export function keepArtifactFor(testCaseId: string): string | null {
     return null;
   const held = pending;
   pending = null;
-  return persistRecording(testCaseId, held.source, held.recording.evidence, held.stateAssertions);
+  return persistRecording(testCaseId, held.source, held.recording.evidence, held.stateAssertions,
+      held.origin);
 }
 
 /**
@@ -340,17 +405,24 @@ export function persistRecording(
   source: string,
   evidence: RecordingEvidence,
   stateAssertions?: RecordedAssertion[],
+  origin?: RecordingOrigin,
 ): string | null {
   try {
-    fs.mkdirSync(RECORDINGS_DIR, { recursive: true });
-    const file = artifactPath(testCaseId);
+    // THE RECORDING'S OWN APPLICATION, not the one this process happens to be in.
+    // `origin.applicationId` was locked before the browser opened; resolving the store
+    // from it is what keeps a save in the project the person actually selected.
+    const dir = origin
+      ? resolveScope({ applicationId: origin.applicationId }).paths.recordingsDir
+      : recordingsDir();
+    fs.mkdirSync(dir, { recursive: true });
+    const file = artifactPath(testCaseId, dir);
     fs.writeFileSync(file, source, 'utf8');
 
     // The picker's assertions, on the same terms as the evidence: removed first,
     // written only when there are some, and never allowed to fail the save. An
     // empty list writes no file, so "recorded nothing" and "recorded before this
     // existed" stay the same state on disk rather than two.
-    const assertions = assertionsPath(testCaseId);
+    const assertions = assertionsPath(testCaseId, dir);
     fs.rmSync(assertions, { force: true });
     if (stateAssertions?.length) {
       try {
@@ -361,11 +433,17 @@ export function persistRecording(
       }
     }
 
-    const sidecar = evidencePath(testCaseId);
+    const sidecar = evidencePath(testCaseId, dir);
     // Always, before deciding whether to write a new one.
     fs.rmSync(sidecar, { force: true });
     if (evidence.available) {
       try {
+        // Ownership is stamped HERE rather than at capture, because it is a fact about
+        // the SESSION and the capture layer has no business knowing about projects.
+        // `testCaseId` is only known now - the row does not exist until the save - so
+        // this is the first moment the whole origin can be written down.
+        if (origin)
+          (evidence as { origin?: RecordingOrigin }).origin = { ...origin, testCaseId };
         // Already redacted and bounded by `sanitiseEvidence` before it reached this
         // object; nothing is re-filtered here, because a second redaction
         // implementation is a second thing to get wrong.
@@ -414,7 +492,7 @@ export function discardArtifact(testCaseId: string): void {
  * folder reads `*.spec.ts` at the top level and never recurses, so an archived
  * recording cannot be mistaken for one waiting to be generated.
  */
-export const ACCEPTED_DIR = path.join(RECORDINGS_DIR, 'accepted');
+export const acceptedDir = activeAcceptedDir;
 
 /**
  * Every artefact belonging to one recording, by the SAME helpers that create them.
@@ -431,14 +509,14 @@ function liveArtefacts(testCaseId: string): string[] {
     artifactPath(testCaseId),
     evidencePath(testCaseId),
     assertionsPath(testCaseId),
-    path.join(RECORDINGS_DIR, `${testCaseId.toUpperCase()}.authoring.json`),
+    path.join(recordingsDir(), `${testCaseId.toUpperCase()}.authoring.json`),
   ];
 }
 
 /** The archived counterpart of one artefact: same file name, archive directory. */
 export function archivedPath(testCaseId: string, suffix: string): string {
   const live = liveArtefacts(testCaseId).find(file => file.endsWith(suffix));
-  return path.join(ACCEPTED_DIR, path.basename(live ?? `${testCaseId.toUpperCase()}${suffix}`));
+  return path.join(acceptedDir(), path.basename(live ?? `${testCaseId.toUpperCase()}${suffix}`));
 }
 
 /**
@@ -461,11 +539,11 @@ export function archivedPath(testCaseId: string, suffix: string): string {
  * kept; this function moves files and does nothing else to them.
  */
 export function archiveArtifact(testCaseId: string): void {
-  fs.mkdirSync(ACCEPTED_DIR, { recursive: true });
+  fs.mkdirSync(acceptedDir(), { recursive: true });
   for (const from of liveArtefacts(testCaseId)) {
     if (!fs.existsSync(from))
       continue;
-    const to = path.join(ACCEPTED_DIR, path.basename(from));
+    const to = path.join(acceptedDir(), path.basename(from));
     fs.rmSync(to, { force: true });
     fs.renameSync(from, to);
   }
@@ -475,14 +553,15 @@ export function archiveArtifact(testCaseId: string): void {
 export function readArchivedArtifact(testCaseId: string): string | null {
   try {
     return fs.readFileSync(
-        path.join(ACCEPTED_DIR, path.basename(artifactPath(testCaseId))), 'utf8');
+        path.join(acceptedDir(), path.basename(artifactPath(testCaseId))), 'utf8');
   } catch {
     return null;
   }
 }
 
 export function recordingStatus(): {
-  recording: boolean; startedAt?: string; url?: string; browser?: string; browserClosed?: boolean; error?: string;
+  recording: boolean; startedAt?: string; url?: string; browser?: string; browserClosed?: boolean;
+  error?: string; applicationId?: string; environmentId?: string; displayName?: string; testCaseId?: string;
 } {
   if (!session)
     return { recording: false };
@@ -491,6 +570,13 @@ export function recordingStatus(): {
     startedAt: session.startedAt,
     url: session.url,
     browser: session.browser,
+    // The LOCKED identity, so the page can show which application is being recorded
+    // rather than leaving a person to infer it from the address bar - which is the
+    // inference this phase removed everywhere else.
+    applicationId: session.scope.applicationId,
+    environmentId: session.scope.environmentId,
+    displayName: session.scope.displayName,
+    ...(session.testCaseId ? { testCaseId: session.testCaseId } : {}),
     // The recorder can end without anyone pressing Stop - the browser has its own
     // close button. Saying so is the difference between "still going" and "waiting
     // for you to press Stop on something that already finished".
@@ -504,18 +590,47 @@ function playwrightCli(): string {
   return path.join(path.dirname(require.resolve('playwright/package.json')), 'cli.js');
 }
 
-export async function startRecording(options: { url: string; browser: string }): Promise<{ started: boolean; error?: string; transport?: 'codegen' | 'live' }> {
+/**
+ * Start a recording INSIDE a chosen application.
+ *
+ * `scope` is required and comes from the dashboard's project/environment selection.
+ * It is not optional and it is not derived: a caller that cannot say which application
+ * it is recording has not made the decision yet, and guessing it from `url` is the one
+ * thing this whole phase exists to remove.
+ *
+ * `url` stays a parameter because a person may legitimately start deeper than the
+ * application's front door - on a specific issue, or a settings page. When it is
+ * omitted the environment's own `baseUrl` is used, which is the normal case and the
+ * one that makes the selection do real work: choose Bugasura + QA and the recorder
+ * opens Bugasura's QA address without anybody typing it.
+ */
+export async function startRecording(options: {
+  scope: ApplicationScope;
+  url?: string;
+  browser: string;
+  testCaseId?: string;
+}): Promise<{ started: boolean; error?: string; transport?: 'codegen' | 'live';
+  applicationId?: string; environmentId?: string; url?: string }> {
   if (session)
     return { started: false, error: 'A recording is already in progress. Stop it first.' };
 
-  const url = options.url.trim();
+  if (!options.scope?.applicationId) {
+    return { started: false,
+      error: 'No project was selected. A recording is made INSIDE an application, and the '
+        + 'application is chosen, never inferred from the address.' };
+  }
+
+  // The environment's declared address is the default, so the selection is what opens
+  // the browser. An explicit url only ever narrows WHERE in the application to start;
+  // it never decides WHICH application, and nothing below reads it for identity.
+  const url = (options.url ?? '').trim() || options.scope.baseUrl;
   // Only http(s), and parsed rather than pattern-matched: this string becomes an
   // argument to a browser, and `file://` or `javascript:` are not recordings.
   let parsed: URL;
   try {
     parsed = new URL(url);
   } catch {
-    return { started: false, error: `"${url}" is not a URL. Include the scheme, e.g. https://my.bugasura.io/` };
+    return { started: false, error: `"${url}" is not a URL. Include the scheme, e.g. https://app.example.com/` };
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')
     return { started: false, error: 'Only http:// and https:// addresses can be recorded.' };
@@ -539,8 +654,10 @@ export async function startRecording(options: { url: string; browser: string }):
       session = {
         transport: 'live', live, outputFile, url: parsed.toString(), browser: options.browser,
         startedAt: new Date().toISOString(), startedMs: Date.now(), exited: false,
+        scope: options.scope, testCaseId: options.testCaseId,
       };
-      return { started: true, transport: 'live' };
+      return { started: true, transport: 'live', applicationId: options.scope.applicationId,
+        environmentId: options.scope.environmentId, url: parsed.toString() };
     }
     process.stdout.write('  [recorder] falling back to the codegen recorder; '
       + 'this recording will carry no DOM evidence\n');
@@ -559,6 +676,7 @@ export async function startRecording(options: { url: string; browser: string }):
   const started: Session = {
     transport: 'codegen', child, outputFile, url: parsed.toString(), browser: options.browser,
     startedAt: new Date().toISOString(), startedMs: Date.now(), exited: false,
+    scope: options.scope, testCaseId: options.testCaseId,
   };
   session = started;
 
@@ -568,7 +686,43 @@ export async function startRecording(options: { url: string; browser: string }):
   child.stdout?.resume();
   child.stderr?.resume();
 
-  return { started: true, transport: 'codegen' };
+  return { started: true, transport: 'codegen', applicationId: options.scope.applicationId,
+    environmentId: options.scope.environmentId, url: parsed.toString() };
+}
+
+/**
+ * The application a recording is being made in, or null when nothing is recording.
+ *
+ * READ-ONLY BY CONSTRUCTION. There is deliberately no setter: the only way to change
+ * the application is to stop this recording and start another, which is exactly the
+ * decision a person should have to make. Everything that files an artefact for the
+ * recording in progress asks here, so there is one answer rather than one per caller.
+ */
+export function recordingScope(): ApplicationScope | null {
+  return session?.scope ?? null;
+}
+
+/** The row the recording in progress was started for, if the person named one. */
+export function recordingTestCaseId(): string | null {
+  return session?.testCaseId ?? null;
+}
+
+/**
+ * The session's application context, as a record that outlives the session.
+ *
+ * Read from `Session.scope` - the value chosen before the browser opened - and never
+ * from `session.url`. That is the whole distinction this phase installs: the URL says
+ * where the browser went, the scope says which application it was.
+ */
+function originOf(current: Session): RecordingOrigin {
+  return {
+    applicationId: current.scope.applicationId,
+    environmentId: current.scope.environmentId,
+    baseUrl: current.scope.baseUrl,
+    ...(current.testCaseId ? { testCaseId: current.testCaseId } : {}),
+    browser: current.browser,
+    startedAt: current.startedAt,
+  };
 }
 
 /** Wait for the recorder to exit, so its output file is complete. */
@@ -592,7 +746,9 @@ export async function stopRecording(): Promise<{ recording?: Recording; error?: 
   // the person was recording. Everything after this point is identical for both
   // transports: the same parser, the same redaction, the same pending artifact.
   if (current.transport === 'live' && current.live) {
-    let collected: { source: string; evidence: RecordingEvidence };
+    // Derived from `stop()` rather than restated: the hand-written annotation had
+    // omitted `stateAssertions`, which the live recorder has always returned.
+    let collected: Awaited<ReturnType<LiveSession['stop']>>;
     try {
       collected = await current.live.stop();
     } catch (error) {
@@ -613,6 +769,7 @@ export async function stopRecording(): Promise<{ recording?: Recording; error?: 
       source: redactSource(collected.source, liveRecording),
       recording: liveRecording,
       stateAssertions: collected.stateAssertions,
+      origin: originOf(current),
     };
     return { recording: liveRecording };
   }
@@ -650,7 +807,7 @@ export async function stopRecording(): Promise<{ recording?: Recording; error?: 
   // Hold the REDACTED source for the save that follows. Redacted first and always:
   // the artifact that reaches disk must be safe to open, so the literal Codegen
   // wrote into a `.fill()` never gets that far.
-  pending = { source: redactSource(source, recording), recording };
+  pending = { source: redactSource(source, recording), recording, origin: originOf(current) };
 
   return { recording };
 }
@@ -678,7 +835,7 @@ function redactSource(source: string, recording: Recording): string {
   }
   // Belt and braces: if a secret this process holds still appears anywhere in the
   // file - a URL, a comment, a form somewhere the parser did not model - it goes.
-  for (const name of ['BUGASURA_PASSWORD', 'BUGASURA_TOKEN']) {
+  for (const name of knownSecretNames()) {
     const secret = process.env[name];
     if (secret && secret.length >= 4)
       out = out.split(secret).join(PLACEHOLDER);
@@ -770,6 +927,22 @@ function describeLocator(chain: string): { target: string; strategy: string } {
 const SENSITIVE = /password|passwd|pwd|secret|token|otp|cvv|credit\s*card|card\s*number/i;
 const PLACEHOLDER = '[type=password]';
 
+/** Names only: configuration declares credentials; conventional names cover service tokens. */
+function knownSecretNames(): Set<string> {
+  const names = new Set(Object.keys(process.env).filter(name =>
+    /(?:^|_)(?:PASSWORD|PASSWD|PWD|TOKEN|SECRET|API_KEY|PRIVATE_KEY)(?:_|$)/i.test(name)));
+  const file = registryFile();
+  if (fs.existsSync(file)) {
+    for (const application of readRegistry(file).applications) {
+      for (const environment of Object.values(application.environments)) {
+        if (environment.credentials?.password)
+          names.add(environment.credentials.password);
+      }
+    }
+  }
+  return names;
+}
+
 /**
  * Secrets this process already holds, so a value typed into an oddly-labelled
  * field is still caught.
@@ -781,7 +954,7 @@ const PLACEHOLDER = '[type=password]';
 function looksLikeAKnownSecret(value: string): boolean {
   if (!value)
     return false;
-  for (const name of ['BUGASURA_PASSWORD', 'BUGASURA_TOKEN']) {
+  for (const name of knownSecretNames()) {
     const secret = process.env[name];
     if (secret && secret.length >= 4 && value === secret)
       return true;

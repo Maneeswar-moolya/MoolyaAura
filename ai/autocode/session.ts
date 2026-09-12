@@ -53,7 +53,7 @@ import path from 'node:path';
 
 import {
   BASE_URL, explorationCredentials, explorationIdentity,
-  MISSING_EXPLORATION_CREDENTIALS_REASON,
+  missingExplorationCredentialsReason,
 } from '../../tests-e2e/support/env';
 import type { Group } from './groups';
 import { SESSION_LOG } from './metrics';
@@ -444,7 +444,7 @@ export class GroupSession {
       // Deterministic and final. This is never turned into a question for the
       // model: an agent asked for a password is an agent looking for one.
       throw new SessionUnavailable(
-          `The generation browser cannot be signed in - ${MISSING_EXPLORATION_CREDENTIALS_REASON} `
+          `The generation browser cannot be signed in - ${missingExplorationCredentialsReason()} `
           + `(looked at ${explorationIdentity() === 'anonymous' ? 'the exploration variables' : explorationIdentity()}).`);
     }
 
@@ -477,7 +477,7 @@ export class GroupSession {
     }
     throw new SessionUnavailable(
         `Sign-in did not complete within ${AUTH_TIMEOUT_MS / 1000}s - the sign-in page is still showing. ` +
-        'Either the credentials are wrong or Bugasura is not reachable.');
+        'Either the credentials are wrong or the configured application is not reachable.');
   }
 
   /** Close and forget. Used for expiry, contamination and death. */

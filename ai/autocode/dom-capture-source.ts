@@ -18,7 +18,10 @@ export const ELEMENT_CAPTURE = `element => {
   // addresses - so these nodes are not described at all, in any direction.
   const OPAQUE = ['script','style','noscript','template','iframe','object','embed'];
   var isOpaque = function (node) { return OPAQUE.indexOf(node.tagName.toLowerCase()) >= 0; };
-  var describe = function (node) {
+  // ONLY THE TARGET gets the extra fields. An ancestor's href or alt feeds no strategy,
+  // and putting them on every node measured at +232% snapshot size against +14% for the
+  // target alone. \`isTarget\` is what keeps the difference.
+  var describe = function (node, isTarget) {
     var attributes = {}; var aria = {}; var data = {};
     var list = Array.prototype.slice.call(node.attributes);
     for (var i = 0; i < list.length; i++) {
@@ -54,13 +57,23 @@ export const ELEMENT_CAPTURE = `element => {
         if (names[n].indexOf('virtual') >= 0) { virtualSignal = 'attribute ' + names[n]; break; }
       }
     }
-    return {
+    // THE NAME THIS SIDE CAN SEE, and it says so. \`aria-label\` and \`title\` are
+    // attributes; the accessible name is a computation over the whole subtree, the label
+    // relationships and the role, and no DOM API exposes it. So this is stamped
+    // \`accessibleNameVerified: false\` and the recorder replaces it with the browser's own
+    // answer where CDP can be reached. Nothing here reimplements the algorithm.
+    var ariaLabel = node.getAttribute('aria-label') || '';
+    var titleValue = node.title || '';
+    var approximateName = ariaLabel || titleValue;
+    var described = {
       tag: node.tagName.toLowerCase(),
       scrollable: scrolls || undefined,
       virtualized: virtualSignal ? true : undefined,
       virtualizedSignal: virtualSignal || undefined,
       role: node.getAttribute('role') || undefined,
-      accessibleName: (node.getAttribute('aria-label') || node.title || '') || undefined,
+      accessibleName: approximateName || undefined,
+      accessibleNameSource: approximateName ? (ariaLabel ? 'aria-label' : 'title') : undefined,
+      accessibleNameVerified: approximateName ? false : undefined,
       text: (node.textContent || '').trim().slice(0, 300) || undefined,
       id: node.id || undefined,
       name: attributes.name || undefined,
@@ -69,23 +82,62 @@ export const ELEMENT_CAPTURE = `element => {
       title: attributes.title || undefined,
       aria: aria, data: data, stableClasses: classes
     };
+    if (isTarget) {
+      // AUTHORED, never resolved. \`node.href\` on an anchor is the resolved absolute URL
+      // and carries the origin; \`getAttribute\` is what somebody wrote.
+      var href = node.getAttribute('href');
+      if (href !== null && href !== '') {
+        described.href = href.slice(0, 200);
+        // A scheme, or protocol-relative. \`javascript:void(0)\` is absolute by this test,
+        // which is the point: it names no destination and must never become a locator.
+        described.hrefAbsolute = /^[a-z][a-z0-9+.-]*:/i.test(href) || href.indexOf('//') === 0;
+      }
+      var alt = node.getAttribute('alt');
+      if (alt !== null && alt !== '') described.alt = alt.slice(0, 300);
+    }
+    return described;
   };
+  // ONE NON-QUALIFYING ANCESTOR, THE NEAREST, AND IT IS APPENDED RATHER THAN INSERTED.
+  //
+  // Measured over eleven live targets: Flipkart's Mobiles and Home links have twelve
+  // ancestors and keep none, because none is a container tag and none carries a role or
+  // an id - so every scoped shape is unbuildable and both produced one candidate in
+  // total. Keeping the nearest plain wrapper gained identity-proven candidates on two
+  // targets and lost none.
+  //
+  // Keeping TWO lost a candidate on one target, and any rule that reorders or truncates
+  // lost them on two: a consumer slices this array (\`stableAncestors\` takes the first
+  // three carrying an id, the container family the first four), so an entry inserted in
+  // depth order can push a qualifying ancestor out of a window it was inside. Appending
+  // after every qualifying ancestor is what makes this strictly additive - the plain one
+  // is reachable when there is room and displaces nothing when there is not.
   var ancestors = []; var current = element.parentElement; var depth = 1;
+  var nearestPlain = null;
   while (current && ancestors.length < 8 && depth <= 12) {
-    if (!isOpaque(current) && (CONTAINERS.indexOf(current.tagName.toLowerCase()) >= 0 || current.getAttribute('role') || current.id)) {
-      var a = describe(current); a.relationship = 'ancestor'; a.depth = depth; ancestors.push(a);
+    if (!isOpaque(current)) {
+      var qualifies = CONTAINERS.indexOf(current.tagName.toLowerCase()) >= 0
+        || current.getAttribute('role') || current.id;
+      if (qualifies) {
+        var a = describe(current, false); a.relationship = 'ancestor'; a.depth = depth; ancestors.push(a);
+      } else if (!nearestPlain) {
+        nearestPlain = describe(current, false);
+        nearestPlain.relationship = 'ancestor';
+        nearestPlain.depth = depth;
+        nearestPlain.nonQualifying = true;
+      }
     }
     current = current.parentElement; depth++;
   }
+  if (nearestPlain) ancestors.push(nearestPlain);
   var children = Array.prototype.slice.call(element.children).filter(function (n) { return !isOpaque(n); }).slice(0, 10).map(function (node) {
-    var c = describe(node); c.relationship = 'child'; c.depth = 1; return c;
+    var c = describe(node, false); c.relationship = 'child'; c.depth = 1; return c;
   });
   var descendants = [];
   var walk = function (node, level) {
     if (level > 3 || descendants.length >= 15) return;
     var kids = Array.prototype.slice.call(node.children).filter(function (n) { return !isOpaque(n); });
     for (var i = 0; i < kids.length; i++) {
-      var d = describe(kids[i]); d.relationship = 'descendant'; d.depth = level;
+      var d = describe(kids[i], false); d.relationship = 'descendant'; d.depth = level;
       descendants.push(d);
       walk(kids[i], level + 1);
     }
@@ -94,13 +146,13 @@ export const ELEMENT_CAPTURE = `element => {
   var previous = []; var sibling = element.previousElementSibling;
   while (sibling && previous.length < 4) {
     if (isOpaque(sibling)) { sibling = sibling.previousElementSibling; continue; }
-    var p = describe(sibling); p.relationship = 'previous-sibling'; p.depth = previous.length + 1;
+    var p = describe(sibling, false); p.relationship = 'previous-sibling'; p.depth = previous.length + 1;
     previous.push(p); sibling = sibling.previousElementSibling;
   }
   var next = []; sibling = element.nextElementSibling;
   while (sibling && next.length < 4) {
     if (isOpaque(sibling)) { sibling = sibling.nextElementSibling; continue; }
-    var n = describe(sibling); n.relationship = 'next-sibling'; n.depth = next.length + 1;
+    var n = describe(sibling, false); n.relationship = 'next-sibling'; n.depth = next.length + 1;
     next.push(n); sibling = sibling.nextElementSibling;
   }
   var rect = element.getBoundingClientRect();
@@ -128,8 +180,8 @@ export const ELEMENT_CAPTURE = `element => {
       width: Math.round(rect.width),
       height: Math.round(rect.height)
     },
-    target: describe(element),
-    parent: element.parentElement ? describe(element.parentElement) : undefined,
+    target: describe(element, true),
+    parent: element.parentElement ? describe(element.parentElement, false) : undefined,
     ancestors: ancestors, children: children, descendants: descendants,
     previousSiblings: previous, nextSiblings: next
   };
@@ -304,6 +356,26 @@ export const PREACTION_HOOK = `(() => {
   // window.__auraPark, because a graph taken at a pick must never be claimable by a
   // recorded action line: an assertion is not an interaction, and attributing one to
   // the other is the error the whole timing contract exists to prevent.
+  // THE ROUTE THIS DOCUMENT IS SHOWING, as the document itself states it.
+  //
+  // PATHNAME ONLY. A query string and a fragment are where a reset token, a session id
+  // and a search term live; a screen identity must carry none of them, and dropping
+  // them here means nothing downstream has to remember to. Bounded like every other
+  // captured string.
+  //
+  // THIS IS NOT AN APPLICATION IDENTITY AND MUST NEVER BECOME ONE. The application is
+  // the locked ApplicationScope, decided before the browser opened - a URL is
+  // configuration and changes between environments. What this answers is the much
+  // smaller question of WHICH SCREEN of that application the press happened on.
+  const routeNow = () => {
+    try {
+      const path = document.location && document.location.pathname;
+      return typeof path === 'string' && path ? path.slice(0, 200) : '';
+    } catch (error) {
+      // A document that will not say is a document with no route. Never guessed.
+      return '';
+    }
+  };
   window.__auraObserveSlot = payload => {
     if (!payload || (payload.documentId && payload.documentId !== DOCUMENT_ID)) return null;
     const element = targets[payload.index];
@@ -313,6 +385,7 @@ export const PREACTION_HOOK = `(() => {
       documentId: DOCUMENT_ID,
       targetIndex: payload.index,
       elementRef: refFor(payload.index),
+      route: routeNow(),
       fingerprint: fingerprint(element),
       graph: capture(element)
     };
@@ -494,6 +567,8 @@ export const PREACTION_HOOK = `(() => {
         // the evidence built from it can be referred to later by something that has
         // no locator in common with it. See __auraSameElement.
         elementRef: refFor(targetIndex),
+        // The screen this press happened on. See routeNow.
+        route: routeNow(),
         fingerprint: fingerprint(element),
         graph: capture(element)
       };

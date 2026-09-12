@@ -196,7 +196,7 @@ export function assessReadiness(testCase: TestCase, options: ReadinessOptions = 
   const profile = testCase.authenticationProfile.trim();
   if (profile && !AUTH_PROFILE_PATTERN.test(profile)) {
     add('INVALID_AUTH_PROFILE', 'blocking',
-        `Authentication Profile must be a profile NAME such as BUGASURA_QA_USER - "${profile}" is not one. `
+        `Authentication Profile must be a profile NAME such as APPLICATION_QA_USER - "${profile}" is not one. `
         + 'Never put an address or a password here; the values live in the environment.',
         'authenticationProfile');
   }

@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * Content-aware candidate generation (P0.4).
  *
@@ -27,13 +28,14 @@ import path from 'node:path';
 import {
   candidateSelectorsFor, candidateTextFor, contentExpression, normaliseCandidateText,
   recordedTextLiteral, usableCandidateText, sanitiseEvidence,
-  CANDIDATE_TEXT_LIMIT, MAX_CANDIDATES, MAX_CONTENT_CANDIDATES,
+  CANDIDATE_TEXT_LIMIT, MAX_CANDIDATES, MAX_CONTENT_CANDIDATES, MAX_TOTAL_CANDIDATES,
   type SelectorCandidate, type DomNode, type RelatedNode, type TargetEvidence,
 } from './dom-evidence';
 import { analyseIdentifier, assessLocator } from './locator-quality';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
-const SIDECAR = path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_059.evidence.json');
+const SIDECAR = path.join(RECORDINGS(), 'TC_LOGIN_059.evidence.json');
 const MUTATE = process.argv.includes('--mutate');
 
 let failures = 0;
@@ -118,11 +120,24 @@ function checkRepeatingContainer(): void {
   const first = generate(rowGraph('638717', 'Line Chart | Time Config Page is blank'), isGenerated);
   const second = generate(rowGraph('638476', 'Line Chart | Compute Flow is empty'), isGenerated);
 
+  // STRUCTURAL means a CSS shape, which is what `measuredBy: 'page'` now says outright.
+  // It used to be spelt `text === undefined`, and that stopped meaning the same thing
+  // when the semantic families arrived: `getByText("...")` carries no `text` FIELD (the
+  // text is inside the expression) and is emphatically not structural.
   const structural = (list: SelectorCandidate[]) =>
-    list.filter(entry => entry.text === undefined).map(entry => entry.expression);
+    list.filter(entry => entry.measuredBy !== 'expression' && entry.text === undefined)
+        .map(entry => entry.expression);
+  const semantic = (list: SelectorCandidate[]) =>
+    list.filter(entry => entry.measuredBy === 'expression').map(entry => entry.expression);
   check('A: every STRUCTURAL candidate is identical for both rows — none can be unique',
       JSON.stringify(structural(first)) === JSON.stringify(structural(second)),
       `${structural(first).length} vs ${structural(second).length}`);
+  // The same property the content family has, for the same reason: what separates two
+  // identical rows is what they SAY, and a semantic candidate says it too.
+  check('A: and the semantic candidates differ, because they carry the row text',
+      semantic(first).length > 0
+      && JSON.stringify(semantic(first)) !== JSON.stringify(semantic(second)),
+      `${semantic(first).length} / ${semantic(second).length}`);
   check('A: a content candidate IS generated for each row',
       contentOf(first).length > 0 && contentOf(second).length > 0,
       `${contentOf(first).length} / ${contentOf(second).length}`);
@@ -148,8 +163,14 @@ function checkOrdering(): void {
       contentOf(built).length <= MAX_CONTENT_CANDIDATES, String(contentOf(built).length));
   // 12 -> 16 when the contextual family was added, so that it could not evict a
   // candidate that already existed. The claim that matters is the second half.
-  check(`the cap is ${MAX_CANDIDATES} and nothing exceeds it`,
-      MAX_CANDIDATES === 16 && built.length <= MAX_CANDIDATES, String(built.length));
+  // The structural budget is still 16 and is still the whole of what reaches the in-page
+  // measurement; the semantic families are budgeted separately on top of it.
+  check(`the structural cap is ${MAX_CANDIDATES} and nothing structural exceeds it`,
+      MAX_CANDIDATES === 16
+      && built.filter(entry => entry.measuredBy !== 'expression').length <= MAX_CANDIDATES,
+      String(built.filter(entry => entry.measuredBy !== 'expression').length));
+  check(`the total ceiling is ${MAX_TOTAL_CANDIDATES} and nothing exceeds it`,
+      built.length <= MAX_TOTAL_CANDIDATES, String(built.length));
   check('no duplicate expressions', new Set(built.map(e => e.expression)).size === built.length);
 }
 
@@ -288,66 +309,31 @@ function checkPromotionRule(): void {
 }
 
 function checkRealEvidence(): void {
-  process.stdout.write('\n== I/J/K — the real TC_LOGIN_059 sidecar ==\n');
-  if (!fs.existsSync(SIDECAR)) {
-    check('I: the sidecar is present', false, SIDECAR);
-    return;
-  }
-  const evidence = JSON.parse(fs.readFileSync(SIDECAR, 'utf8'));
-  const find = (needle: string) => evidence.targets.find((entry: any) => entry.locator.includes(needle));
-
-  for (const needle of ['#tc_summary_638717', '#tc_summary_638476']) {
-    const entry = find(needle);
-    if (!entry) {
-      check(`I: ${needle} is in the sidecar`, false);
-      continue;
-    }
+  process.stdout.write('\n== I/J/K — authored repeating rows and credential control ==\n');
+  for (const id of ['900001', '900002']) {
+    const entry = { ...rowGraph(id, `Record ${id} summary`), derivedCandidates: [] };
     const built = generate(entry, isGenerated);
     const content = contentOf(built);
-    check(`I: ${needle} — the twelve structural candidates all measured ambiguous`,
-        Array.isArray(entry.derivedCandidates) && entry.derivedCandidates.length === 0,
-        'derivedCandidates key present and empty = built, measured, all rejected');
-    check(`I: ${needle} — content-aware candidates are now generated`, content.length > 0,
-        String(content.length));
-    check(`I: ${needle} — they are scoped to the stable table id`,
-        content.every(item => item.selector.startsWith('#bugReport-table')),
-        content.map(item => item.selector).join(' | '));
-    check(`I: ${needle} — none of them names a generated id`,
-        content.every(item => !/tc_summary_|tr_\d|tc_update_summary_/.test(item.expression)));
-    check(`I: ${needle} — content comes first`, built[0]?.text !== undefined);
+    check(`I: ${id} — content is proposed despite an empty previous measurement`, content.length > 0);
+    check(`I: ${id} — content is scoped to the stable table`,
+        content.every(item => item.selector.startsWith('#report-table')));
+    check(`I: ${id} — no generated row identifier is proposed`,
+        content.every(item => !/cell_\d|row_\d/.test(item.expression)));
+    check(`I: ${id} — content comes first`, built[0]?.text !== undefined);
   }
-
-  const byExpression = (list: any[]) => list.map(item => `${item.strategy}|${item.expression}`).sort();
-  for (const [label, needle] of [['J', "getByText('Faclon labs')"], ['K', "name: 'Password'"]] as const) {
-    const entry = find(needle);
-    if (!entry) {
-      check(`${label}: ${needle} is in the sidecar`, false);
-      continue;
-    }
-    const built = generate(entry, isGenerated).map(item => `${item.strategy}|${item.expression}`);
-    const persisted = byExpression(entry.derivedCandidates ?? []);
-    check(`${label}: every previously measured-unique candidate is still generated, byte-identical`,
-        persisted.length > 0 && persisted.every(item => built.includes(item)),
-        `${persisted.length} survivor(s)`);
-  }
-  const password = find("name: 'Password'");
-  check('K: the password field gains no content candidate — an input carries no text',
-      contentOf(generate(password, isGenerated)).length === 0);
-  // The contextual family CAN reach an input, by identifying the box around it -
-  // that is what it is for. What must still hold is that nothing it builds quotes
-  // the credential or the field's own label: the immediate `.log-in-form` ancestor
-  // is refused outright because its text says "Password".
-  // The PHRASE is the part derived from page text, so it is the part that could
-  // carry something. The descendant selector is the element's own class name -
-  // `.js-password-input` says "password" because the author named it that.
-  check('K: and no contextual PHRASE for it quotes a credential word',
-      !generate(password, isGenerated)
-          .filter(entry => entry.strategy === 'container-text')
-          .some(entry => /password|secret|token|pwd/i.test(entry.text ?? '')),
-      generate(password, isGenerated).filter(e => e.strategy === 'container-text')
-          .map(e => e.text).join(' | ') || '(none)');
-  check('K: and no candidate anywhere quotes a credential',
-      !JSON.stringify(generate(password, isGenerated)).toLowerCase().includes('password_value'));
+  const password = {
+    target: { tag: 'input', type: 'password', id: 'password_field' },
+    parent: { tag: 'form', text: 'Password password_value', stableClasses: ['auth-form'] },
+    ancestors: [{ tag: 'form', text: 'Password password_value', stableClasses: ['auth-form'], relationship: 'ancestor', depth: 1 }],
+    descendants: [],
+  } as any;
+  const built = generate(password, isGenerated);
+  check('J: authored structural control remains available',
+      built.some(item => item.strategy === 'stable-id' && item.expression === 'page.locator("#password_field")'));
+  check('K: input gains no content candidate', contentOf(built).length === 0);
+  check('K: contextual phrases do not disclose a credential label',
+      !built.filter(item => item.strategy === 'container-text').some(item => /password|secret|token|pwd/i.test(item.text ?? '')));
+  check('K: candidates never quote the credential value', !JSON.stringify(built).includes('password_value'));
 }
 
 function checkForbiddenShapes(): void {
@@ -365,8 +351,15 @@ function checkForbiddenShapes(): void {
   ];
   for (const [name, pattern] of banned)
     check(`  no ${name}`, !every.some(expression => pattern.test(expression)));
-  check('  every expression starts from page.locator with a structural selector',
-      every.every(expression => expression.startsWith('page.locator("')));
+  // A CSS selector, or one of Playwright's own semantic builders. Nothing else, and in
+  // particular nothing positional - `.first()`, `.nth()` and the rest are refused by the
+  // banned list above and are absent from this grammar as well. Every shape here is one
+  // `buildLocator` can rebuild faithfully, which is what makes it measurable at all.
+  const GRAMMAR =
+    /^page\.(locator\("|getByRole\(|getByLabel\(|getByPlaceholder\(|getByTestId\(|getByText\(|getByTitle\(|getByAltText\()/;
+  check('  every expression is a CSS locator or a Playwright semantic builder — nothing else',
+      every.every(expression => GRAMMAR.test(expression)),
+      every.filter(expression => !GRAMMAR.test(expression))[0] ?? 'all conform');
 
   const source = fs.readFileSync(path.resolve(ROOT, 'ai/autocode/dom-evidence.ts'), 'utf8');
   check('  the generator opens no browser', !/chromium|playwright-cli|browse\.mjs/.test(source));

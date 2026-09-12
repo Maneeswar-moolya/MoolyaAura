@@ -81,6 +81,16 @@ export interface Proposal {
   /** Null whenever ownership could not be resolved from evidence. Never guessed. */
   owner: string | null;
   ownerKind: 'page-object' | 'component' | null;
+  /**
+   * Present only when the owner was BOOTSTRAPPED - derived from the active application
+   * and the route the recording established, because nothing declared one.
+   *
+   * The writer reads it for the one thing it cannot otherwise know: which knowledge file
+   * to create, under which identity, declaring which route. Absent on every proposal
+   * whose owner came from a declared rule, which is every proposal an application with
+   * knowledge produces.
+   */
+  bootstrap?: { canonicalId: string; route: string; pageName: string };
   method: string | null;
   parameterised: boolean;
   parameterSource: string | null;
@@ -243,6 +253,20 @@ export type RefusalCode =
   | 'CONTAINER_OR_CAPABILITY'
   | 'OWNER_UNKNOWN'
   | 'UNCLASSIFIED_TARGET'
+  /**
+   * Bootstrap could not establish which SCREEN this element belongs to.
+   *
+   * Raised only on the empty-knowledge path, where nothing declares an owner and the
+   * only remaining evidence is the route the recording itself established. No route,
+   * a route the document never stated, or a route carrying a generated identifier -
+   * `/issues/636432` names one record, not one screen - and there is nothing left to
+   * derive an owner from.
+   *
+   * SEMANTIC by class and deliberately ABSENT from `SEMANTIC_ENABLED`: a resolver asked
+   * "which page is this?" with no route would be inventing the page, which is the one
+   * thing bootstrap exists to make impossible.
+   */
+  | 'BOOTSTRAP_ROUTE_UNKNOWN'
   /* STRUCTURAL */
   | 'SIGNATURE_MISMATCH'
   | 'PARAMETER_SOURCE_MISSING'
@@ -280,6 +304,8 @@ export const REFUSAL_CLASS: Record<RefusalCode, RefusalClass> = {
   CONTAINER_OR_CAPABILITY: 'SEMANTIC',
   OWNER_UNKNOWN: 'SEMANTIC',
   UNCLASSIFIED_TARGET: 'SEMANTIC',
+  // SEMANTIC, and never askable - see the code's own note.
+  BOOTSTRAP_ROUTE_UNKNOWN: 'SEMANTIC',
   SIGNATURE_MISMATCH: 'STRUCTURAL',
   PARAMETER_SOURCE_MISSING: 'STRUCTURAL',
   TEMPLATE_NOT_DERIVABLE: 'STRUCTURAL',
@@ -338,6 +364,20 @@ export interface SemanticAttempt {
   outcome: 'ACCEPTED' | 'REJECTED' | 'MALFORMED' | 'TRANSPORT_FAILED';
   /** The validator's verbatim reason. It is also what the next repair prompt states. */
   rejection: string | null;
+  /**
+   * How long the transport call took, measured at its own boundary.
+   *
+   * The observability gap Phase 13.6's investigation named: a case spent 278 s here while
+   * every timed field in the metrics read zero. Null when the call never returned.
+   */
+  transportMs?: number | null;
+  /** Did the resolver answer at all? False for a timeout or an unreachable binary. */
+  responded?: boolean;
+  /**
+   * The validator established that repair cannot improve this answer, so the exchange
+   * stopped here. Absent on every record written before this existed.
+   */
+  terminal?: boolean;
 }
 
 /** What a model was asked, what it answered, and what the framework did with it. */
@@ -369,4 +409,16 @@ export interface SemanticAudit {
   attempts: SemanticAttempt[];
   /** True when an attempt after the first is the one that was accepted. */
   repaired: boolean;
+  /** When the exchange started and ended, and what it cost in total. */
+  startedAt?: string;
+  finishedAt?: string;
+  totalMs?: number;
+  /**
+   * The exchange ended on a VALIDATED TERMINAL ANSWER rather than on a spent budget.
+   *
+   * Read by `exhaustedBefore`: a settled answer is settled in the next run too, and
+   * re-asking it would spend a call to reproduce a recorded conclusion. Absent on every
+   * record written before this existed, which is why an old record behaves as it did.
+   */
+  terminal?: boolean;
 }

@@ -30,6 +30,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { parseResults } from '../excel/results';
+import { workbookOwner } from '../projects/registry';
 import { isPositionProven, positionalExpression } from './dom-evidence';
 // THE PATHS ONLY, and by name. The gate asks the recorder WHERE a case's evidence
 // lives - live and archived - and nothing else: it reads no recording, spawns no
@@ -638,6 +639,11 @@ function runOne(specFile: string, testCaseId: string, workbook: string): RunOutc
       env: {
         ...process.env,
         EXCEL_WORKBOOK: workbook,
+        // The APPLICATION that owns that workbook, matching what `ai/excel/cli.ts` sends.
+        // `tests-e2e/support/data-driven.ts` now refuses a workbook whose declared owner
+        // is not the active application, so sending one without the other is a
+        // contradiction the suite would (correctly) reject.
+        AURA_APPLICATION: workbookOwner(workbook),
         PLAYWRIGHT_JSON_OUTPUT_NAME: jsonPath,
         // Keep the gate's two runs out of ai/reports/steps. The mutated run is
         // deliberately red, and leaving its step list behind would have the

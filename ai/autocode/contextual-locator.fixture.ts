@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * A container identified by what it SAYS, and the element inside it.
  *
@@ -34,7 +35,7 @@ import path from 'node:path';
 
 import {
   candidateSelectorsFor, containerExpression, containerPhraseFor, isProvenAgainstClickedTarget,
-  looksLikeStateClass, MAX_CANDIDATES, MAX_CONTAINER_CANDIDATES,
+  looksLikeStateClass, MAX_CANDIDATES, MAX_CONTAINER_CANDIDATES, MAX_TOTAL_CANDIDATES,
   type CandidateMeasurement, type TargetEvidence,
 } from './dom-evidence';
 import { analyseIdentifier, assessLocator } from './locator-quality';
@@ -55,13 +56,21 @@ const build = (graph: any) => candidateSelectorsFor(graph, gen);
 const contextual = (graph: any) =>
   build(graph).filter(candidate => candidate.strategy === 'container-text');
 
-const EVIDENCE = path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_082.evidence.json');
 const CHECKBOX = 'page.locator(\'[id="639978"]\')';
 const PHRASE = 'Line Chart : Getting flat line for Weekly and monthly';
 
 function recordedTarget(locator: string): any {
-  const evidence = JSON.parse(fs.readFileSync(EVIDENCE, 'utf8'));
-  return evidence.targets.find((entry: any) => entry.locator === locator);
+  const span = locator.includes('rounded-checkbox-ui');
+  return {
+    locator, target: { tag: span ? 'span' : 'input', type: span ? undefined : 'checkbox',
+      id: span ? undefined : '639978', stableClasses: [span ? 'rounded-checkbox-ui' : 'bugChecked'] },
+    ancestors: [
+      { tag: 'div', id: 'row_639978', stableClasses: ['tabulator-row'],
+        text: '639978 ' + PHRASE + '  ' + 'supplementary details '.repeat(6), relationship: 'ancestor', depth: 1 },
+      { tag: 'div', text: 'var email = "fixture@example.invalid"; var password;', relationship: 'ancestor', depth: 2 },
+    ], descendants: [], previousSiblings: [], nextSiblings: [],
+    rejectedCandidates: [{ expression: 'page.locator(".bugChecked")', matchCount: 3 }],
+  };
 }
 const graphOf = (entry: any) => ({
   target: entry.target, parent: entry.parent, ancestors: entry.ancestors,
@@ -72,9 +81,9 @@ const graphOf = (entry: any) => ({
 /* --------------------------------------------------- A-D: the recorded graph */
 
 function checkGraph(): void {
-  process.stdout.write('\n== A-D — TC_LOGIN_082, from its own evidence file ==\n');
+  process.stdout.write('\n== A-D — authored repeated-row evidence ==\n');
   const entry = recordedTarget(CHECKBOX);
-  check('A: the recorded checkbox target is in the file', Boolean(entry));
+  check('A: the authored graph includes the intended checkbox', Boolean(entry));
 
   const built = build(graphOf(entry));
   const wanted = containerExpression('.tabulator-row', PHRASE, '.bugChecked');
@@ -294,9 +303,16 @@ function checkClaimAndHygiene(): void {
   check('T: the contextual family is bounded',
       contextual(graphOf(entry)).length <= MAX_CONTAINER_CANDIDATES,
       `${contextual(graphOf(entry)).length} of ${MAX_CONTAINER_CANDIDATES}`);
-  check('T: and the cap is large enough to hold everything',
-      built.length <= MAX_CANDIDATES && built.length >= previous.length + 1,
-      `${built.length} built, cap ${MAX_CANDIDATES}, ${previous.length} pre-existing`);
+  // THE CAP IS TWO CAPS NOW, and the first half of this check is the one that always
+  // mattered: the structural budget is untouched, so nothing that was measured before
+  // the semantic families existed can be evicted by one of them.
+  const structuralOnly = built.filter(candidate => candidate.measuredBy !== 'expression');
+  check('T: the structural budget is unchanged and still holds everything measured before',
+      structuralOnly.length <= MAX_CANDIDATES && structuralOnly.length >= previous.length + 1,
+      `${structuralOnly.length} structural, cap ${MAX_CANDIDATES}, ${previous.length} pre-existing`);
+  check('T: and the total stays inside the family-budget ceiling',
+      built.length <= MAX_TOTAL_CANDIDATES,
+      `${built.length} of ${MAX_TOTAL_CANDIDATES}`);
 
   // U - the assertion path obeys the same policy. It used to write `#639978`.
   check('U: the assertion locator refuses a dynamic id',
@@ -304,12 +320,7 @@ function checkClaimAndHygiene(): void {
       locatorFor({ tag: 'input', id: '639978', stableClasses: ['bugChecked'] }));
   check('U: and still uses an authored one',
       locatorFor({ tag: 'a', id: 'notif_bell_trigger' }) === 'page.locator("#notif_bell_trigger")');
-  const saved = path.resolve(ROOT, 'ai/dashboard/recordings/TC_LOGIN_082.assertions.json');
-  if (fs.existsSync(saved)) {
-    check('U: the recorded assertion that carries one is visible as such',
-        JSON.parse(fs.readFileSync(saved, 'utf8')).some((a: any) => a.locator.includes('639978')),
-        'the existing artefact predates the guard and needs a re-record');
-  }
+
 }
 
 /* ------------------------------------------------------- generality, and mutation */

@@ -37,10 +37,34 @@ import type { ParseResult, TestCase } from './types';
 
 export const DATA_DIR = path.resolve(process.cwd(), 'ai', 'test-data');
 
-/** `excel/login-test-cases.xlsx` -> `ai/test-data/login-test-cases.data-driven.json` */
+/**
+ * `excel/login-test-cases.xlsx` -> `ai/test-data/excel-login-test-cases.data-driven.json`
+ *
+ * DERIVED FROM THE WHOLE REPO-RELATIVE PATH, not the basename.
+ *
+ * The basename is not unique. A workbook belongs to exactly one application - the
+ * registry enforces that, and `validateRegistry` refuses a workbook two applications
+ * both claim - but nothing stops TWO applications owning two DIFFERENT workbooks that
+ * happen to share a file name: `excel/bugasura/cases.xlsx` and
+ * `excel/flipkart/cases.xlsx` both reduced to `cases`, and the second run's cache
+ * silently overwrote the first's. The rows are what the data-driven runner executes,
+ * so that is one application's cases running under another application's name.
+ *
+ * A path is unique by construction, and one path means one workbook means one
+ * application, so uniqueness of the path gives uniqueness of the application without
+ * this module needing to read the registry - which matters because `globalSetup` calls
+ * it inside the Playwright runtime, where pulling in the project registry would be a
+ * new dependency for a name.
+ *
+ * The directory is git-ignored and rebuilt by `globalSetup` before every run, so
+ * renaming costs nothing: there is no stale file to migrate and no reader that spells
+ * the old name - every caller goes through this function.
+ */
 export function cachePathFor(workbookPath: string): string {
-  const base = path.basename(workbookPath, path.extname(workbookPath));
-  return path.join(DATA_DIR, `${base}.data-driven.json`);
+  const relative = path.relative(process.cwd(), path.resolve(process.cwd(), workbookPath));
+  const stem = relative.slice(0, relative.length - path.extname(relative).length);
+  const safe = stem.split(/[\/]+/).filter(Boolean).join('-').replace(/[^A-Za-z0-9._-]+/g, '-');
+  return path.join(DATA_DIR, `${safe}.data-driven.json`);
 }
 
 /** What the runner should assert once the actions have been performed. */
@@ -87,6 +111,19 @@ const OUTCOMES: Record<string, Outcome> = {
 /** The declared outcome as an `Outcome`, or null when it is not one we know. */
 export function normalizeOutcome(declared: string): Outcome | null {
   return OUTCOMES[declared.trim().toLowerCase().replace(/\s+/g, ' ')] ?? null;
+}
+
+/**
+ * The literal text a token carries, or undefined for every other kind.
+ *
+ * `Token` is a discriminated union and only `literal` has a `value`; the call sites
+ * were reading `.value` off the union, which happened to give `undefined` for the
+ * other kinds at run time and was a type error the whole time. This states the same
+ * answer in a way the compiler can check, so a token kind added later cannot silently
+ * start reading as a submit control.
+ */
+export function literalValueOf(token: Token | undefined): string | undefined {
+  return token?.kind === 'literal' ? token.value : undefined;
 }
 
 export type Token =
@@ -276,7 +313,7 @@ export function toDataDrivenCase(testCase: TestCase): DataDrivenCase | RejectedR
     outcome,
     inputNames: Object.keys(inputs as Record<string, Token>),
     steps: testCase.steps,
-    submit: (inputs as Record<string, Token>).submit?.value,
+    submit: literalValueOf((inputs as Record<string, Token>).submit),
   });
   if (gap)
     return reject(gap.message);

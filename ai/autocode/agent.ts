@@ -35,6 +35,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { type ContextBudget, type ContextSelection, describeSelection, selectContext } from './context';
+import { credentialsFixtureName } from './abstraction/writer';
 import { toPromptBlock as pageIndexBlock } from '../knowledge/canonical';
 import type { BrowserNeed, SufficiencyResult } from '../knowledge/page-knowledge';
 import { autoLoadedChars, BROWSE_LOG, BROWSE_LOG_ENV, CASE_ID_ENV, RUN_ID_ENV } from './metrics';
@@ -42,6 +43,7 @@ import { explorationRequest, toPromptBlock } from '../knowledge/page-knowledge';
 import type { Handover } from './session';
 import { MANAGED_ENV } from './session';
 import type { TestCase } from '../excel/types';
+import { activeScope } from '../projects/scope';
 
 const ROOT = process.cwd();
 
@@ -305,7 +307,7 @@ function recordedBlock(origin: { recorded: boolean; signedInDuringRecording: boo
         'credentials were never captured - the value is stored as `[type=password]`.',
         '',
         'Your spec must authenticate the way every other authenticated spec in this repo',
-        'does: guard with `requireCredentials(bugasuraCredentials)`, then sign in through',
+        `does: guard with \`requireCredentials(${credentialsFixtureName() ?? 'appCredentials'})\`, then sign in through`,
         'the existing fixtures and Page Object. That mechanism reads the git-ignored .env',
         'at run time.',
         '',
@@ -316,7 +318,7 @@ function recordedBlock(origin: { recorded: boolean; signedInDuringRecording: boo
   return [...lines, ''];
 }
 
-function browserCrib(handover: Handover | null, withheld: WithheldBrowser | null): string[] {
+function browserCrib(handover: Handover | null, withheld: WithheldBrowser | null, baseUrl: string): string[] {
   if (!handover && withheld) {
     return [
       'THERE IS NO BROWSER THIS RUN, and that is a decision, not an oversight.',
@@ -343,7 +345,7 @@ function browserCrib(handover: Handover | null, withheld: WithheldBrowser | null
     `  node ${BROWSE_SCRIPT} snapshot            # refs (e12) to target with`,
     `  node ${BROWSE_SCRIPT} snapshot --depth=4  # cheaper on a big page`,
     `  node ${BROWSE_SCRIPT} find "Sign in"      # search instead of dumping it all`,
-    `  node ${BROWSE_SCRIPT} goto https://my.bugasura.io/apps`,
+    `  node ${BROWSE_SCRIPT} goto ${JSON.stringify(baseUrl)}`,
     `  node ${BROWSE_SCRIPT} click e12           # or a CSS selector, or getByRole(...)`,
     `  node ${BROWSE_SCRIPT} fill e5 "text"`,
     `  node ${BROWSE_SCRIPT} --raw eval "document.querySelectorAll('.x').length"`,
@@ -352,10 +354,10 @@ function browserCrib(handover: Handover | null, withheld: WithheldBrowser | null
 
   if (!handover) {
     return [
-      'Open Bugasura and read the real DOM before you write selectors. Guessing',
+      'Open the configured application and read the real DOM before you write selectors. Guessing',
       'selectors is the main reason generated tests fail. Your browser is a CLI,',
       'driven ONLY through this script - no other shell command is available to you:',
-      `  node ${BROWSE_SCRIPT} open https://my.bugasura.io/`,
+      `  node ${BROWSE_SCRIPT} open ${JSON.stringify(baseUrl)}`,
       ...commands,
       `  node ${BROWSE_SCRIPT} close               # do this when you are finished`,
       'The session is one browser that persists between commands, so `open` once.',
@@ -419,7 +421,9 @@ export function instructions(
   withheld: WithheldBrowser | null = null,
 ): string {
   const testCase = request.testCase;
-  const mutating = process.env.BUGASURA_ALLOW_DATA_MUTATION === '1' && Boolean(process.env.BUGASURA_TEAM);
+  const scope = activeScope();
+  const mutationPermission = `${scope.applicationId.toUpperCase().replace(/-/g, '_')}_ALLOW_DATA_MUTATION`;
+  const mutating = process.env[mutationPermission] === '1';
 
   return [
     'WRITE THE SPEC TO EXACTLY THIS PATH, creating or editing only this file:',
@@ -441,10 +445,11 @@ export function instructions(
     '  5. Import from the existing fixtures and Page Objects in tests-e2e/.',
     '     Add a locator to a Page Object rather than inlining a brittle selector.',
     '',
-    ...browserCrib(handover, withheld),
+    ...browserCrib(handover, withheld, scope.baseUrl),
     mutating
-      ? 'Data-mutating flows are permitted this run (BUGASURA_ALLOW_DATA_MUTATION=1). Gate any test' +
-        ' that creates data behind that variable the way tests-e2e/projects/projects.spec.ts does.'
+      ? `Data-mutating flows are permitted this run (${mutationPermission}=1). Gate any test`
+        + ` that creates data with requireDataMutationOptIn(process.env.${mutationPermission} === '1')`
+        + ' from tests-e2e/support/base-fixtures.'
       : 'Data-mutating flows are NOT permitted this run. If this case can only be tested by creating' +
         ' or changing data, decline it (below) rather than writing a test that will skip.',
     '',

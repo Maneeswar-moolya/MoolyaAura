@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * The DOM-evidence contract, pinned offline.
  *
@@ -9,6 +10,7 @@
  * working exactly as it does today.
  */
 
+import { recordingSource } from '../testing/synthetic-data';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -18,6 +20,7 @@ import {
 } from './dom-evidence';
 import { parseRecording } from '../dashboard/recorder';
 import { mapRecording, locatorMetrics } from './from-recording';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -116,15 +119,12 @@ function main(): void {
   check('evidenceFor on undefined returns null', evidenceFor(undefined, 'anything') === null);
 
   process.stdout.write('\n== F — backward compatibility: recordings with no evidence ==\n');
-  const artifacts = ['TC_LOGIN_036', 'TC_LOGIN_037', 'TC_LOGIN_039'];
-  for (const id of artifacts) {
-    const file = path.resolve(ROOT, `ai/dashboard/recordings/${id}.spec.ts`);
-    if (!fs.existsSync(file)) {
-      check(`${id}: artifact present`, false, 'missing');
-      continue;
-    }
-    const recording = parseRecording(fs.readFileSync(file, 'utf8'),
-        { startUrl: '', browser: '', durationMs: 0 });
+  for (const id of ['row_900001', 'row_900002', 'row_900003']) {
+    const recording = parseRecording(recordingSource([
+      "await page.getByRole('link', { name: 'Notifications' }).click();",
+      "await page.getByRole('button', { name: 'Notification settings' }).click();",
+      `await expect(page.locator('#${id}')).toContainText('Record summary');`,
+    ]), { startUrl: '', browser: '', durationMs: 0 });
     check(`${id}: parses with evidence marked unavailable`,
         recording.evidence.available === false
         && recording.evidence.reason.includes('Codegen script'));

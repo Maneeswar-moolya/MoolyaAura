@@ -22,21 +22,30 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { recordingFingerprint } from '../autocode/work';
+import { recordingsDir } from './recorder';
 import type { TestCase } from '../excel/types';
 
-const ROOT = process.cwd();
-export const RECORDINGS_DIR = path.resolve(ROOT, 'ai', 'dashboard', 'recordings');
+/**
+ * ONE recordings directory, and it is the recorder's.
+ *
+ * This module used to declare its own `path.resolve(ROOT, 'ai','dashboard','recordings')`,
+ * a second definition of the same location - which is exactly how a scoped recorder and
+ * an unscoped bookkeeper would come to disagree about where a recording is: the sidecar
+ * would be written beside a recording that is not there, `recordingStatus` would report
+ * `exists: false` for a case that HAS a recording, and generation would be refused for
+ * one that is fine. The recorder owns the store; this module owns the bookkeeping in it.
+ */
 
 /** The bookkeeping file. Never the recording itself. */
-export function authoringSidecarPath(testCaseId: string, dir = RECORDINGS_DIR): string {
+export function authoringSidecarPath(testCaseId: string, dir = recordingsDir()): string {
   return path.join(dir, `${testCaseId}.authoring.json`);
 }
 
-export function recordingArtifactPath(testCaseId: string, dir = RECORDINGS_DIR): string {
+export function recordingArtifactPath(testCaseId: string, dir = recordingsDir()): string {
   return path.join(dir, `${testCaseId}.spec.ts`);
 }
 
-export function evidenceArtifactPath(testCaseId: string, dir = RECORDINGS_DIR): string {
+export function evidenceArtifactPath(testCaseId: string, dir = recordingsDir()): string {
   return path.join(dir, `${testCaseId}.evidence.json`);
 }
 
@@ -64,7 +73,7 @@ export interface RecordingStatus {
  * Pure apart from two `readFileSync`s. Returns `exists: false` for every case
  * nobody recorded, which is most of them.
  */
-export function recordingStatus(testCase: TestCase, dir = RECORDINGS_DIR): RecordingStatus {
+export function recordingStatus(testCase: TestCase, dir = recordingsDir()): RecordingStatus {
   const current = recordingFingerprint(testCase);
   const exists = fs.existsSync(recordingArtifactPath(testCase.testCaseId, dir));
   const status: RecordingStatus = {
@@ -98,7 +107,7 @@ export function recordingStatus(testCase: TestCase, dir = RECORDINGS_DIR): Recor
  * next edit has something to compare against. Failure is swallowed: losing this
  * file costs a staleness check, and must never cost somebody their recording.
  */
-export function rememberRecordingFingerprint(testCase: TestCase, dir = RECORDINGS_DIR): void {
+export function rememberRecordingFingerprint(testCase: TestCase, dir = recordingsDir()): void {
   try {
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(authoringSidecarPath(testCase.testCaseId, dir),

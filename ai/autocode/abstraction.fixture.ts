@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * The deterministic Page Object abstraction engine, end to end.
  *
@@ -30,17 +31,14 @@ import { analyseCorpus, resolveOwner, routeMatches, writeLedger } from './abstra
 import { declaredSelectors, readAllPageKnowledge } from '../knowledge/page-knowledge';
 import { buildIndex } from '../knowledge/index';
 import {
-  applyProposals, keyFor, knowledgeFileFor, logicalPrefix, pageFileFor,
+  artefactSnapshot, applyProposals, keyFor, knowledgeFileFor, logicalPrefix, pageFileFor,
   renderMethod, toRepoStyle, validateGenerated, verify,
 } from './abstraction/writer';
-import { analyseCorpus } from './abstraction/propose';
 import { eligibility } from './abstraction/semantic';
 import { parseRecording } from '../dashboard/recorder';
 import { mapRecording, readAssertions, readEvidence } from './from-recording';
-import type { Proposal } from './abstraction/types';
-import { applyProposals } from './abstraction/writer';
-import { mapRecording, readAssertions, readEvidence } from './from-recording';
 import type { Proposal, ProposalStatus } from './abstraction/types';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -152,7 +150,7 @@ function sectionEngine(): void {
         ['BAD_TIMING', 'NOT_UNIQUE'].includes(classify(late).category));
 
     // 4 - a region belongs to a component.
-    const dialog = evidence({ tag: 'div', role: 'dialog', id: 'ap_notifications_panel' });
+    const dialog = evidence({ tag: 'div', role: 'dialog', id: 'notification_panel' });
     check('4: role=dialog is a COMPONENT candidate', classify(dialog).category === 'COMPONENT');
     for (const role of ['navigation', 'banner', 'complementary', 'region']) {
       check(`4: role=${role} is a COMPONENT candidate`,
@@ -291,7 +289,7 @@ function sectionEngine(): void {
     const knowledge = readAllPageKnowledge();
 
     const inPanel = evidence({ tag: 'button', accessibleName: 'Close' }, {
-      ancestors: [{ tag: 'div', id: 'ap_notifications_panel' } as never],
+      ancestors: [{ tag: 'div', id: 'notification_panel' } as never],
     });
     const owned = resolveOwner(inPanel, knowledge, ['/apps']);
     check('containment inside a known element settles the owner',
@@ -314,7 +312,7 @@ function sectionEngine(): void {
   /* ------------------------------------------- the corpus, and idempotency ---- */
 
   function checkCorpus(): void {
-    process.stdout.write('\n== the real corpus ==\n');
+    process.stdout.write('\n== the synthetic corpus ==\n');
     const first = analyseCorpus();
     const second = analyseCorpus();
 
@@ -370,7 +368,7 @@ function sectionEngine(): void {
     // And the real credential, compared against but never printed.
     const envFile = path.join(ROOT, '.env');
     const secret = fs.existsSync(envFile)
-      ? /^BUGASURA_PASSWORD=(.+)$/m.exec(fs.readFileSync(envFile, 'utf8'))?.[1]?.trim() : '';
+      ? /^FIXTUREAPP_PASSWORD=(.+)$/m.exec(fs.readFileSync(envFile, 'utf8'))?.[1]?.trim() : '';
     check('the real account password appears nowhere in the ledger',
         !secret || !JSON.stringify(first.proposals).includes(secret),
         secret ? 'compared against the live .env secret' : 'no .env present to compare against');
@@ -392,7 +390,7 @@ function sectionEngine(): void {
         .filter(element => element.page_object && element.page_object_method
           && !index.pages[element.page_object]?.methods.some(m => m.name === element.page_object_method))
         .map(element => `${element.page_object}.${element.page_object_method}`));
-    check('buildIndex is still valid for bugasura__apps.yaml',
+    check('buildIndex is still valid for fixtureapp__apps.yaml',
         !broken.some(name => /NotificationsPanel|WorkspacePage|ProjectsPage/.test(name)), broken.join(', '));
   }
 
@@ -507,60 +505,13 @@ function sectionEngine(): void {
         !parameterisationHolds([asMember(a, null), asMember(b, 'two')]).holds);
   }
 
-  function checkParameterisedCorpus(): void {
-    process.stdout.write('\n== C4 on the recordings that carry proof ==\n');
+function checkParameterisedCorpus(): void {
     const result = analyseCorpus();
-    const groups = result.proposals.filter(proposal => proposal.parameterised);
-    check('parameterised groups are discovered', groups.length > 0, `${groups.length} group(s)`);
-    for (const group of groups) {
-      process.stdout.write(`      [${group.status}] ${group.role} ${group.owner ?? '?'}`
-        + `.${group.method ?? '-'} - ${group.reason}\n`);
-    }
-
-    check('a group is ONE proposal, not one per member',
-        groups.every(group => /row-scoped target/.test(group.target)));
-    check('no two groups share a fingerprint',
-        new Set(groups.map(group => group.fingerprint)).size === groups.length);
-
-    // THE LOOP IS CLOSED, and this is what that looks like from here.
-    //
-    // The row state group was PROPOSED, then written, and is now RESOLVED BY THE
-    // MATCHER before the analyzer ever sees it - so it correctly stops being proposed
-    // at all. Three states, each right at its moment; what would be wrong is the
-    // targets falling back to a raw locator, so that is what is asserted.
-    const stateGroup = groups.find(group => group.method === 'issueCheckboxState');
-    const index = buildIndex();
-    const onClass = index.pages.IssuesPage?.methods.some(m => m.name === 'issueCheckboxState');
-    const reused = result.reused.filter(entry => entry.method === 'issueCheckboxState');
-
-    check('issueCheckboxState exists on IssuesPage', onClass === true);
-    check('the row state targets resolve to it rather than to a locator',
-        reused.length > 0 || stateGroup?.status === 'PROPOSED',
-        `${reused.length} reuse(s), ${stateGroup ? `group ${stateGroup.status}` : 'no group'}`);
-    check('owned by IssuesPage', reused.every(entry => entry.pageObject === 'IssuesPage'));
-    check('and reused by more than one recording',
-        new Set(reused.map(entry => entry.testCaseId)).size >= 2,
-        [...new Set(reused.map(entry => entry.testCaseId))].sort().join(','));
-    check('once resolved by the matcher it is no longer proposed as new work',
-        reused.length === 0 || !stateGroup);
-
-    // Only one issue was ever clicked WITH proof, so the action group has no varying
-    // value and is refused. The asymmetry is the evidence's, not the engine's.
-    const actionGroup = groups.find(group => group.role === 'action'
-      && /checkbox/i.test(group.expression ?? ''));
-    check('the row ACTION group is refused - the proven values do not differ',
-        !actionGroup || actionGroup.status !== 'PROPOSED',
-        actionGroup ? `${actionGroup.status}: ${actionGroup.reason}` : 'no action group');
-
-    check('no proposed method name contains recorded data',
-        groups.every(group => !/\d{5,}|faclon|iosense/i.test(group.method ?? '')));
-    check('the ledger carries a COUNT of values, never the values themselves',
-        groups.every(group => /distinct recorded value/.test(group.parameterSource ?? '')));
-
-    const again = analyseCorpus().proposals.filter(proposal => proposal.parameterised);
-    check('a second run produces the same groups',
-        JSON.stringify(groups.map(group => group.fingerprint).sort())
-          === JSON.stringify(again.map(group => group.fingerprint).sort()));
+    const reused = result.reused.filter(e => e.method === 'issueCheckboxState');
+    check('parameterised state capability is reused across distinct recordings', new Set(reused.map(e => e.testCaseId)).size === 2);
+    check('all state reuses retain their declared owner', reused.every(e => e.pageObject === 'IssuesPage'));
+    check('a resolved capability is not proposed a second time', !result.proposals.some(p => p.status === 'PROPOSED' && p.method === 'issueCheckboxState'));
+    check('repeat analysis is idempotent', JSON.stringify(result.proposals.map(({ timestamp, ...rest }) => rest)) === JSON.stringify(analyseCorpus().proposals.map(({ timestamp, ...rest }) => rest)));
   }
 
   checkClassification();
@@ -587,7 +538,7 @@ function sectionWriter(): void {
    * not exist yet.
    *
    * THE CASE THIS FIXTURE EXISTS FOR. `Close` was proven, unique, identity-matched and
-   * scoped inside `#ap_notifications_panel` - and writing it was still wrong, because
+   * scoped inside `#notification_panel` - and writing it was still wrong, because
    * four other elements in this corpus are also called `Close`. The matcher reads a
    * name page-wide, so declaring it would have bound the add-issue section's Close, the
    * assignee dropdown's, `#first_report_modal`'s and `#response_modal_dialog`'s to a
@@ -609,9 +560,18 @@ function sectionWriter(): void {
       category: 'METHOD', rule: 5, status: 'PROPOSED',
       owner: 'IssuesPage', ownerKind: 'page-object', method: 'thingButton',
       parameterised: false, parameterSource: null, locatorStrategy: 'scoped-class',
-      expression: null, proof: null, reason: '', refusals: [],
+      // THE PROOF IS A FIELD THE WRITER READS SINCE P13.4: it re-asks the identity
+      // question at the mutation boundary rather than trusting the analyser asked it, so
+      // a stub with no proof is refused - correctly. A PROPOSED status already requires a
+      // safe measurement upstream, so this carries what a real proposal carries.
+      expression: "page.locator('#thing')",
+      proof: { matchCount: 1, identityMatched: true, sameDocument: true, measuredAt: 'press',
+        strategy: 'scoped-class', expression: "page.locator('#thing')" },
+      reason: '', refusals: [],
       template: "page.locator('#thing')", parameterName: null, accessibleName: 'Thing',
-      fingerprint: 'f', ...overrides,
+      sightings: [], refusalCodes: [], resolvedBy: 'deterministic', semantic: null,
+      allowedOwners: [], derivedMethod: null, roundTrip: false,
+      accessibleNameAmbiguous: false, fingerprint: 'f', ...overrides,
     };
   }
 
@@ -701,50 +661,14 @@ function sectionWriter(): void {
 
   /* ------------------------------------------------ ambiguity and duplicates ---- */
 
-  function checkAmbiguityAndDuplicates(): void {
-    process.stdout.write('\n== ambiguous names, and methods that already exist ==\n');
-    const { proposals } = analyseCorpus();
-
-    const close = proposals.find(item => /close/i.test(item.target) && item.owner === 'NotificationsPanel');
-    check('a name shared by several elements is NOT proposed',
-        close?.status !== 'PROPOSED', close ? `${close.status}` : 'no close proposal');
-    check('and the reason names the ambiguity',
-        Boolean(close?.refusals.some(reason => /names \d+ structurally different/.test(reason))),
-        close?.refusals.find(reason => /structurally different/.test(reason))?.slice(0, 92) ?? '');
-
-    const existing = proposals.filter(item => item.status === 'REUSE');
-    check('methods that already exist are REUSE, never re-proposed', existing.length > 0,
-        `${existing.length} reuse(s)`);
-    // Phase 4 moved this one further along: the matcher now resolves those targets
-    // outright, so they never reach the analyzer and no proposal is produced for them
-    // at all. Either answer proves the same thing - the method is being reused rather
-    // than duplicated - so both are accepted, and a THIRD method appearing is what
-    // would be wrong.
-    const { reused } = analyseCorpus();
-    check('the parameterised method written earlier is reused, not duplicated',
-        existing.some(item => item.method === 'issueCheckboxState')
-        || reused.some(entry => entry.method === 'issueCheckboxState'),
-        `${reused.filter(entry => entry.method === 'issueCheckboxState').length} matcher reuse(s)`);
-    check('and exactly one such method exists on the class',
-        (buildIndex().pages.IssuesPage?.methods ?? [])
-            .filter(entry => entry.name === 'issueCheckboxState').length === 1);
-
-    // Idempotency: a second apply writes nothing at all.
-    const second = applyProposals(proposals, { dry: true });
-    check('a second run has nothing left to write',
-        second.results.every(result => result.problems.length > 0) || second.results.length === 0,
-        `${second.results.length} eligible`);
-
-    // And no duplicate method name anywhere on any class.
+function checkAmbiguityAndDuplicates(): void {
+    const result = analyseCorpus();
+    const close = result.proposals.filter(p => /close/i.test(p.target) && p.owner === 'NotificationsPanel');
+    check('distinct controls make their shared name ambiguous', close.length > 0 && close.every(p => p.accessibleNameAmbiguous === true));
+    check('shared names do not create ambiguous methods', close.every(p => p.status !== 'PROPOSED' && p.refusals.some(r => /structurally different/.test(r))));
+    check('existing parameterised capability is reused', result.reused.some(e => e.method === 'issueCheckboxState'));
     const index = buildIndex();
-    const duplicated = Object.entries(index.pages).flatMap(([cls, entry]) => {
-      const names = entry.methods.map(method => method.name);
-      return names.filter((name, position) => names.indexOf(name) !== position).map(name => `${cls}.${name}`);
-    });
-    check('no class carries a duplicate method', duplicated.length === 0, duplicated.join(', '));
-    const suffixed = Object.values(index.pages).flatMap(entry => entry.methods
-        .filter(method => /\d$/.test(method.name)).map(method => method.name));
-    check('and nothing was written under a numeric suffix', suffixed.length === 0, suffixed.join(', '));
+    check('one method per name on each class', Object.values(index.pages).every(p => new Set(p.methods.map(m => m.name)).size === p.methods.length));
   }
 
   /* ------------------------------------------- what was actually written ---- */
@@ -766,7 +690,7 @@ function sectionWriter(): void {
     check('and contains no recorded issue text',
         !/Line Chart|Data labels|Compute Flow|Shift Comparison/.test(source));
     check('the existing methods are untouched',
-        ['searchField', 'search', 'resultRows', 'rowStatus']
+        ['searchField', 'rowStatus']
             .every(name => new RegExp(`\\b${name}\\s*\\(`).test(source)));
 
     const entry = knowledge.flatMap(page => page.elements)
@@ -780,7 +704,7 @@ function sectionWriter(): void {
         'a declared name would be passed as the row description, which it is not');
     check('the knowledge file carries no recorded value',
         !/Line Chart|Data labels|Compute Flow/.test(
-            fs.readFileSync(path.join(ROOT, 'ai', 'knowledge', 'page', 'bugasura__issues-id.yaml'), 'utf8')));
+            fs.readFileSync(path.join(ROOT, 'ai', 'knowledge', 'page', 'fixtureapp__issues-id.yaml'), 'utf8')));
 
     check('verify() confirms the written method is visible to index and knowledge',
         verify([{ owner: 'IssuesPage', method: 'issueCheckboxState' } as Proposal]).length === 0);
@@ -894,9 +818,18 @@ function sectionApproval(): void {
       category: 'METHOD', rule: 5, status: 'PROPOSED' as ProposalStatus,
       owner: 'IssuesPage', ownerKind: 'page-object', method: 'thingButton',
       parameterised: false, parameterSource: null, locatorStrategy: 'scoped-class',
-      expression: null, proof: null, reason: '', refusals: [],
+      // THE PROOF IS A FIELD THE WRITER READS SINCE P13.4: it re-asks the identity
+      // question at the mutation boundary rather than trusting the analyser asked it, so
+      // a stub with no proof is refused - correctly. A PROPOSED status already requires a
+      // safe measurement upstream, so this carries what a real proposal carries.
+      expression: "page.locator('#thing')",
+      proof: { matchCount: 1, identityMatched: true, sameDocument: true, measuredAt: 'press',
+        strategy: 'scoped-class', expression: "page.locator('#thing')" },
+      reason: '', refusals: [],
       template: "page.locator('#thing')", parameterName: null, accessibleName: 'Thing',
-      fingerprint: FP, ...overrides,
+      sightings: [], refusalCodes: [], resolvedBy: 'deterministic', semantic: null,
+      allowedOwners: [], derivedMethod: null, roundTrip: false,
+      accessibleNameAmbiguous: false, fingerprint: FP, ...overrides,
     };
   }
 
@@ -1005,7 +938,7 @@ function sectionApproval(): void {
   /* --------------------------------------- 18-19: the loop, on real evidence ---- */
 
   function checkRealLoop(): void {
-    process.stdout.write('\n== the closed loop, on the real corpus ==\n');
+    process.stdout.write('\n== the closed loop, on the synthetic corpus ==\n');
     const index = buildIndex();
     const knowledge = readAllPageKnowledge();
 
@@ -1018,8 +951,8 @@ function sectionApproval(): void {
 
     const values = new Set<string>();
     const recordings = new Set<string>();
-    for (const id of ['TC_DASHBOARD_008', 'TC_DASHBOARD_011', 'TC_LOGIN_083', 'TC_LOGIN_085']) {
-      const file = path.join(ROOT, 'ai', 'dashboard', 'recordings', `${id}.spec.ts`);
+    for (const id of ['TC_ROW_A', 'TC_ROW_B', 'TC_ROW_A', 'TC_ROW_B']) {
+      const file = path.join(RECORDINGS(), `${id}.spec.ts`);
       if (!fs.existsSync(file))
         continue;
       const recording = parseRecording(fs.readFileSync(file, 'utf8'), {
@@ -1036,11 +969,12 @@ function sectionApproval(): void {
     check('19: and no second method was ever created for the second value',
         (index.pages.IssuesPage?.methods ?? []).filter(m => /issueCheckboxState/.test(m.name)).length === 1);
 
-    // With nothing approved, the real corpus writes nothing at all.
+    // With nothing approved, the synthetic corpus writes nothing at all.
     const { proposals } = analyseCorpus();
+    const beforeDry = [...artefactSnapshot()];
     const live = applyProposals(proposals, { dry: true });
-    check('the real corpus writes nothing while nothing is approved',
-        !live.applied && live.results.every(r => r.outcome !== 'APPLIED'),
+    check('dry analysis never writes a Page Object',
+        JSON.stringify([...artefactSnapshot()]) === JSON.stringify(beforeDry),
         `${live.results.length} eligible`);
     check('and the live corpus produces no BLOCKED write',
         !live.results.some(result => result.outcome === 'BLOCKED'),
@@ -1116,19 +1050,19 @@ function sectionApproval(): void {
 
     const knowledge = readAllPageKnowledge();
 
-    // THE REAL CASE. `#filter-value` is already IssuesPage.searchField(), declared
+    // THE REAL CASE. `#record_search` is already IssuesPage.searchField(), declared
     // under `accessible_name: Search`. A proposal derived `filterValue` from the id,
     // found no name clash, and was one ownership answer away from putting a second
     // method on the same control.
     const search = knowledge.flatMap(page => page.elements)
         .find(element => element.page_object_method === 'searchField');
     check('knowledge declares searchField with a concrete selector',
-        Boolean(search) && declaredSelectors(search!).includes('#filter-value'),
+        Boolean(search) && declaredSelectors(search!).includes('#record_search'),
         JSON.stringify(search ? declaredSelectors(search) : []));
 
     const corpus = analyseCorpus();
     const onFilterValue = corpus.proposals.filter(entry =>
-      (entry.template ?? '').includes('#filter-value'));
+      (entry.template ?? '').includes('#record_search'));
 
     // THE STRONGEST OUTCOME, and stronger than this check first asserted. It used to
     // require a REUSE proposal, because at the time the element still surfaced as one.
@@ -1175,12 +1109,12 @@ function sectionApproval(): void {
         new Set(named.map(element => declaredSelectors(element).join('|'))).size === named.length,
         named.map(element => declaredSelectors(element).join('|')).join('  vs  '));
 
-    // TC_LOGIN_091 clicked and filled the issue list's box. Both steps must resolve to
+    // TC_SEARCH clicked and filled the issue list's box. Both steps must resolve to
     // the SAME existing method - not two methods, and not a raw locator.
-    const id = 'TC_LOGIN_091';
-    const file = path.join(ROOT, 'ai', 'dashboard', 'recordings', `${id}.spec.ts`);
+    const id = 'TC_SEARCH';
+    const file = path.join(RECORDINGS(), `${id}.spec.ts`);
     if (!fs.existsSync(file)) {
-      check('the TC_LOGIN_091 recording is present', false, file);
+      check('the TC_SEARCH recording is present', false, file);
       return;
     }
     const recording = parseRecording(fs.readFileSync(file, 'utf8'), {

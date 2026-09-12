@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * P0.11 — the attempt budget must not outlive the defect it was protecting against.
  *
@@ -9,7 +10,7 @@
  *
  * WHY THIS EXISTS
  *
- * `MAX_ATTEMPTS` asked "has this row changed?" and nothing else. TC_LOGIN_041,
+ * `MAX_ATTEMPTS` asked "has this row changed?" and nothing else. TC_SYNTHETIC_001,
  * 042 and 043 spent their two attempts failing at a click the application
  * swallowed - a framework defect, fixed by P0.8 - and stayed skipped afterwards
  * with "edit the row to try again". Nothing was wrong with those rows. The
@@ -24,13 +25,13 @@ import path from 'node:path';
 import { parseWorkbook } from '../excel/parser';
 import { readMapping } from '../excel/mapping';
 import {
-  budgetExhausted, fingerprint, frameworkFingerprint, GENERATION_PAGE_OBJECT_DIR,
-  GENERATION_SOURCES, MAX_ATTEMPTS, resetFrameworkFingerprint, surveyWork,
+  budgetExhausted, fingerprint, frameworkFingerprint, generationPageObjectDir,
+  GENERATION_SOURCES, MAX_ATTEMPTS, resetFrameworkFingerprint, stateKeyFor, surveyWork,
   type State, type StateEntry,
 } from './work';
 
 const ROOT = process.cwd();
-const WORKBOOK = 'excel/login-test-cases.xlsx';
+const WORKBOOK = 'excel/fixture-cases.xlsx';
 let failures = 0;
 const check = (label: string, ok: boolean, detail = '') => {
   process.stdout.write(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? ` — ${detail}` : ''}\n`);
@@ -106,9 +107,9 @@ function fakeTree(): string {
     fs.mkdirSync(path.join(root, path.dirname(relative)), { recursive: true });
     fs.writeFileSync(path.join(root, relative), `// ${relative}\nexport const x = 1;\n`, 'utf8');
   }
-  fs.mkdirSync(path.join(root, GENERATION_PAGE_OBJECT_DIR), { recursive: true });
+  fs.mkdirSync(path.join(root, generationPageObjectDir()), { recursive: true });
   for (const name of ['login.page.ts', 'projects.page.ts'])
-    fs.writeFileSync(path.join(root, GENERATION_PAGE_OBJECT_DIR, name), `export class X {}\n`, 'utf8');
+    fs.writeFileSync(path.join(root, generationPageObjectDir(), name), `export class X {}\n`, 'utf8');
   return root;
 }
 
@@ -129,9 +130,9 @@ function checkFingerprint(): void {
 
   process.stdout.write('\n== 6 — only generation inputs move it ==\n');
   const unrelated = [
-    'ai/autocode/state.json', 'ai/test-mapping/mapping.json', 'excel/login-test-cases.xlsx',
+    'ai/autocode/state.json', 'ai/test-mapping/mapping.json', 'excel/fixture-cases.xlsx',
     'tests-e2e/generated/TC_LOGIN_064.spec.ts', 'ai/reports/autocode-log.md',
-    'ai/dashboard/recordings/TC_LOGIN_041.spec.ts', 'ai/autocode/verify.ts', 'README.md',
+    'ai/dashboard/recordings/TC_SYNTHETIC_001.spec.ts', 'ai/autocode/verify.ts', 'README.md',
   ];
   for (const relative of unrelated) {
     fs.mkdirSync(path.join(root, path.dirname(relative)), { recursive: true });
@@ -151,16 +152,16 @@ function checkFingerprint(): void {
   const afterResolver = print(root);
   check('6: locator resolution changes it', afterResolver !== afterAssembler);
 
-  const pageObject = path.join(root, GENERATION_PAGE_OBJECT_DIR, 'projects.page.ts');
+  const pageObject = path.join(root, generationPageObjectDir(), 'projects.page.ts');
   fs.writeFileSync(pageObject, `${fs.readFileSync(pageObject, 'utf8')}// page object changed\n`, 'utf8');
   const afterPageObject = print(root);
   check('6: a Page Object changes it', afterPageObject !== afterResolver);
 
-  fs.writeFileSync(path.join(root, GENERATION_PAGE_OBJECT_DIR, 'new.page.ts'), 'export class N {}\n', 'utf8');
+  fs.writeFileSync(path.join(root, generationPageObjectDir(), 'new.page.ts'), 'export class N {}\n', 'utf8');
   const afterNewPage = print(root);
   check('6: a NEW Page Object changes it', afterNewPage !== afterPageObject);
 
-  fs.rmSync(path.join(root, GENERATION_PAGE_OBJECT_DIR, 'new.page.ts'));
+  fs.rmSync(path.join(root, generationPageObjectDir(), 'new.page.ts'));
   check('6: removing it again restores the previous fingerprint', print(root) === afterPageObject);
 
   fs.rmSync(path.join(root, GENERATION_SOURCES[2]));
@@ -174,7 +175,7 @@ function checkFingerprint(): void {
     fs.writeFileSync(file, fs.readFileSync(file, 'utf8').split('\n').join('\r\n'), 'utf8');
   }
   for (const name of ['login.page.ts', 'projects.page.ts']) {
-    const file = path.join(crlf, GENERATION_PAGE_OBJECT_DIR, name);
+    const file = path.join(crlf, generationPageObjectDir(), name);
     fs.writeFileSync(file, fs.readFileSync(file, 'utf8').split('\n').join('\r\n'), 'utf8');
   }
   check('6: a CRLF checkout hashes the same as an LF one', print(crlf) === first,
@@ -191,17 +192,20 @@ async function checkSurvey(): Promise<void> {
   process.stdout.write('\n== 8 + integration — through the real surveyWork ==\n');
   const parsed = await parseWorkbook(path.resolve(ROOT, WORKBOOK));
   const mapping = readMapping();
-  const id = 'TC_LOGIN_041';
+  const id = 'TC_SYNTHETIC_001';
   const only = new Set([id]);
   const testCase = parsed.testCases.find(row => row.testCaseId.toUpperCase() === id);
   if (!testCase) {
-    check('integration: TC_LOGIN_041 is in the workbook', false, 'row not found');
+    check('integration: TC_SYNTHETIC_001 is in the workbook', false, 'row not found');
     return;
   }
   const row = fingerprint(testCase);
   const current = frameworkFingerprint();
+  // Keyed `applicationId/testCaseId`, which is what `surveyWork` now looks up. A Test
+  // Case ID is unique within an application and meaningless across them, so the bare id
+  // was a key two projects would have shared.
   const state = (framework: string | undefined, attempts = MAX_ATTEMPTS): State => ({
-    [id]: entry({ fingerprint: row, attempts, framework, verdict: 'quarantined' }),
+    [stateKeyFor(id)]: entry({ fingerprint: row, attempts, framework, verdict: 'quarantined' }),
   });
 
   const blocked = surveyWork(parsed, mapping, state(current), only);
@@ -227,12 +231,13 @@ async function checkSurvey(): Promise<void> {
       JSON.stringify(legacy.skipped));
 
   process.stdout.write('\n== 8 — accepted cases are untouched by any of this ==\n');
-  const acceptedId = 'TC_LOGIN_038';
+  const acceptedId = 'TC_SYNTHETIC_001';
   const acceptedCase = parsed.testCases.find(r => r.testCaseId.toUpperCase() === acceptedId);
-  const acceptedSpec = 'tests-e2e/generated/TC_LOGIN_038.spec.ts';
+  const acceptedSpec = 'tests-e2e/generated/TC_SYNTHETIC_001.spec.ts';
+  fs.writeFileSync(path.resolve(ROOT, acceptedSpec), "// synthetic accepted artifact\n");
   if (acceptedCase && fs.existsSync(path.resolve(ROOT, acceptedSpec))) {
     const acceptedState = (framework: string | undefined): State => ({
-      [acceptedId]: entry({
+      [stateKeyFor(acceptedId)]: entry({
         fingerprint: fingerprint(acceptedCase), verdict: 'accepted', attempts: 0,
         specFile: acceptedSpec, framework,
       }),
@@ -245,7 +250,7 @@ async function checkSurvey(): Promise<void> {
     check('8: an accepted case with NO framework recorded is still left alone',
         surveyWork(parsed, mapping, acceptedState(undefined), only38).work.length === 0);
   } else {
-    check('8: TC_LOGIN_038 and its spec are available to test with', false, acceptedSpec);
+    check('8: TC_SYNTHETIC_001 and its spec are available to test with', false, acceptedSpec);
   }
 }
 

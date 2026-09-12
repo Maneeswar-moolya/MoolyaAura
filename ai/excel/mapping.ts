@@ -10,10 +10,56 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { activeScope, activeScopePath, artefactRoot, resolveScope } from '../projects/scope';
 import type { AutomationStatus, TestCase } from './types';
 
 export const MAPPING_DIR = path.resolve(process.cwd(), 'ai', 'test-mapping');
-export const MAPPING_FILE = path.join(MAPPING_DIR, 'mapping.json');
+
+/** The pre-scope location, and the fallback for a checkout with no registry. */
+const LEGACY_MAPPING_FILE = path.join(MAPPING_DIR, 'mapping.json');
+
+/**
+ * The active application's traceability store.
+ *
+ * APPLICATION-OWNED, and this one is load-bearing twice over. The mapping is keyed by
+ * BARE Test Case ID, so two applications that both have TC_LOGIN_001 do not merely
+ * share a file - they share a KEY, and the second `upsertEntry` overwrites the first
+ * application's spec path, test name and status in place. Everything downstream then
+ * follows the wrong entry: `excel:report` writes one application's result into the
+ * other's workbook row, and `mapping promote` marks it Automated.
+ *
+ * Scoping the FILE rather than namespacing the key is deliberate. `scopedKey()` exists
+ * in `ai/projects/scope.ts` and is not used here, because the key is also the
+ * traceability contract with the workbook: `results.ts` extracts the ID from a test
+ * TITLE (`TC_ID - Scenario`), and namespacing the key would mean namespacing the
+ * title, which is authored text this framework does not own. One file per application
+ * gives the same isolation and leaves the ID exactly as the tester wrote it.
+ *
+ * Flat compatibility belongs only to the registry's declared legacy owner.
+ */
+export function activeMappingFile(): string {
+  return activeScopePath('mappingFile', LEGACY_MAPPING_FILE);
+}
+
+/**
+ * The traceability store for the application that OWNS a workbook.
+ *
+ * USE THIS WHENEVER A WORKBOOK IS IN HAND; `activeMappingFile()` is for a caller that
+ * has none. The difference is not cosmetic and it produced a real cross-project defect:
+ * `activeMappingFile()` reads the AMBIENT scope, which falls back to the declared
+ * `legacyLayout` owner, so `excel:run excel/demoapp-test-cases.xlsx` read and wrote
+ * BUGASURA's `ai/test-mapping/mapping.json` - measured, not theorised. A run of one
+ * project's workbook would have promoted its cases into another project's mapping, and
+ * because the mapping is keyed by BARE Test Case ID a shared `TC_LOGIN_001` would have
+ * overwritten the real owner's spec path, test name and status in place.
+ *
+ * The workbook's owner is DECLARED in the registry (`workbookOwner`), never derived from
+ * the file's name - `excel/demoapp-test-cases.xlsx` is owned by `demoapp` because the
+ * registry says so, and renaming the file changes nothing.
+ */
+export function mappingFileFor(workbook: string): string {
+  return resolveScope({ workbook }).paths.mappingFile;
+}
 
 export interface MappingEntry {
   testFile: string;
@@ -31,7 +77,7 @@ export interface MappingEntry {
 
 export type Mapping = Record<string, MappingEntry>;
 
-export function readMapping(file: string = MAPPING_FILE): Mapping {
+export function readMapping(file: string = activeMappingFile()): Mapping {
   if (!fs.existsSync(file))
     return {};
   const contents = fs.readFileSync(file, 'utf8').trim();
@@ -40,7 +86,7 @@ export function readMapping(file: string = MAPPING_FILE): Mapping {
   return JSON.parse(contents) as Mapping;
 }
 
-export function writeMapping(mapping: Mapping, file: string = MAPPING_FILE): void {
+export function writeMapping(mapping: Mapping, file: string = activeMappingFile()): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const sorted: Mapping = {};
   for (const key of Object.keys(mapping).sort())
@@ -56,6 +102,15 @@ export function upsertEntry(
   timestamp: string,
 ): Mapping {
   const existing = mapping[testCaseId];
+  // DEFAULTS FIRST, THEN THE TWO SPREADS - AND THE OVERWRITING IS THE POINT.
+  //
+  // TypeScript reports the five literals below as TS2783 ("specified more than once,
+  // so this usage will be overwritten") under `strictNullChecks`. That is a correct
+  // description of what happens and a wrong description of what it means: the literals
+  // exist to give a BRAND-NEW entry a complete shape, and an entry that already exists
+  // is supposed to win over them. Reordering to silence the diagnostic would make a
+  // first write incomplete, and `?? ''`-ing each field individually would turn one
+  // statement into five that can drift apart. Deliberate; do not "fix".
   mapping[testCaseId] = {
     module: '',
     scenario: '',
@@ -77,6 +132,43 @@ export function testTitleFor(testCase: TestCase): string {
 const TITLE_PATTERN = /['"`]\s*((?:TC|TS)[_-][A-Za-z0-9_-]+)\s*-\s*([^'"`]+?)\s*['"`]/g;
 
 /**
+ * A subdirectory that is another application's namespace, which a scan must not enter.
+ *
+ * `tests-e2e/generated` is Bugasura's ENTIRE generated tree under the flat layout, and
+ * `tests-e2e/generated/demoapp` is a second application's scoped directory sitting
+ * inside it. Both walkers below recurse, so without this a Bugasura `mapping sync`
+ * walks into demoapp and registers its specs against Bugasura's test-case IDs - a
+ * cross-application leak that produces a plausible mapping rather than an error, and
+ * one that gets worse the moment the two applications share an ID.
+ *
+ * Namespace boundaries are structural, not a list of currently registered names.
+ * Removing an application must never expose its remaining scoped files to the flat owner.
+ */
+function isForeignScopeDir(full: string): boolean {
+  const generated = path.join(artefactRoot(), 'tests-e2e/generated');
+  if (path.dirname(full) !== generated)
+    return false;
+  return full !== activeScope().paths.generatedDir;
+}
+
+/** Flat application runners are not generic framework capabilities. */
+function canReadSuiteFile(file: string): boolean {
+  const suite = path.join(artefactRoot(), 'tests-e2e');
+  const relative = path.relative(suite, file);
+  // Explicit source-analysis callers may scan independent temporary directories.
+  if (relative.startsWith('..') || path.isAbsolute(relative))
+    return true;
+  const scope = activeScope();
+  if (relative.startsWith(`generic${path.sep}`))
+    return true;
+  const generatedRelative = path.relative(scope.paths.generatedDir, file);
+  if (!generatedRelative.startsWith('..') && !path.isAbsolute(generatedRelative))
+    return !scope.flatLayout || path.dirname(scope.paths.generatedDir) === path.join(suite, 'generated')
+      || path.dirname(generatedRelative) === '.';
+  return scope.flatLayout && !relative.startsWith(`generated${path.sep}`);
+}
+
+/**
  * Rebuild the mapping from the spec files themselves.
  *
  * Scanning the source of truth beats trusting a hand-edited JSON file: if a
@@ -91,8 +183,10 @@ export function scanSpecs(specDir: string): Array<{ testCaseId: string; testName
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
+        if (isForeignScopeDir(full))
+          continue;
         walk(full);
-      } else if (/\.spec\.ts$/.test(entry.name)) {
+      } else if (/\.spec\.ts$/.test(entry.name) && canReadSuiteFile(full)) {
         const contents = fs.readFileSync(full, 'utf8');
         for (const match of contents.matchAll(TITLE_PATTERN)) {
           found.push({
@@ -153,8 +247,10 @@ export function scanDataDrivenRunners(specDir: string): Array<{ module: string; 
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
+        if (isForeignScopeDir(full))
+          continue;
         walk(full);
-      } else if (/\.spec\.ts$/.test(entry.name)) {
+      } else if (/\.spec\.ts$/.test(entry.name) && canReadSuiteFile(full)) {
         const contents = fs.readFileSync(full, 'utf8');
         for (const match of contents.matchAll(RUNNER_PATTERN)) {
           const module = cleanModuleName(match[1]);

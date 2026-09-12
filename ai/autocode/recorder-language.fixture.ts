@@ -1,3 +1,4 @@
+import '../testing/isolated-checkout';
 /**
  * The recorder's output language decides whether assertions survive at all.
  *
@@ -25,6 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { parseRecording, expectedResultFrom, NEEDS_CONFIRMATION } from '../dashboard/recorder';
+import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
 const ROOT = process.cwd();
 let failures = 0;
@@ -35,7 +37,7 @@ const check = (label: string, ok: boolean, detail = '') => {
 };
 
 /** The same recording, as each target emits it. */
-const ACTIONS = `  await page.goto('https://my.bugasura.io/');
+const ACTIONS = `  await page.goto('https://portal.fixture.invalid/');
   await page.getByRole('textbox', { name: 'Email' }).fill('someone@moolya.com');
   await page.getByRole('textbox', { name: 'Password' }).fill('[type=password]');
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
@@ -114,14 +116,11 @@ test('test', async ({ page }) => {
   check('D: the codegen CLI still asks for playwright-test',
       /'--target', 'playwright-test'/.test(codegen));
 
-  process.stdout.write('\n== E — the two lost recordings, as evidence ==\n');
-  for (const id of ['TC_LOGIN_053', 'TC_LOGIN_054']) {
-    const file = path.resolve(ROOT, `ai/dashboard/recordings/${id}.spec.ts`);
-    if (!fs.existsSync(file)) {
-      check(`E: ${id} artifact present`, false, 'missing');
-      continue;
-    }
-    const source = fs.readFileSync(file, 'utf8');
+  process.stdout.write('\n== E — synthetic library-style recordings with commented assertions ==\n');
+  for (const [id, source] of [
+    ['library-single', LIBRARY_STYLE],
+    ['library-multiple', LIBRARY_STYLE.replace('// ---------------------', `// await expect(${ASSERTION});\n  // ---------------------`)],
+  ]) {
     const parsed = parse(source);
     const commented = (source.match(/^\s*\/\/\s*await expect\(/gm) ?? []).length;
     check(`E: ${id} was recorded library-style`, source.startsWith('const { chromium }'));

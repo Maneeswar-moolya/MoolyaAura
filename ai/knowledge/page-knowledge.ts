@@ -30,6 +30,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { KNOWLEDGE_DIR } from './index';
+import { activeScopePath } from '../projects/scope';
 import { type ExtractionResult, extractRequirements, inspectableRequirements } from './requirements';
 import { parse, type YamlValue } from './yaml';
 import type { TestCase } from '../excel/types';
@@ -292,7 +293,7 @@ function hydrate(file: string, raw: string): PageKnowledge {
  * explore a page it already knew - the failure this module exists to prevent, made
  * invisible.
  */
-export function readAllPageKnowledge(dir: string = PAGE_DIR): PageKnowledge[] {
+export function readAllPageKnowledge(dir: string = activeKnowledgePageDir()): PageKnowledge[] {
   if (!fs.existsSync(dir))
     return [];
   const found: PageKnowledge[] = [];
@@ -303,10 +304,37 @@ export function readAllPageKnowledge(dir: string = PAGE_DIR): PageKnowledge[] {
     try {
       found.push(hydrate(full, fs.readFileSync(full, 'utf8')));
     } catch (error) {
-      throw new Error(`ai/knowledge/page/${name} could not be read: ${(error as Error).message}`);
+      const shown = path.relative(ROOT, full).replace(/\\/g, '/');
+      throw new Error(`${shown} could not be read: ${(error as Error).message}`);
     }
   }
   return found;
+}
+
+/**
+ * The page-knowledge directory for the ACTIVE application.
+ *
+ * Knowledge is application-specific, so this is where the isolation happens: a run
+ * scoped to one application reads one directory and cannot see another's files.
+ * There is no cross-application fallback - a screen this application has no
+ * knowledge for is a gap to explore, never another application's file that happens
+ * to share a route.
+ *
+ * `ai/knowledge/framework/` is deliberately NOT scoped. It describes the framework's
+ * own capabilities and is application-independent, which is exactly the "explicitly
+ * declared as shared framework capability" exemption in `ai/projects/scope.ts`.
+ *
+ * Note what this does NOT do: it does not read the `bugasura__` prefix off a file
+ * name or a `page.id` to decide ownership. That prefix is an OUTPUT of
+ * `canonicalIdentity`, and treating it as an input would make a naming convention
+ * load-bearing for isolation - the registry and the directory are authoritative.
+ */
+export function activeKnowledgePageDir(): string {
+  // The legacy fallback lives in `activeScopePath`, and so does the rule that a
+  // ScopeError is rethrown rather than answered with the flat directory: two
+  // registered applications and no choice made is a REFUSAL, not a reason to read
+  // whichever application's knowledge happens to sit in the unscoped directory.
+  return activeScopePath('knowledgePageDir', PAGE_DIR);
 }
 
 /**
@@ -325,7 +353,7 @@ const STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'that', 'this', 'from', 'into', 'then', 'when', 'should',
   'page', 'test', 'user', 'click', 'open', 'check', 'verify', 'enter', 'select', 'displayed',
   'shown', 'able', 'must', 'will', 'have', 'has', 'are', 'was', 'not', 'button', 'field',
-  'bugasura', 'application', 'valid', 'invalid', 'correct', 'successfully', 'without',
+  'application', 'valid', 'invalid', 'correct', 'successfully', 'without',
   'given', 'their', 'they', 'them', 'all', 'any', 'each', 'new', 'via', 'using', 'after',
   'before', 'again', 'also', 'only', 'same', 'other', 'step', 'steps', 'case', 'expected',
   'result', 'navigate', 'navigates', 'navigated', 'goes', 'sees', 'see', 'show', 'shows',

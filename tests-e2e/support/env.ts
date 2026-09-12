@@ -1,27 +1,65 @@
-/**
- * Environment configuration for the Bugasura suite.
- *
- * Credentials are never committed. Put them in the git-ignored .env (copy
- * .env.example), or set them in the shell, which takes precedence:
- *
- *   $env:BUGASURA_EMAIL    = "qa.user@moolya.com"
- *   $env:BUGASURA_PASSWORD = "..."
+/** Runtime URL and credentials come from the active application's registry environment.
+ * Load secrets from the environment; no installed application or fallback account.
  */
 
-// Must come first: it populates process.env before the reads below.
+// Must come first: it populates process.env before the reads below, including the
+// per-environment `baseUrlEnv` override the registry applies.
 import './load-env';
 
-export const BASE_URL = process.env.BUGASURA_BASE_URL ?? 'https://my.bugasura.io/';
+import { activeScope } from '../../ai/projects/scope';
+
+/** Resolve the selected environment URL; no selection is an explicit error. */
+export function resolveBaseUrl(): string {
+  let scope;
+  try {
+    scope = activeScope();
+  } catch (error) {
+    throw new Error('No application is selected, so there is no base URL to run against. '
+      + `Set AURA_APPLICATION. (${(error as Error).message})`);
+  }
+  if (!scope.baseUrl?.trim()) {
+    throw new Error(`Application "${scope.applicationId}" declares no baseUrl for environment `
+      + `"${scope.environmentId}". Add one to ai/projects/registry.json.`);
+  }
+  return scope.baseUrl;
+}
+
+export const BASE_URL = resolveBaseUrl();
 
 export interface Credentials {
   email: string;
   password: string;
 }
 
-/** Returns credentials, or null when the environment has not supplied them. */
+/**
+ * WHICH VARIABLES this application's credentials live in - names only, never values.
+ *
+ * The registry declares them per environment (`credentials.email` / `.password`, which
+ * `validateRegistry` refuses unless they are VARIABLE NAMES). An application that declares
+ * none returns null and its authenticated cases skip with a reason. Borrowing another
+ * application's account is the one outcome that must never happen: it would sign in to
+ * somebody else's product, and the test would look like it had worked.
+ */
+export function credentialSource(): { email: string; password: string } | null {
+  let scope;
+  try {
+    scope = activeScope();
+  } catch {
+    return null;
+  }
+  const declared = scope.credentials;
+  if (!declared?.email || !declared?.password)
+    return null;
+  return { email: declared.email, password: declared.password };
+}
+
+/** Returns credentials, or null when this application has not declared/supplied them. */
 export function credentials(): Credentials | null {
-  const email = process.env.BUGASURA_EMAIL;
-  const password = process.env.BUGASURA_PASSWORD;
+  const source = credentialSource();
+  if (!source)
+    return null;
+  const email = process.env[source.email];
+  const password = process.env[source.password];
   return email && password ? { email, password } : null;
 }
 
@@ -33,81 +71,82 @@ export function credentials(): Credentials | null {
  * them on a secret they never use.
  */
 export function registeredEmail(): string | null {
-  return process.env.BUGASURA_EMAIL ?? null;
+  const source = credentialSource();
+  return source ? process.env[source.email] ?? null : null;
 }
 
-export const MISSING_CREDENTIALS_REASON =
-  'BUGASURA_EMAIL / BUGASURA_PASSWORD are not set - skipping the authenticated part of this test case. ' +
-  'Set both variables to execute it.';
+/**
+ * Why the authenticated part of a case is being skipped, naming the ACTUAL variables.
+ *
+ * A function rather than a constant because the answer depends on which application is
+ * selected: a fixed credential name would send somebody setting up a
+ * different project to the wrong variable entirely.
+ */
+export function missingCredentialsReason(): string {
+  const source = credentialSource();
+  if (source) {
+    return `${source.email} / ${source.password} are not set - skipping the authenticated `
+      + 'part of this test case. Set both variables to execute it.';
+  }
+  let who: string;
+  try {
+    who = `Application "${activeScope().applicationId}" declares no credentials`;
+  } catch {
+    who = 'No application is selected, so no credentials are declared';
+  }
+  return `${who} in ai/projects/registry.json, so the authenticated part of this test case `
+    + 'is skipped. Declare credential VARIABLE NAMES for its environment - the account of '
+    + 'another application is never borrowed.';
+}
 
-export const MISSING_EMAIL_REASON =
-  'BUGASURA_EMAIL is not set - this test case needs a registered email address (but not its password).';
+/** Why a case needing only a registered address is skipped. Names the real variable. */
+export function missingEmailReason(): string {
+  const source = credentialSource();
+  return source
+    ? `${source.email} is not set - this test case needs a registered email address `
+      + '(but not its password).'
+    : missingCredentialsReason();
+}
 
 /** An email that is well-formed but deliberately not a real account. */
 export const INVALID_PASSWORD = 'definitely-not-the-password-9137';
 
-/**
- * Opt-in gate for tests that WRITE to the Bugasura workspace.
- *
- * my.bugasura.io is a live product with real teams, not a throwaway
- * environment. A test that creates a project leaves it there for colleagues to
- * see, and nothing here deletes it. Such tests skip unless this is set
- * explicitly, so a routine `npm run excel:test` never mutates the workspace.
+/** Exploration overrides use only the declared active application's prefix.
+ * Resolution: <APP>_EXPLORATION_PROFILE, explicit <APP>_EXPLORATION_USER/PASSWORD,
+ * then that environment's declared credential variable names. No cross-app fallback.
  */
-export function dataMutationAllowed(): boolean {
-  return process.env.BUGASURA_ALLOW_DATA_MUTATION === '1';
-}
-
-export const MUTATION_NOT_ALLOWED_REASON =
-  'This test case creates data in the live Bugasura workspace. Set ' +
-  'BUGASURA_ALLOW_DATA_MUTATION=1 (and BUGASURA_TEAM to the team to create under) to run it.';
-
-/* --------------------------------------------------- exploration account ---
-
- * The account the CODE GENERATOR's browser signs in with, which is not
- * necessarily the account the tests run as.
- *
- * WHY IT IS SEPARATE
- *
- * The suite's credentials belong to the tests: they are what a spec signs in
- * with, and TC_LOGIN_002 deliberately fails a sign-in with them. The
- * exploration account belongs to the generation browser, which only ever READS
- * the application so an agent can be shown a real DOM. Those are different
- * jobs, they may want different accounts (a read-only reviewer, a seeded
- * workspace), and one of them must be changeable without touching the other.
- *
- * Resolution order, first hit wins:
- *
- *   1. BUGASURA_EXPLORATION_PROFILE=qa-user -> BUGASURA_QA_USER_EMAIL /
- *      BUGASURA_QA_USER_PASSWORD. A profile is a NAME, so a run can be pointed
- *      at another account without a secret ever appearing in a command, a
- *      config file or a log.
- *   2. BUGASURA_EXPLORATION_USER / BUGASURA_EXPLORATION_PASSWORD.
- *   3. The suite's own BUGASURA_EMAIL / BUGASURA_PASSWORD, so an existing .env
- *      keeps working with nothing added.
- *
- * NOTHING HERE RETURNS A VALUE TO ANYTHING THAT CAN PRINT IT. The generation
- * browser reads these in-process and passes them to the browser as arguments;
- * the agent is denied .env, and `explorationIdentity()` exists so a log, a
- * metric or a group key can say WHICH VARIABLE was used without ever naming
- * the account.
- */
-
-/** Turns `qa-user` into the `BUGASURA_QA_USER_` prefix its secrets live under. */
-function profilePrefix(profile: string): string {
-  return `BUGASURA_${profile.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_')}_`;
-}
-
-/** Which variables the exploration account would be read from. Names only. */
-export function explorationSource(): { email: string; password: string } {
-  const profile = process.env.BUGASURA_EXPLORATION_PROFILE?.trim();
-  if (profile) {
-    const prefix = profilePrefix(profile);
-    return { email: `${prefix}EMAIL`, password: `${prefix}PASSWORD` };
+function applicationPrefix(): string | null {
+  try {
+    return `${activeScope().applicationId.toUpperCase().replace(/[^A-Z0-9]+/g, '_')}_`;
+  } catch {
+    return null;
   }
-  if (process.env.BUGASURA_EXPLORATION_USER)
-    return { email: 'BUGASURA_EXPLORATION_USER', password: 'BUGASURA_EXPLORATION_PASSWORD' };
-  return { email: 'BUGASURA_EMAIL', password: 'BUGASURA_PASSWORD' };
+}
+
+/** Turns `qa-user` into the `<APP>_QA_USER_` prefix its secrets live under. */
+function profilePrefix(prefix: string, profile: string): string {
+  return `${prefix}${profile.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_')}_`;
+}
+
+/** Resolve exploration credential variable names within the active application only. */
+export function explorationSource(): { email: string; password: string } | null {
+  const prefix = applicationPrefix();
+  if (!prefix)
+    return null;
+
+  const profile = process.env[`${prefix}EXPLORATION_PROFILE`]?.trim();
+  if (profile) {
+    const scoped = profilePrefix(prefix, profile);
+    return { email: `${scoped}EMAIL`, password: `${scoped}PASSWORD` };
+  }
+  if (process.env[`${prefix}EXPLORATION_USER`]) {
+    return {
+      email: `${prefix}EXPLORATION_USER`,
+      password: `${prefix}EXPLORATION_PASSWORD`,
+    };
+  }
+  // The application's OWN declaration. No literal, and no fallback past it.
+  return credentialSource();
 }
 
 /**
@@ -119,6 +158,8 @@ export function explorationSource(): { email: string; password: string } {
  */
 export function explorationCredentials(): Credentials | null {
   const source = explorationSource();
+  if (!source)
+    return null;
   const email = process.env[source.email];
   const password = process.env[source.password];
   return email && password ? { email, password } : null;
@@ -131,16 +172,31 @@ export function explorationCredentials(): Credentials | null {
  * is a username in a file somebody will paste into an issue.
  */
 export function explorationIdentity(): string {
-  return explorationCredentials() ? explorationSource().email : 'anonymous';
+  return explorationCredentials() ? explorationSource()!.email : 'anonymous';
 }
 
-export const MISSING_EXPLORATION_CREDENTIALS_REASON =
-  'the generation browser has no account to sign in with. Set ' +
-  'BUGASURA_EXPLORATION_USER / BUGASURA_EXPLORATION_PASSWORD (or a ' +
-  'BUGASURA_EXPLORATION_PROFILE, or the suite\'s own BUGASURA_EMAIL / ' +
-  'BUGASURA_PASSWORD) in .env. The generator never asks anybody for a password.';
-
-/** Team the create-project test uses. Required - Bugasura marks Team mandatory. */
-export function targetTeam(): string | null {
-  return process.env.BUGASURA_TEAM ?? null;
+/**
+ * Why the generation browser has no account, naming the variables ACTUALLY looked at.
+ *
+ * A function rather than a constant for the same reason `missingCredentialsReason` is:
+ * the variables depend on which application is selected, and a fixed string naming
+ * another application's credential name would send somebody setting up a different project to a
+ * variable that has nothing to do with it.
+ */
+export function missingExplorationCredentialsReason(): string {
+  const prefix = applicationPrefix();
+  if (!prefix) {
+    return 'the generation browser has no account to sign in with, because no application '
+      + 'is selected. Set AURA_APPLICATION. The generator never asks anybody for a password.';
+  }
+  const source = explorationSource();
+  const declared = source
+    ? `${source.email} / ${source.password} are not set. `
+    : 'this application declares no credentials in ai/projects/registry.json, and no '
+      + 'exploration override is set. ';
+  return `the generation browser has no account to sign in with: ${declared}Set `
+    + `${prefix}EXPLORATION_USER / ${prefix}EXPLORATION_PASSWORD (or a `
+    + `${prefix}EXPLORATION_PROFILE, or the credentials this application declares) in .env. `
+    + 'The generator never asks anybody for a password.';
 }
+
