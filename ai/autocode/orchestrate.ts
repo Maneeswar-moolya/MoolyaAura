@@ -39,8 +39,11 @@ import {
 import { gate, type GateResult } from './verify';
 import { activeApplicationId } from '../knowledge/canonical';
 import { activeMappingFile, readMapping, upsertEntry, writeMapping } from '../excel/mapping';
-import { pinActiveScope } from '../projects/scope';
+import { pinActiveScope, activeScope } from '../projects/scope';
+import { createQuarantinePackage } from '../dashboard/quarantine-workspace';
 import { parseWorkbook } from '../excel/parser';
+import { executionContextFromTransport, executionSelectionFromTransport, resolveExecutionContext, type ExecutionContext } from '../projects/execution-context';
+import type { ExecutionSelection } from '../test-data/execution';
 
 const ROOT = process.cwd();
 export const LOCK_FILE = path.join(AUTOCODE_DIR, '.lock');
@@ -181,7 +184,8 @@ export function recordedSpecPathFor(testCaseId: string): string {
  * suite, and a spec that only passes because it checks nothing would sit there
  * reporting green for as long as nobody looked at it.
  */
-export function quarantine(specFile: string, testCaseId: string): string {
+export function quarantine(specFile: string, testCaseId: string, result?: GateResult,
+    metadata: Parameters<typeof createQuarantinePackage>[4] = {}): string {
   fs.mkdirSync(QUARANTINE_DIR, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   // THE APPLICATION IS PART OF THE NAME, and the timestamp alone was not enough.
@@ -201,6 +205,7 @@ export function quarantine(specFile: string, testCaseId: string): string {
   // .txt, not .ts: nothing should ever compile or collect this by accident.
   const destination = path.join(QUARANTINE_DIR, `${owner}.${testCaseId}.${stamp}.spec.ts.txt`);
   fs.copyFileSync(path.resolve(ROOT, specFile), destination);
+  if(result)createQuarantinePackage(activeScope(),specFile,testCaseId,result,metadata);
   return path.relative(ROOT, destination).replace(/\\/g, '/');
 }
 
@@ -258,6 +263,8 @@ function warnOnDuplicate(
 }
 
 export interface RunOptions {
+  executionContext?: ExecutionContext;
+  executionSelection?: ExecutionSelection;
   workbook: string;
   onlyIds?: string[];
   onLog?: (text: string) => void;
@@ -422,7 +429,11 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
   // Pinned HERE rather than in `ai/autocode/cli.ts` because this is the single boundary
   // every entry point crosses - the CLI, its --watch mode and the dashboard's spawn all
   // arrive at `run()` - so one statement covers them all and none can forget it.
-  const scope = pinActiveScope({ workbook: options.workbook });
+  const scope = pinActiveScope({ workbook: options.workbook, applicationId:options.executionContext?.applicationId, environmentId:options.executionContext?.environmentId });
+  const executionSelection=options.executionSelection ?? executionSelectionFromTransport();
+  const executionContext=options.dryRun ? options.executionContext : options.executionContext
+    ? resolveExecutionContext(scope,options.executionContext,executionSelection) : executionContextFromTransport(scope,executionSelection);
+  if(executionContext)log(`execution context: ${JSON.stringify(executionContext)}\n`);
   log(`application: ${scope.applicationId} (${scope.environmentId})
 `);
 
@@ -517,7 +528,7 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
     //
     // Computed before the dry-run exit so `--dry-run` shows the grouping. Checking
     // that four login rows land in one group should not cost four generations.
-    const groups = groupWork(survey.work);
+    const groups = groupWork(survey.work,executionContext);
     if (survey.work.length)
       log(describeGroups(groups));
 
@@ -742,9 +753,9 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
       // Playwright Codegen already watched somebody use the application. If every
       // recorded action maps onto an existing Page Object method, the spec is
       // assembled from that mapping - no browser, no exploration, no model call -
-      // and then goes through the SAME quality gate as everything else. If anything
-      // cannot be mapped confidently it falls through to the existing path below,
-      // so a mapping failure costs a fallback rather than a wrong spec.
+      // and then goes through the SAME quality gate as everything else. Missing
+      // capabilities/provenance produce typed blocks with the recording retained;
+      // the generic AI generator cannot repair absent deterministic authority.
       let recordedResult: RecordedGeneration | null = null;
       /**
        * What the resolver spent on THIS case, held where `recordAttempt` can read it.
@@ -805,6 +816,15 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
       // no gate run to spend. The recording is kept, and the reason names the element
       // and the rules that fired - `#tc_summary_636432` is one issue's id, not a
       // selector, and no amount of re-running will make it resolve twice.
+      if (recordedResult && !recordedResult.assembled && recordedResult.block !== 'needsReview'
+          && recordedResult.block !== 'noAssertion') {
+        base.skipped.push({ testCaseId: testCase.testCaseId, reason: recordedResult.reason });
+        recordRecordedBlocked(testCase, recordedResult, started);
+        log(`  BLOCKED (${recordedResult.block}): ${recordedResult.reason}\n`);
+        log('  Recording and measured evidence retained; no generic AI fallback was requested.\n');
+        return;
+      }
+
       if (recordedResult?.block === 'needsReview') {
         base.skipped.push({ testCaseId: testCase.testCaseId,
           reason: `recorded locator needs review - ${recordedResult.reason}` });
@@ -834,7 +854,7 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
         // tests that were fine get corrupted.
         warnOnDuplicate(item.previousSpec, recordedSpecFile, testCase.testCaseId, log);
 
-        const verdict = gate(recordedSpecFile, testCase.testCaseId, testCase.scenario, workbookRelative, log);
+        const verdict = gate(recordedSpecFile, testCase.testCaseId, testCase.scenario, workbookRelative, log,{runId,executionContext,executionSelection});
         gateResult = verdict;
         wroteSpec = true;
 
@@ -861,7 +881,7 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
           return;
         }
 
-        const kept = quarantine(recordedSpecFile, testCase.testCaseId);
+        const kept = quarantine(recordedSpecFile, testCase.testCaseId,verdict,{workbook:workbookRelative,runId,scenario:testCase.scenario,module:testCase.module,sourceWorksheet:testCase.source.worksheet,sourceRow:testCase.source.row,executionContext,sourceEnvironmentId:executionContext?.sourceEnvironmentId,executionSelection});
         retractSpec(recordedSpecFile, testCase.testCaseId, log);
         recordRecorded(testCase, 'quarantined', verdict.reason, recordedResult, started, verdict);
         recordOutcomeOnly('quarantined', verdict.reason, { quarantinedTo: kept });
@@ -1116,7 +1136,7 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
         return;
       }
 
-      const verdict = gate(specFile, testCase.testCaseId, testCase.scenario, workbookRelative, log);
+      const verdict = gate(specFile, testCase.testCaseId, testCase.scenario, workbookRelative, log,{runId,executionContext,executionSelection});
       gateResult = verdict;
 
       if (verdict.verdict === 'accepted') {
@@ -1137,7 +1157,7 @@ export async function run(options: RunOptions): Promise<AutocodeResult> {
         return;
       }
 
-      const kept = quarantine(specFile, testCase.testCaseId);
+      const kept = quarantine(specFile, testCase.testCaseId,verdict,{workbook:workbookRelative,runId,scenario:testCase.scenario,module:testCase.module,sourceWorksheet:testCase.source.worksheet,sourceRow:testCase.source.row,executionContext,sourceEnvironmentId:executionContext?.sourceEnvironmentId,executionSelection});
       retractSpec(specFile, testCase.testCaseId, log);
       record('quarantined', verdict.reason, { quarantinedTo: kept });
     };

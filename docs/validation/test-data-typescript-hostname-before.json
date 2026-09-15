@@ -1,0 +1,125 @@
+{
+  "exitCode": 2,
+  "diagnostics": [
+    {
+      "file": "ai/autocode/abstraction/lifecycle.fixture.ts",
+      "line": 105,
+      "code": "TS2741",
+      "message": "Property 'alternatives' is missing in type '{ proposals: Proposal[]; reused: never[]; unmeasured: never[]; counts: {}; }' but required in type 'CorpusResult'."
+    },
+    {
+      "file": "ai/autocode/abstraction/propose.ts",
+      "line": 1174,
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'identityProofs' does not exist in type '{ signature: string; role: TargetRole; testCaseId: string; from: string; owner: string | null; ownerWhy: string; ownerCode: RefusalCode | null; ownerCandidates: string[] | null; ... 5 more ...; refusals: Refusal[]; }'."
+    },
+    {
+      "file": "ai/autocode/abstraction/propose.ts",
+      "line": 1425,
+      "code": "TS2339",
+      "message": "Property 'identityProofs' does not exist on type '{ signature: string; role: TargetRole; testCaseId: string; from: string; owner: string | null; ownerWhy: string; ownerCode: RefusalCode | null; ownerCandidates: string[] | null; ... 5 more ...; refusals: Refusal[]; }'."
+    },
+    {
+      "file": "ai/autocode/abstraction/semantic.fixture.ts",
+      "line": 114,
+      "code": "TS2741",
+      "message": "Property 'alternatives' is missing in type '{ proposals: Proposal[]; reused: never[]; unmeasured: never[]; counts: {}; }' but required in type 'CorpusResult'."
+    },
+    {
+      "file": "ai/autocode/abstraction/semantic.fixture.ts",
+      "line": 341,
+      "code": "TS2345",
+      "message": "Argument of type '{ proposals: Proposal[]; reused: never[]; unmeasured: never[]; counts: {}; }' is not assignable to parameter of type 'CorpusResult'."
+    },
+    {
+      "file": "ai/autocode/abstraction/semantic.fixture.ts",
+      "line": 415,
+      "code": "TS2741",
+      "message": "Property 'alternatives' is missing in type '{ proposals: Proposal[]; reused: never[]; unmeasured: never[]; counts: {}; }' but required in type 'CorpusResult'."
+    },
+    {
+      "file": "ai/autocode/abstraction/semantic.ts",
+      "line": 627,
+      "code": "TS2345",
+      "message": "Argument of type '{ matchCount: number | null; identityMatched?: boolean | undefined; sameDocument?: boolean | undefined; measuredAt?: string | undefined; strategy?: string | undefined; expression?: string | undefined; }' is not assignable to parameter of type 'CandidateMeasurement'."
+    },
+    {
+      "file": "ai/autocode/abstraction/semantic.ts",
+      "line": 629,
+      "code": "TS2339",
+      "message": "Property 'canonicalId' does not exist on type 'BootstrapResult'."
+    },
+    {
+      "file": "ai/autocode/accessible-name-stability.fixture.ts",
+      "line": 165,
+      "code": "TS2551",
+      "message": "Property 'accessibleNameSource' does not exist on type '{ tag: string; accessibleName: string; }'. Did you mean 'accessibleName'?"
+    },
+    {
+      "file": "ai/autocode/accessible-name-stability.fixture.ts",
+      "line": 165,
+      "code": "TS2339",
+      "message": "Property 'accessibleNameVerified' does not exist on type '{ tag: string; accessibleName: string; }'."
+    },
+    {
+      "file": "ai/autocode/content-candidates.fixture.ts",
+      "line": 394,
+      "code": "TS2307",
+      "message": "Cannot find module './dom-evidence.mutant' or its corresponding type declarations."
+    },
+    {
+      "file": "ai/autocode/preaction-claim.fixture.ts",
+      "line": 336,
+      "code": "TS2307",
+      "message": "Cannot find module '../dashboard/live-recorder.mutant' or its corresponding type declarations."
+    },
+    {
+      "file": "ai/autocode/scoped-dynamic-id.fixture.ts",
+      "line": 238,
+      "code": "TS2307",
+      "message": "Cannot find module './locator-quality.mutant' or its corresponding type declarations."
+    },
+    {
+      "file": "ai/dashboard/live-recorder.ts",
+      "line": 1020,
+      "code": "TS2554",
+      "message": "Expected 2 arguments, but got 1."
+    },
+    {
+      "file": "ai/dashboard/server.ts",
+      "line": 748,
+      "code": "TS2339",
+      "message": "Property 'screenshotUrl' does not exist on type '{ diagnostic?: Partial<DiagnosticStep> | undefined; captures?: DiagnosticCapture[] | undefined; stepId?: string | undefined; applicationId?: string | undefined; ... 9 more ...; error?: string | undefined; }'."
+    },
+    {
+      "file": "ai/excel/mapping.ts",
+      "line": 115,
+      "code": "TS2783",
+      "message": "'module' is specified more than once, so this usage will be overwritten."
+    },
+    {
+      "file": "ai/excel/mapping.ts",
+      "line": 116,
+      "code": "TS2783",
+      "message": "'scenario' is specified more than once, so this usage will be overwritten."
+    },
+    {
+      "file": "ai/excel/mapping.ts",
+      "line": 117,
+      "code": "TS2783",
+      "message": "'status' is specified more than once, so this usage will be overwritten."
+    },
+    {
+      "file": "ai/excel/mapping.ts",
+      "line": 118,
+      "code": "TS2783",
+      "message": "'sourceWorkbook' is specified more than once, so this usage will be overwritten."
+    },
+    {
+      "file": "ai/excel/mapping.ts",
+      "line": 119,
+      "code": "TS2783",
+      "message": "'sourceWorksheet' is specified more than once, so this usage will be overwritten."
+    }
+  ]
+}

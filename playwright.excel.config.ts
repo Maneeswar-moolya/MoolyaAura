@@ -11,11 +11,16 @@
  */
 
 import { defineConfig, devices } from '@playwright/test';
+import { LOCATOR_TIMEOUT_MS } from './tests-e2e/support/locator-policy';
 
 // env.ts loads .env itself (see support/load-env.ts), so importing it is all
 // that is needed here - credentials are read lazily by the fixtures.
 import { BASE_URL } from './tests-e2e/support/env';
 import { collectionIgnoreFor } from './tests-e2e/support/collection-scope';
+import { executionContextFromTransport, executionSelectionFromTransport } from './ai/projects/execution-context';
+import { activeScope } from './ai/projects/scope';
+const executionContext = process.env.AURA_EXECUTION_CONTEXT
+  ? executionContextFromTransport(activeScope(),executionSelectionFromTransport()) : undefined;
 
 export default defineConfig({
   testDir: './tests-e2e',
@@ -45,7 +50,7 @@ export default defineConfig({
   // failure, because a retried pass is reported as "flaky", not "passed".
   retries: 1,
   timeout: 60_000,
-  expect: { timeout: 10_000 },
+  expect: { timeout: LOCATOR_TIMEOUT_MS },
   // Deliberately NOT `test-results`: that is the upstream MCP suite's default
   // output directory, and Playwright wipes outputDir at the start of every run.
   // Sharing it means `npm test` deletes this suite's results.json and Allure
@@ -53,7 +58,7 @@ export default defineConfig({
   // The HTML report also stays outside it, or the reporter clears the very
   // artifacts it is reporting on.
   outputDir: 'test-results-excel',
-  reporter: [
+  reporter: process.env.AURA_EXECUTION_SELECTION ? [['./ai/test-data/reporter.ts']] : [
     ['list'],
     // The execution report generator reads this file.
     ['json', { outputFile: 'test-results-excel/results.json' }],
@@ -70,16 +75,18 @@ export default defineConfig({
     }],
   ],
   use: {
+    ...(executionContext ? {headless:!executionContext.headed} : {}),
     baseURL: BASE_URL,
     // Capture defaults to failures only - evidence for a passing test is
     // usually noise, and video for a whole green suite is expensive. The
     // dashboard overrides these per run when you ask it to record everything;
     // unset, the behaviour is exactly what it has always been.
     //   EXCEL_TRACE / EXCEL_SCREENSHOT / EXCEL_VIDEO
-    trace: (process.env.EXCEL_TRACE as 'on' | 'off' | 'retain-on-failure' | undefined) ?? 'retain-on-failure',
-    screenshot: (process.env.EXCEL_SCREENSHOT as 'on' | 'off' | 'only-on-failure' | undefined) ?? 'only-on-failure',
-    video: (process.env.EXCEL_VIDEO as 'on' | 'off' | 'retain-on-failure' | undefined) ?? 'retain-on-failure',
-    actionTimeout: 15_000,
+    trace: process.env.AURA_EXECUTION_SELECTION ? 'off' : process.env.AURA_DIAGNOSTICS === '1' ? {mode:'on',screenshots:false,snapshots:false,sources:false}
+      : (process.env.EXCEL_TRACE as 'on' | 'off' | 'retain-on-failure' | undefined) ?? 'retain-on-failure',
+    screenshot: process.env.AURA_EXECUTION_SELECTION ? 'off' : (process.env.EXCEL_SCREENSHOT as 'on' | 'off' | 'only-on-failure' | undefined) ?? 'only-on-failure',
+    video: process.env.AURA_EXECUTION_SELECTION ? 'off' : (process.env.EXCEL_VIDEO as 'on' | 'off' | 'retain-on-failure' | undefined) ?? 'retain-on-failure',
+    actionTimeout: LOCATOR_TIMEOUT_MS,
   },
   // Chromium is the only project by default, deliberately.
   //
@@ -93,7 +100,7 @@ export default defineConfig({
   // The dashboard sets this itself when you pick a non-Chromium browser.
   // Install them first: npx playwright install firefox webkit
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'chromium', use: { ...devices['Desktop Chrome'], ...(executionContext?.browserChannel ? {channel:executionContext.browserChannel} : {}) } },
     ...(process.env.EXCEL_ALL_BROWSERS === '1'
       ? [
         { name: 'firefox', use: { ...devices['Desktop Firefox'] } },

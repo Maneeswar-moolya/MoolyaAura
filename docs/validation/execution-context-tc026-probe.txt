@@ -1,0 +1,5 @@
+no context (the state this case failed in) -> REFUSED: SOURCE_ENVIRONMENT_CONFIGURATION_FAILURE: Application ksp; target environment stg; source environment = not selected. Select a configured Source Environment.
+flat AURA_SOURCE_ENVIRONMENT=stg -> https://stgsupport.keysight.com/us/en/home
+full AURA_EXECUTION_CONTEXT (source stg, headed) -> https://stgsupport.keysight.com/us/en/home
+source qa rebased onto target stg -> https://stgsupport.keysight.com/us/en/home
+unconfigured source -> REFUSED: SOURCE_ENVIRONMENT_CONFIGURATION_FAILURE: Application ksp; target environment stg; source environment is not configured in this application. Select a configured Source Environment.

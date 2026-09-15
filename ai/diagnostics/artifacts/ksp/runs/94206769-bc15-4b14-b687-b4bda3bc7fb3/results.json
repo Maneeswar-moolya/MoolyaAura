@@ -1,0 +1,96 @@
+{
+  "config": {
+    "rootDir": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-KtLaIk\\tests-e2e"
+  },
+  "suites": [
+    {
+      "title": "chromium",
+      "suites": [
+        {
+          "title": "generated\\ksp\\TC_SMOKE_021.spec.ts",
+          "file": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-KtLaIk\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts",
+          "line": 0,
+          "column": 0,
+          "suites": [
+            {
+              "title": "Test Cases",
+              "file": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-KtLaIk\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts",
+              "line": 13,
+              "column": 6,
+              "suites": [],
+              "specs": [
+                {
+                  "title": "TC_SMOKE_021 - Log In â€” dashboard-heading contains \"My Dashboard\"",
+                  "file": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-KtLaIk\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts",
+                  "line": 14,
+                  "column": 7,
+                  "ok": false,
+                  "id": "42b6934190a2279894e1-c0d6636e49e5132dfc4e",
+                  "tests": [
+                    {
+                      "projectName": "chromium",
+                      "expectedStatus": "passed",
+                      "status": "unexpected",
+                      "annotations": [
+                        {
+                          "type": "execution-profile",
+                          "description": "{\"applicationId\":\"ksp\",\"environmentId\":\"stg\",\"testCaseId\":\"TC_SMOKE_021\",\"executionRowId\":\"override-1-1\",\"credentialProfileId\":\"cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed\",\"credentialProfileName\":\"kspuserCommon\",\"role\":\"custom\",\"dataProfileId\":null,\"tags\":[\"ksp\"]}"
+                        },
+                        {
+                          "type": "test-case-id",
+                          "description": "TC_SMOKE_021"
+                        },
+                        {
+                          "type": "module",
+                          "description": ""
+                        },
+                        {
+                          "type": "scenario",
+                          "description": "Log In â€” dashboard-heading contains \"My Dashboard\""
+                        },
+                        {
+                          "type": "source",
+                          "description": "ksp-test-cases.xlsx :: Test Cases"
+                        }
+                      ],
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 20501,
+                          "startTime": "2026-09-14T05:20:43.300Z",
+                          "retry": 0,
+                          "errors": [
+                            {
+                              "message": "Error: Could not resolve \"usenhome.myDashboardState\" on https://idcs-53cf237d465040bd976bfb33fd4a799c.identity.oraclecloud.com/fed/v1/user/response/login to exactly one element.\nTried 1 strateg(ies):\n  - getByRole('heading', { name: 'My Dashboard', exact: true }) - nothing attached\nThis is a genuine locator failure - add a candidate strategy that identifies the element, or the element is gone. A strategy that matched several elements is NOT narrowed with first(): that would pick an element nobody chose.",
+                              "stack": "Error: Could not resolve \"usenhome.myDashboardState\" on https://idcs-53cf237d465040bd976bfb33fd4a799c.identity.oraclecloud.com/fed/v1/user/response/login to exactly one element.\nTried 1 strateg(ies):\n  - getByRole('heading', { name: 'My Dashboard', exact: true }) - nothing attached\nThis is a genuine locator failure - add a candidate strategy that identifies the element, or the element is gone. A strategy that matched several elements is NOT narrowed with first(): that would pick an element nobody chose.\n    at resolveLocator (C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-KtLaIk\\tests-e2e\\support\\resilient-locator.ts:147:9)\n    at C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-KtLaIk\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts:50:20\n    at runStep (C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-KtLaIk\\tests-e2e\\support\\steps.ts:167:20)\n    at C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-KtLaIk\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts:49:5"
+                            }
+                          ],
+                          "error": {
+                            "message": "Error: Could not resolve \"usenhome.myDashboardState\" on https://idcs-53cf237d465040bd976bfb33fd4a799c.identity.oraclecloud.com/fed/v1/user/response/login to exactly one element.\nTried 1 strateg(ies):\n  - getByRole('heading', { name: 'My Dashboard', exact: true }) - nothing attached\nThis is a genuine locator failure - add a candidate strategy that identifies the element, or the element is gone. A strategy that matched several elements is NOT narrowed with first(): that would pick an element nobody chose.",
+                            "stack": "Error: Could not resolve \"usenhome.myDashboardState\" on https://idcs-53cf237d465040bd976bfb33fd4a799c.identity.oraclecloud.com/fed/v1/user/response/login to exactly one element.\nTried 1 strateg(ies):\n  - getByRole('heading', { name: 'My Dashboard', exact: true }) - nothing attached\nThis is a genuine locator failure - add a candidate strategy that identifies the element, or the element is gone. A strategy that matched several elements is NOT narrowed with first(): that would pick an element nobody chose.\n    at resolveLocator (C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-KtLaIk\\tests-e2e\\support\\resilient-locator.ts:147:9)\n    at C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-KtLaIk\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts:50:20\n    at runStep (C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-KtLaIk\\tests-e2e\\support\\steps.ts:167:20)\n    at C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-KtLaIk\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts:49:5"
+                          },
+                          "stdout": [],
+                          "stderr": [],
+                          "attachments": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "specs": []
+        }
+      ],
+      "specs": []
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-14T05:20:38.935Z",
+    "duration": 26212.844
+  }
+}

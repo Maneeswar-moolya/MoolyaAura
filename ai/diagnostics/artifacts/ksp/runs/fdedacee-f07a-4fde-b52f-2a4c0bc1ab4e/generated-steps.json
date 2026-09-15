@@ -1,0 +1,166 @@
+{
+  "steps": [
+    {
+      "recordingStepKey": "generated:25",
+      "label": "Open recorded destination",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_022.spec.ts",
+      "generatedLineStart": 25,
+      "generatedLineEnd": 27,
+      "statement": "{\n      await page.goto('https://stgsupport.keysight.com/us/en/home');\n    }"
+    },
+    {
+      "pageObject": "InitialLandingPage",
+      "method": "logIn",
+      "implementation": "tests-e2e/pages/ksp/InitialLandingPage.ts",
+      "implementationLine": 6,
+      "implementationSource": "logIn() { const page = this.page; return page.locator('header').getByRole('link', { name: 'Log In' }); }",
+      "calls": [
+        {
+          "pageObject": "InitialLandingPage",
+          "method": "logIn",
+          "implementation": "tests-e2e/pages/ksp/InitialLandingPage.ts",
+          "implementationLine": 6,
+          "implementationSource": "logIn() { const page = this.page; return page.locator('header').getByRole('link', { name: 'Log In' }); }"
+        }
+      ],
+      "recordingStepKey": "generated:29",
+      "label": "Use Log In",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_022.spec.ts",
+      "generatedLineStart": 29,
+      "generatedLineEnd": 31,
+      "statement": "{\n      await (await initialLandingPage.logIn()).click();\n    }"
+    },
+    {
+      "pageObject": "SsoauthLoginPage",
+      "method": "enterEmailField",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 27,
+      "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "enterEmailField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 27,
+          "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }"
+        }
+      ],
+      "recordingStepKey": "generated:33",
+      "label": "Use Enter email",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_022.spec.ts",
+      "generatedLineStart": 33,
+      "generatedLineEnd": 35,
+      "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).click();\n    }"
+    },
+    {
+      "pageObject": "SsoauthLoginPage",
+      "method": "enterEmailField",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 27,
+      "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "enterEmailField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 27,
+          "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }"
+        }
+      ],
+      "recordingStepKey": "generated:37",
+      "label": "Enter account from configured credentials",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_022.spec.ts",
+      "generatedLineStart": 37,
+      "generatedLineEnd": 39,
+      "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).fill(appCredentials.email);\n    }"
+    },
+    {
+      "pageObject": "SsoauthLoginPage",
+      "method": "passwordField",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 39,
+      "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "passwordField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 39,
+          "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }"
+        }
+      ],
+      "recordingStepKey": "generated:41",
+      "label": "Use Password",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_022.spec.ts",
+      "generatedLineStart": 41,
+      "generatedLineEnd": 43,
+      "statement": "{\n      await (await ssoauthLoginPage.passwordField()).click();\n    }"
+    },
+    {
+      "pageObject": "SsoauthLoginPage",
+      "method": "passwordField",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 39,
+      "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "passwordField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 39,
+          "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }"
+        }
+      ],
+      "recordingStepKey": "generated:45",
+      "label": "Enter password from configured credentials",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_022.spec.ts",
+      "generatedLineStart": 45,
+      "generatedLineEnd": 47,
+      "statement": "{\n      await (await ssoauthLoginPage.passwordField()).fill(appCredentials.password);\n    }"
+    },
+    {
+      "pageObject": "SsoauthLoginPage",
+      "method": "logInButton",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 51,
+      "implementationSource": "logInButton(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.logInButton', [\n      { strategy: 'getByRole(\\'button\\', { name: \\'Log In\\', exact: true })', build: page => page.getByRole('button', { name: 'Log In', exact: true }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "logInButton",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 51,
+          "implementationSource": "logInButton(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.logInButton', [\n      { strategy: 'getByRole(\\'button\\', { name: \\'Log In\\', exact: true })', build: page => page.getByRole('button', { name: 'Log In', exact: true }) },\n    ]);\n  }"
+        }
+      ],
+      "recordingStepKey": "generated:49",
+      "label": "Use Log In",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_022.spec.ts",
+      "generatedLineStart": 49,
+      "generatedLineEnd": 51,
+      "statement": "{\n      await (await ssoauthLoginPage.logInButton()).click();\n    }"
+    },
+    {
+      "pageObject": "UsEnHomePage",
+      "method": "homeLinkState",
+      "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+      "implementationLine": 82,
+      "implementationSource": "homeLinkState() { const page = this.page; return page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link'); }",
+      "calls": [
+        {
+          "pageObject": "UsEnHomePage",
+          "method": "homeLinkState",
+          "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+          "implementationLine": 82,
+          "implementationSource": "homeLinkState() { const page = this.page; return page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link'); }"
+        }
+      ],
+      "recordingStepKey": "generated:53",
+      "label": "Main navigation contains \"Home\"",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_022.spec.ts",
+      "generatedLineStart": 53,
+      "generatedLineEnd": 55,
+      "statement": "{\n      await expect(await usEnHomePage.homeLinkState()).toContainText('Home');\n    }"
+    }
+  ]
+}

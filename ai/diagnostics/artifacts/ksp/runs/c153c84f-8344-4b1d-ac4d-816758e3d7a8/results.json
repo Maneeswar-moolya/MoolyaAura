@@ -1,0 +1,87 @@
+{
+  "config": {
+    "rootDir": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e"
+  },
+  "suites": [
+    {
+      "title": "chromium",
+      "suites": [
+        {
+          "title": "generated\\ksp\\TC_SMOKE_037.spec.ts",
+          "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_037.spec.ts",
+          "line": 0,
+          "column": 0,
+          "suites": [
+            {
+              "title": "Test Cases",
+              "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_037.spec.ts",
+              "line": 13,
+              "column": 6,
+              "suites": [],
+              "specs": [
+                {
+                  "title": "TC_SMOKE_037 - My Support Cases â€” heading contains \"My Support Cases\"",
+                  "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_037.spec.ts",
+                  "line": 14,
+                  "column": 7,
+                  "ok": true,
+                  "id": "b24bf35ffd4ff101b706-1bdac1f5d4cd72c47ecc",
+                  "tests": [
+                    {
+                      "projectName": "chromium",
+                      "expectedStatus": "passed",
+                      "status": "expected",
+                      "annotations": [
+                        {
+                          "type": "execution-profile",
+                          "description": "{\"applicationId\":\"ksp\",\"environmentId\":\"stg\",\"testCaseId\":\"TC_SMOKE_037\",\"executionRowId\":\"override-1-1\",\"credentialProfileId\":\"cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed\",\"credentialProfileName\":\"kspuserCommon\",\"role\":\"custom\",\"dataProfileId\":null,\"tags\":[\"recorded\",\"signed-in\",\"ksp\"]}"
+                        },
+                        {
+                          "type": "test-case-id",
+                          "description": "TC_SMOKE_037"
+                        },
+                        {
+                          "type": "module",
+                          "description": ""
+                        },
+                        {
+                          "type": "scenario",
+                          "description": "My Support Cases â€” heading contains \"My Support Cases\""
+                        },
+                        {
+                          "type": "source",
+                          "description": "ksp-test-cases.xlsx :: Test Cases"
+                        }
+                      ],
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 33430,
+                          "startTime": "2026-09-15T10:48:37.096Z",
+                          "retry": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "attachments": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "specs": []
+        }
+      ],
+      "specs": []
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-15T10:48:33.998Z",
+    "duration": 37239.301999999996
+  }
+}

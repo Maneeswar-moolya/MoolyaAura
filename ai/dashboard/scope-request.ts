@@ -103,12 +103,17 @@ export function tryScopeFromSelection(selection: ScopeSelection = {}):
 }
 
 export interface EnvironmentView {
+  displayName?: string;
+  configuredBaseUrl?: string;
+  baseUrlEnv?: string;
+  credentials?: { email?: string; password?: string };
   environmentId: string;
   baseUrl: string;
   isDefault: boolean;
 }
 
 export interface ProjectView {
+  defaultSourceEnvironmentId?: string;
   /** THE identifier. Everything downstream keys off this. */
   applicationId: string;
   /** For people to read. Never an identifier - `Bugasura` is not `bugasura`. */
@@ -130,8 +135,13 @@ export function describeProject(application: ApplicationConfig): ProjectView {
     applicationId: application.applicationId,
     displayName: application.displayName,
     defaultEnvironmentId: application.defaultEnvironmentId,
+    defaultSourceEnvironmentId: application.defaultSourceEnvironmentId,
     environments: Object.keys(application.environments).map(environmentId => ({
       environmentId,
+      displayName: application.environments[environmentId].displayName || environmentId,
+      configuredBaseUrl: application.environments[environmentId].baseUrl,
+      baseUrlEnv: application.environments[environmentId].baseUrlEnv,
+      credentials: application.environments[environmentId].credentials,
       baseUrl: baseUrlFor(application, environmentId),
       isDefault: environmentId === application.defaultEnvironmentId,
     })),

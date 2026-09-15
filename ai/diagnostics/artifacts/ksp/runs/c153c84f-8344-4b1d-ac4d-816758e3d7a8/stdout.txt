@@ -1,0 +1,22 @@
+
+Run column found - executing the 1 row(s) marked to run. Use --all to ignore it.
+
+running 1 test case(s): TC_SMOKE_037
+
+TC_SMOKE_037: passed
+
+promoted to Automated: TC_SMOKE_037
+  Total test cases : 37
+  Automated        : 2
+  Generated        : 1
+  Not automated    : 34
+  Needs review     : 0
+  Passed           : 1
+  Failed           : 0
+  Skipped          : 0
+  Blocked          : 0
+  Not run          : 36
+  Healed           : 0
+  Flaky            : 0
+  Source workbook  : C:\Users\[REDACTED]\ClientProjects\MoolyaAura\MoolyaAura\excel\ksp-test-cases.xlsx (unchanged, --no-in-place)
+

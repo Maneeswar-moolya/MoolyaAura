@@ -41,7 +41,6 @@
 
 import path from 'node:path';
 
-import { BASE_URL } from '../../tests-e2e/support/env';
 import { activeKnowledgePageDir, type PageKnowledge } from './page-knowledge';
 import { activeScope, onScopeChange, resetActiveScope, ScopeError } from '../projects/scope';
 
@@ -71,7 +70,9 @@ const ROOT = process.cwd();
  * this function and that catch block should both be deleted; nothing else may call
  * it, and nothing does.
  */
-export function applicationSlug(baseUrl: string = BASE_URL): string {
+// Resolve only when called. Importing identity helpers must not require a selected
+// runtime application: the dashboard also serves empty and unselected registries.
+export function applicationSlug(baseUrl: string = activeScope().baseUrl): string {
   let host: string;
   try {
     host = new URL(baseUrl).hostname;

@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "applicationId": "ksp",
+  "environmentId": "stg",
+  "testCaseId": "TC_SMOKE_021",
+  "runId": "cd85c9cd-6919-4ba6-9f57-f5738962721d",
+  "attemptId": "94206769-bc15-4b14-b687-b4bda3bc7fb3",
+  "kind": "clean",
+  "createdAt": "2026-09-14T05:21:06.923Z",
+  "locatorTimeoutMs": 40000,
+  "executionContext": {
+    "applicationId": "ksp",
+    "environmentId": "stg",
+    "sourceEnvironmentId": "stg",
+    "credentialProfileId": "cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed",
+    "executionRowId": "override-1-1",
+    "browserEngine": "chromium",
+    "headed": true,
+    "locatorTimeoutMs": 40000
+  },
+  "sourceEnvironmentId": "stg",
+  "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+  "steps": [
+    {
+      "recordingStepKey": "generated:25",
+      "label": "Open recorded destination",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 25,
+      "generatedLineEnd": 27,
+      "statement": "{\n      await page.goto('https://stgsupport.keysight.com/us/en/home');\n    }"
+    },
+    {
+      "pageObject": "InitialLandingPage",
+      "method": "logIn",
+      "implementation": "tests-e2e/pages/ksp/InitialLandingPage.ts",
+      "implementationLine": 6,
+      "implementationSource": "logIn() { const page = this.page; return page.locator('header').getByRole('link', { name: 'Log In' }); }",
+      "calls": [
+        {
+          "pageObject": "InitialLandingPage",
+          "method": "logIn",
+          "implementation": "tests-e2e/pages/ksp/InitialLandingPage.ts",
+          "implementationLine": 6,
+          "implementationSource": "logIn() { const page = this.page; return page.locator('header').getByRole('link', { name: 'Log In' }); }"
+        }
+      ],
+      "recordingStepKey": "generated:29",
+      "label": "Use Log In",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 29,
+      "generatedLineEnd": 31,
+      "statement": "{\n      await (await initialLandingPage.logIn()).click();\n    }"
+    },
+    {
+      "pageObject": "SsoauthLoginPage",
+      "method": "enterEmailField",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 27,
+      "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "enterEmailField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 27,
+          "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }"
+        }
+      ],
+      "recordingStepKey": "generated:33",
+      "label": "Use Enter email",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 33,
+      "generatedLineEnd": 35,
+      "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).click();\n    }"
+    },
+    {
+      "pageObject": "SsoauthLoginPage",
+      "method": "enterEmailField",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 27,
+      "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "enterEmailField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 27,
+          "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }"
+        }
+      ],
+      "recordingStepKey": "generated:37",
+      "label": "Enter account from configured credentials",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 37,
+      "generatedLineEnd": 39,
+      "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).fill(appCredentials.email);\n    }"
+    },
+    {
+      "pageObject": "SsoauthLoginPage",
+      "method": "passwordField",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 39,
+      "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "passwordField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 39,
+          "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }"
+        }
+      ],
+      "recordingStepKey": "generated:41",
+      "label": "Enter password from configured credentials",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 41,
+      "generatedLineEnd": 43,
+      "statement": "{\n      await (await ssoauthLoginPage.passwordField()).fill(appCredentials.password);\n    }"
+    },
+    {
+      "pageObject": "SsoauthLoginPage",
+      "method": "logInButton",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 51,
+      "implementationSource": "logInButton(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.logInButton', [\n      { strategy: 'getByRole(\\'button\\', { name: \\'Log In\\', exact: true })', build: page => page.getByRole('button', { name: 'Log In', exact: true }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "logInButton",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 51,
+          "implementationSource": "logInButton(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.logInButton', [\n      { strategy: 'getByRole(\\'button\\', { name: \\'Log In\\', exact: true })', build: page => page.getByRole('button', { name: 'Log In', exact: true }) },\n    ]);\n  }"
+        }
+      ],
+      "recordingStepKey": "generated:45",
+      "label": "Use Log In",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 45,
+      "generatedLineEnd": 47,
+      "statement": "{\n      await (await ssoauthLoginPage.logInButton()).click();\n    }"
+    },
+    {
+      "pageObject": "UsEnHomePage",
+      "method": "myDashboardState",
+      "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+      "implementationLine": 27,
+      "implementationSource": "myDashboardState(): Promise<Locator> {\n    return this.resolve('usenhome.myDashboardState', [\n      { strategy: 'getByRole(\\'heading\\', { name: \\'My Dashboard\\', exact: true })', build: page => page.getByRole('heading', { name: 'My Dashboard', exact: true }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "UsEnHomePage",
+          "method": "myDashboardState",
+          "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+          "implementationLine": 27,
+          "implementationSource": "myDashboardState(): Promise<Locator> {\n    return this.resolve('usenhome.myDashboardState', [\n      { strategy: 'getByRole(\\'heading\\', { name: \\'My Dashboard\\', exact: true })', build: page => page.getByRole('heading', { name: 'My Dashboard', exact: true }) },\n    ]);\n  }"
+        }
+      ],
+      "recordingStepKey": "generated:49",
+      "label": "dashboard-heading contains \"My Dashboard\"",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 49,
+      "generatedLineEnd": 51,
+      "statement": "{\n      await expect(await usEnHomePage.myDashboardState()).toContainText('My Dashboard');\n    }"
+    }
+  ],
+  "artifacts": [
+    "artifacts/.last-run.json",
+    "artifacts/generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-24a80f48-3008-4855-b18e-b529873b9d3a.png",
+    "artifacts/generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-71f8140a-1afe-45bf-8f46-74b75998d051.png",
+    "artifacts/generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-7b576e20-2254-449a-b3cb-de208d9a2989.png",
+    "artifacts/generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-7d2a02e3-31fe-42af-b825-e2dd69e09f7c.png",
+    "artifacts/generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-a38e77cb-f653-4426-9602-74fd6b009b2b.png",
+    "artifacts/generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-aed39d54-9778-4cc8-a597-72661d1b25a6.png",
+    "artifacts/generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-ccf74aa5-cf4e-4078-af22-919d9e738736.png",
+    "executed-dependencies.json",
+    "generated-steps.json",
+    "results.json",
+    "steps/TC_SMOKE_021.d1d15f272671a7d2-1.json"
+  ],
+  "trace": null,
+  "tracePolicy": "Sanitized action timeline. Native DOM snapshots, response bodies, video and unmasked screenshots are excluded.",
+  "unavailable": []
+}

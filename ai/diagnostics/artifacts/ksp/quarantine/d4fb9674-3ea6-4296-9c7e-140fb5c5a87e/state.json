@@ -1,0 +1,275 @@
+{
+  "revisionId": "708a32d5-592e-433c-b07c-a5a04db49505",
+  "runs": [
+    {
+      "runId": "c825a143-bda4-4562-8462-514c436d3ad3",
+      "revisionId": "708a32d5-592e-433c-b07c-a5a04db49505",
+      "environmentId": "stg",
+      "sourceEnvironmentId": "stg",
+      "executionBasis": "CURRENT_FRAMEWORK_VALIDATION",
+      "sourceEnvironmentProvenance": "USER_SELECTED_FOR_RERUN",
+      "currentFrameworkRevision": "e2d308fa3e81041a4961c28e6202472b831a438c",
+      "retainedApplicationArtifacts": [
+        {
+          "path": "tests-e2e/generated/ksp/TC_SMOKE_032.spec.ts",
+          "hash": "62474e21a3c06ac415d6df25713bc59d5a4b26237c55fe15de325328bae9e4b8",
+          "ownership": "TEST_OWNED"
+        },
+        {
+          "path": "tests-e2e/ksp.fixtures.ts",
+          "hash": "45eac105e41d386dd08fc400c4b90b20d4ca2a385f99406860c4f9e3516a4f09",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "hash": "6da48ea1f7abfaf255c2294badb06d1967bdec3785f38ea26070a59e7a79f63a",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "tests-e2e/pages/ksp/us.en.home.page.ts",
+          "hash": "bb37aab86e798221e05f9c3777c7ae554e9a6034f4477fe62af5ba07dea8ad7a",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "tests-e2e/pages/ksp/InitialLandingPage.ts",
+          "hash": "8e1acff23fc5ecfc5ac64a4590f9893493f0796a8157fa2e21540a2f2500a508",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "tests-e2e/pages/ksp/MySupportCasesPage.ts",
+          "hash": "68793a3da4492d95e466a90e5103ba4e9759efbe061b49b6310c81c0c725e660",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "ai/knowledge/page/ksp/ksp__authored_6476741217dd2a2707a9.yaml",
+          "hash": "5472c32a32635939f476ec8082610f553fb5269c417303d92cd9028bee59b92f",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "ai/knowledge/page/ksp/ksp__authored_e6579f95a87bbe80e1b2.yaml",
+          "hash": "4e51e1e181f2b2129f173a4adb7d86eab2157a06d1eecd63dfa2a23b3d97b9d5",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "ai/knowledge/page/ksp/ksp__ssoauth-login.yaml",
+          "hash": "f35be9e236fe92af2b3885dc9dd2f505843e9c067ee270cc38cc2eb33e58d370",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "ai/knowledge/page/ksp/ksp__us-en-home.yaml",
+          "hash": "f8d41f66df52b9fb4de398782e3513913e28332b567e3df5575e884e73fd4a62",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "ai/knowledge/page/ksp/.authoring-validation.json",
+          "hash": "2ee8392cf8e20400d243be7c5b6fb117fec7042bc5473bd6b585d1dc3587caaf",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "ai/dashboard/recordings/ksp/TC_SMOKE_032.spec.ts",
+          "hash": "fb65434288a1dde0080dc22168f8ebf26fd6fcde9e00875b44a83b7efc27753a",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "ai/dashboard/recordings/ksp/TC_SMOKE_032.owners.json",
+          "hash": "7055606a683a3994f588cf77ed3b76496a1ab2ad24ff70053ac82407249ed600",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "tests-e2e/pages/ksp/LandingPage.ts",
+          "hash": "01dc00fff580d0cfd973df3f5c07246efc3125ee155c410bf16eb61610b18575",
+          "ownership": "APPLICATION_OWNED"
+        },
+        {
+          "path": "tests-e2e/pages/ksp/LoginButton.ts",
+          "hash": "e2ef9eea89e35ede59988c35c8a7dca7879d1b17b19a48ef138b1108b70828bd",
+          "ownership": "APPLICATION_OWNED"
+        }
+      ],
+      "currentFrameworkArtifacts": [
+        {
+          "path": "tests-e2e/support/resilient-locator.ts",
+          "hash": "7ff9e40db2c7d5768780a78453cfdfb53d581456cf5e06776b32cc4da60e0bbe",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "tests-e2e/support/locator-policy.ts",
+          "hash": "0be9828a965953cd89a15c64579d1565460f3b898f85c3f6a395d6031260b678",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/diagnostics/artifacts.ts",
+          "hash": "84ec1e641d6e4f3be8155759496d126366545389467ddbf31b26b24cc2177a80",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/projects/scope.ts",
+          "hash": "61d2da9e045522c00fef1194c19d406ea11507adb5d9930b2d98ffe0780466a3",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/projects/registry.ts",
+          "hash": "e613daf688f98cf66353c98648a3d2ad2978a00aabd074a2d1f9e70ce14d2c53",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/test-data/secrets.ts",
+          "hash": "a24a5988ff3b131e231a1e112e46a8e0bed147395e31c33d3ac46f3ace0847cc",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "tests-e2e/support/env.ts",
+          "hash": "94e4e4f78a72f228c81f7f0eb16c3df07e4707b34b6703bfebf76e23742af982",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "tests-e2e/support/load-env.ts",
+          "hash": "a9698674a65aefe2ee70786402420cc66d12189318a2ea3df152bb46e9b8dcd7",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/test-data/execution.ts",
+          "hash": "a3ac5ca381f04089f305bfeaccc91f7e7a7156ab5027dca6c97ccd60eb9c7c87",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/test-data/store.ts",
+          "hash": "83680176afb1e0852f05c29ee8923be3a37a8738a68b9f0385611d548a698085",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/test-data/encryption.ts",
+          "hash": "3a0aa0bd439712f67bff1792c18cae0477f505e927337be668734f6948bf4c7a",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/excel/filter.ts",
+          "hash": "ffd5864f2c53e483c58c4777f9b59df3a2b85fe7482758a3ab2bcc27fb6918ad",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/excel/parser.ts",
+          "hash": "ed2846a4c9209bbab3118c09c111f1a7fe6b0e323ba6f6d2acc3f6ff549d8dda",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/excel/column-map.ts",
+          "hash": "7c63bbf685c2410b435d58ae111b15d024bd23ff9629129299d4923b33da662c",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/excel/types.ts",
+          "hash": "54625d0725ad8c044efa8bd5010afa814fe857589cf9bd18b92a1a322332cab3",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "tests-e2e/support/base-fixtures.ts",
+          "hash": "2f6fa6305191f5c981fa14ad3af499d8bfefd3481de01d0f6c1e4bfe8c5f74ff",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "tests-e2e/support/execution-environment.ts",
+          "hash": "9c1c0c423a76dcffbfdb105fe591c7b3c575bf4fcc7015686d460fbd27a15980",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/projects/execution-context.ts",
+          "hash": "ac366c487a006d0d677c22daed4ab757dda807c1bf95734ea9d299d4ed1c2b17",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "tests-e2e/support/steps.ts",
+          "hash": "349496a14df936892f49493eef86cb41c729b6e19cd5ecf26f2290c3483645dc",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/diagnostics/manifest.ts",
+          "hash": "50e3867ac97e1b992ad0b44dcdc5d8066b9518bdc71bd2ac014e1c5a4e1c39b3",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "ai/test-data/values.ts",
+          "hash": "ccbc66732600ba3d19eb6db78aed642efa48c25a4dbcae583b4d90b5f9299b6d",
+          "ownership": "SHARED_FRAMEWORK"
+        },
+        {
+          "path": "tests-e2e/pages/base.page.ts",
+          "hash": "07d8e2a188771acd2176c00eee34b2e3f91aee5e9dfcf70cc348a2a462019203",
+          "ownership": "SHARED_FRAMEWORK"
+        }
+      ],
+      "executionContext": {
+        "applicationId": "ksp",
+        "environmentId": "stg",
+        "sourceEnvironmentId": "stg",
+        "credentialProfileId": "cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed",
+        "executionRowId": "override-1-1",
+        "browserEngine": "chromium",
+        "browserChannel": "chrome",
+        "headed": true,
+        "locatorTimeoutMs": 40000
+      },
+      "at": "2026-09-15T06:09:04.864Z",
+      "result": {
+        "verdict": "quarantined",
+        "detail": {
+          "staticProblems": [],
+          "mutationsApplied": [
+            "expected text literal -> a string no page contains"
+          ],
+          "executionContext": {
+            "applicationId": "ksp",
+            "environmentId": "stg",
+            "sourceEnvironmentId": "stg",
+            "credentialProfileId": "cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed",
+            "executionRowId": "override-1-1",
+            "browserEngine": "chromium",
+            "browserChannel": "chrome",
+            "headed": true,
+            "locatorTimeoutMs": 40000
+          },
+          "staticMs": 31,
+          "cleanStatus": "Failed",
+          "diagnostics": "runs/e2da34c8-42b4-4698-8615-34fce70452f4",
+          "cleanRunMs": 65741,
+          "cleanFailure": "TimeoutError: page.goto: Timeout 40000ms exceeded. | Call log: | - navigating to \"https://stgsupport.keysight.com/us/en/home\", waiting until \"load\" | TimeoutError: page.goto: Timeout 40000ms exceeded. | Call log: | - navigating to \"https://stgsupport.keysight.com/us/en/home\", waiting until \"load\"",
+          "phase": "execution",
+          "code": "TIMEOUT",
+          "playwrightMessage": "TimeoutError: page.goto: Timeout 40000ms exceeded. | Call log: | - navigating to \"https://stgsupport.keysight.com/us/en/home\", waiting until \"load\" | TimeoutError: page.goto: Timeout 40000ms exceeded. | Call log: | - navigating to \"https://stgsupport.keysight.com/us/en/home\", waiting until \"load\"",
+          "collected": 1
+        },
+        "reason": "Phase: EXECUTION | Reason: TIMEOUT | Collected tests: 1. TimeoutError: page.goto: Timeout 40000ms exceeded. | Call log: | - navigating to \"https://stgsupport.keysight.com/us/en/home\", waiting until \"load\" | TimeoutError: page.goto: Timeout 40000ms exceeded. | Call log: | - navigating to \"https://stgsupport.keysight.com/us/en/home\", waiting until \"load\""
+      },
+      "executionSelection": {
+        "applicationId": "ksp",
+        "environmentId": "stg",
+        "testCaseId": "TC_SMOKE_032",
+        "storeVersion": "a76af0be0bb7b062fe4ed5a185a5bfac5c04e71bc071f7f02e3856f0645d42ab",
+        "row": {
+          "id": "override-1-1",
+          "credentialProfileId": "cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed",
+          "dataProfileId": null,
+          "tags": [
+            "ksp"
+          ],
+          "overrides": {},
+          "enabled": true
+        }
+      },
+      "executionProfile": {
+        "applicationId": "ksp",
+        "environmentId": "stg",
+        "testCaseId": "TC_SMOKE_032",
+        "executionRowId": "override-1-1",
+        "credentialProfileId": "cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed",
+        "credentialProfileName": "kspuserCommon",
+        "role": "custom",
+        "dataProfileId": null,
+        "tags": [
+          "ksp"
+        ]
+      }
+    }
+  ],
+  "eligible": false
+}

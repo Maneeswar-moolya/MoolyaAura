@@ -26,6 +26,7 @@ import path from 'node:path';
 
 import { buildIndex } from '../knowledge/index';
 import { parseRecording } from '../dashboard/recorder';
+import { targetEvidence } from '../testing/synthetic-data';
 import { mapRecording } from './from-recording';
 
 const ROOT = process.cwd();
@@ -45,7 +46,16 @@ function stepsFor(body: string): Array<{ kind: string; code: string; why: string
     body,
     '});',
   ].join('\n');
-  return mapRecording(parseRecording(script, { startUrl: '', browser: '', durationMs: 0 }))
+  const recording = parseRecording(script, { startUrl: '', browser: '', durationMs: 0 });
+  recording.evidence = { available: true, capturedAt: new Date(0).toISOString(), limits: {} as any,
+    targets: [
+      ...recording.assertions.map(a => targetEvidence(a.locator)),
+      ...recording.actions.filter(action => ['Notifications', 'Notification settings'].includes(action.target)).map(action => targetEvidence(action.locator, {
+        documentId: 'synthetic-notifications', elementRef: `synthetic-notifications:${action.target}`,
+        target: { tag: action.target === 'Notifications' ? 'a' : 'button', role: action.target === 'Notifications' ? 'link' : 'button', accessibleName: action.target, accessibleNameVerified: true },
+      })),
+    ] };
+  return mapRecording(recording)
       .steps.map(step => ({ kind: step.kind, code: step.code.join(' '), why: step.why ?? '' }));
 }
 

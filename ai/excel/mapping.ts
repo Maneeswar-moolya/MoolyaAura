@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { activeScope, activeScopePath, artefactRoot, resolveScope } from '../projects/scope';
+import { activeScope, activeScopePath, artefactRoot, resolveScope, type ApplicationScope } from '../projects/scope';
 import type { AutomationStatus, TestCase } from './types';
 
 export const MAPPING_DIR = path.resolve(process.cwd(), 'ai', 'test-mapping');
@@ -144,21 +144,21 @@ const TITLE_PATTERN = /['"`]\s*((?:TC|TS)[_-][A-Za-z0-9_-]+)\s*-\s*([^'"`]+?)\s*
  * Namespace boundaries are structural, not a list of currently registered names.
  * Removing an application must never expose its remaining scoped files to the flat owner.
  */
-function isForeignScopeDir(full: string): boolean {
+function isForeignScopeDir(full: string, scope?: ApplicationScope): boolean {
   const generated = path.join(artefactRoot(), 'tests-e2e/generated');
   if (path.dirname(full) !== generated)
     return false;
-  return full !== activeScope().paths.generatedDir;
+  return full !== (scope || activeScope()).paths.generatedDir;
 }
 
 /** Flat application runners are not generic framework capabilities. */
-function canReadSuiteFile(file: string): boolean {
+function canReadSuiteFile(file: string, requestedScope?: ApplicationScope): boolean {
   const suite = path.join(artefactRoot(), 'tests-e2e');
   const relative = path.relative(suite, file);
   // Explicit source-analysis callers may scan independent temporary directories.
   if (relative.startsWith('..') || path.isAbsolute(relative))
     return true;
-  const scope = activeScope();
+  const scope = requestedScope || activeScope();
   if (relative.startsWith(`generic${path.sep}`))
     return true;
   const generatedRelative = path.relative(scope.paths.generatedDir, file);
@@ -238,7 +238,7 @@ export function runnerFor(
   return runners.find(r => r.module.trim() === '*')?.testFile ?? null;
 }
 
-export function scanDataDrivenRunners(specDir: string): Array<{ module: string; testFile: string }> {
+export function scanDataDrivenRunners(specDir: string, scope?: ApplicationScope): Array<{ module: string; testFile: string }> {
   const found: Array<{ module: string; testFile: string }> = [];
   if (!fs.existsSync(specDir))
     return found;
@@ -247,10 +247,10 @@ export function scanDataDrivenRunners(specDir: string): Array<{ module: string; 
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (isForeignScopeDir(full))
+        if (isForeignScopeDir(full, scope))
           continue;
         walk(full);
-      } else if (/\.spec\.ts$/.test(entry.name) && canReadSuiteFile(full)) {
+      } else if (/\.spec\.ts$/.test(entry.name) && canReadSuiteFile(full, scope)) {
         const contents = fs.readFileSync(full, 'utf8');
         for (const match of contents.matchAll(RUNNER_PATTERN)) {
           const module = cleanModuleName(match[1]);

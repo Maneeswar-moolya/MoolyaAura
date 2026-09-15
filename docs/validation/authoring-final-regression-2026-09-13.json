@@ -1,0 +1,45 @@
+{
+  "started": "2026-09-13T03:11:45.440Z",
+  "finished": "2026-09-13T03:12:12.492Z",
+  "total": 88,
+  "completed": 7,
+  "results": [
+    {
+      "fixture": "ai\\autocode\\abstraction.fixture.ts",
+      "exitCode": 0,
+      "milliseconds": 6583
+    },
+    {
+      "fixture": "ai\\autocode\\abstraction\\lifecycle.fixture.ts",
+      "exitCode": 0,
+      "milliseconds": 3574
+    },
+    {
+      "fixture": "ai\\autocode\\abstraction\\semantic.fixture.ts",
+      "exitCode": 0,
+      "milliseconds": 3630
+    },
+    {
+      "fixture": "ai\\autocode\\accessible-name-stability.fixture.ts",
+      "exitCode": 0,
+      "milliseconds": 2876
+    },
+    {
+      "fixture": "ai\\autocode\\action-locator.fixture.ts",
+      "exitCode": 0,
+      "milliseconds": 3391
+    },
+    {
+      "fixture": "ai\\autocode\\application-neutral.fixture.ts",
+      "exitCode": 0,
+      "milliseconds": 3799
+    },
+    {
+      "fixture": "ai\\autocode\\apps-readiness.fixture.ts",
+      "exitCode": 1,
+      "milliseconds": 3117
+    }
+  ],
+  "changed": [],
+  "passed": false
+}

@@ -23,7 +23,9 @@
  * failure says so rather than timing out mysteriously.
  */
 
-import { expect, type Locator, type Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
+import { expect, locatorDeadline, LOCATOR_TIMEOUT_MS } from './locator-policy';
+import { resolveLocator } from './resilient-locator';
 
 /** Input names that configure the run rather than naming a field to fill. */
 export const RESERVED_INPUTS = new Set(['url', 'scope', 'submit', 'expect']);
@@ -39,8 +41,8 @@ export const RESERVED_INPUTS = new Set(['url', 'scope', 'submit', 'expect']);
 export async function assertAllVisible(
   page: Page,
   names: string[],
-  settleMs = 15_000,
-  perItemMs = 3_000,
+  settleMs = LOCATOR_TIMEOUT_MS,
+  perItemMs = LOCATOR_TIMEOUT_MS,
 ): Promise<string[]> {
   const missing: string[] = [];
 
@@ -52,25 +54,23 @@ export async function assertAllVisible(
       page.getByRole('menuitem', { name: pattern }),
       page.getByText(pattern),
     ];
-    // Each item gets its OWN deadline. Sharing one across the list looked
-    // harmless until a genuinely missing item consumed the whole budget and
-    // every item after it was reported missing without being looked for - a
-    // failure message naming innocent menus is worse than no message.
-    const deadline = Date.now() + budgetMs;
+    // Inside a recorded step, every item shares that step's deadline. Each
+    // item is still inspected once, even if an earlier missing item spent it.
+    // Outside a step, one item gets one bounded locator operation.
+    const budget = locatorDeadline();
+    const deadline = budget.clock.now() + Math.min(budgetMs, budget.remaining());
     do {
       for (const candidate of candidates) {
         if (await candidate.locator('visible=true').count().catch(() => 0) >= 1)
           return true;
       }
-      await page.waitForTimeout(250);
-    } while (Date.now() < deadline);
+      await budget.recheck();
+    } while (budget.clock.now() < deadline && budget.remaining() > 0);
     return false;
   };
 
   for (const [index, name] of names.entries()) {
-    // The first item absorbs the page still rendering; by the time it resolves
-    // the rest are either present or genuinely absent, so they need only a
-    // short look each. That keeps a four-item list from costing a minute.
+    // Explicitly shorter observation windows remain bounded by the active UI step.
     const found = await look(name, index === 0 ? settleMs : perItemMs);
     if (!found)
       missing.push(name);
@@ -119,24 +119,8 @@ export async function resolveField(page: Page, scope: string | undefined, name: 
   if (/e-?mail/i.test(name))
     candidates.push({ strategy: 'input[type=email]', locator: root.locator('input[type="email"]') });
 
-  const tried: string[] = [];
-  for (const candidate of candidates) {
-    const visible = candidate.locator.locator('visible=true');
-    const count = await visible.count().catch(() => 0);
-    tried.push(`${candidate.strategy} → ${count}`);
-    // EXACTLY ONE. This accepted `>= 1` and then took the first, so a field name
-    // matching two inputs silently filled whichever came first in the DOM. A
-    // candidate that matches several has not found the field; the next strategy
-    // is tried, and the error below lists every count when none identifies it.
-    if (count === 1)
-      return visible;
-  }
-
-  throw new Error(
-      `Could not find a field called "${name}"${scope ? ` inside ${scope}` : ''}.\n` +
-      `  Tried: ${tried.join(', ')}\n` +
-      '  Add `scope = <css>` to narrow the search, rename the input to match the control\'s ' +
-      'visible label, or give this module a Page Object.');
+  return resolveLocator({ page, logicalName: `form.field:${name}`,
+    candidates: candidates.map(candidate => ({ strategy: candidate.strategy, build: () => candidate.locator.locator('visible=true') })) });
 }
 
 /**
@@ -158,30 +142,15 @@ export async function resolveSubmit(
     roots.push(within);
   roots.push(container(page, scope));
 
+  const candidates: Locator[] = [];
   for (const root of roots) {
-    const candidates: Locator[] = [];
-    if (name)
-      candidates.push(root.getByRole('button', { name: asPattern(name) }));
+    if (name) candidates.push(root.getByRole('button', { name: asPattern(name) }));
     candidates.push(root.locator('button[type="submit"], input[type="submit"]'));
-    if (!name)
-      candidates.push(root.getByRole('button'));
-
-    for (const candidate of candidates) {
-      const visible = candidate.locator('visible=true');
-      // EXACTLY ONE. The submit control is pressed, so it is an identity: a
-      // candidate matching two buttons has not found it, and pressing whichever
-      // came first is how a form's Cancel gets clicked instead of its Submit.
-      // The broadest candidate here is "any button in the form", which is a
-      // heuristic - when it matches several, the row is expected to say which,
-      // and the error below says so.
-      if (await visible.count().catch(() => 0) === 1)
-        return visible;
-    }
+    if (!name) candidates.push(root.getByRole('button'));
   }
-  throw new Error(
-      `No single submit control found${scope ? ` inside ${scope}` : ''}. ` +
-      'Either nothing matched, or several did and none of them can be assumed - '
-      + 'add `submit = <button text>` to the row to say which one.');
+  return resolveLocator({ page, logicalName: 'form.submit', candidates: candidates.map(candidate => ({
+    strategy: candidate.toString(), build: () => candidate.locator('visible=true'),
+  })) });
 }
 
 /**
@@ -192,7 +161,7 @@ export async function resolveSubmit(
  * and no element is identified for a test to act on, so `first()` here is a
  * collection operation rather than ambiguity being hidden.
  */
-export async function observedMessage(page: Page, timeoutMs: number): Promise<string> {
+export async function observedMessage(page: Page, timeoutMs = LOCATOR_TIMEOUT_MS): Promise<string> {
   const message = page.locator(
       '#toast-container .toast-message, .toast-message, [role="alert"], .error-message, .error')
       .locator('visible=true')
@@ -246,7 +215,7 @@ export async function submitForm(
     // both require exactly one.
     await expect(page.locator(options.scope).first(),
         `The row says scope = ${options.scope}, but nothing on ${target} matches it`)
-        .toBeAttached({ timeout: 15_000 });
+        .toBeAttached();
   }
 
   // The form the fields actually live in becomes the search area for the submit
@@ -272,7 +241,8 @@ export async function submitForm(
 
 /** True when the submission was accepted: no message, and the page moved on. */
 export async function wasAccepted(page: Page, run: FormRun): Promise<boolean> {
-  for (let attempt = 0; attempt < 30; attempt++) {
+  const deadline = locatorDeadline();
+  do {
     if (page.url() !== run.urlBefore)
       return true;
     // The form disappearing counts too - plenty of apps swap it in place.
@@ -280,7 +250,7 @@ export async function wasAccepted(page: Page, run: FormRun): Promise<boolean> {
       return true;
     if (await observedMessage(page, 250))
       return false;
-    await page.waitForTimeout(250);
-  }
+    await deadline.recheck();
+  } while (deadline.remaining() > 0);
   return false;
 }

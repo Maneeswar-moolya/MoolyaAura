@@ -1,0 +1,463 @@
+{
+  "applicationId": "ksp",
+  "environmentId": "stg",
+  "testCaseId": "TC_SMOKE_021",
+  "historicalEvidence": false,
+  "provenance": "LIVE_DIAGNOSTIC_ONLY",
+  "startedAt": "2026-09-13T16:12:33.907Z",
+  "locatorTimeoutMs": 40000,
+  "browser": {
+    "engine": "chromium",
+    "channel": null,
+    "headless": false,
+    "playwrightVersion": "1.63.0-alpha-2026-08-05",
+    "version": "152.0.7977.8"
+  },
+  "trace": {
+    "retained": false,
+    "reason": "Raw Playwright traces can retain credential fill arguments; using existing masked screenshot and sanitized diagnostic architecture."
+  },
+  "runtimeAIInvoked": false,
+  "observations": [
+    {
+      "recordingStepKey": "action:0",
+      "label": "Open configured entry page",
+      "generatedFile": "ai/autocode/quarantine/ksp.TC_SMOKE_021.2026-09-13T09-12-14-284Z.spec.ts.txt",
+      "generatedLine": 26,
+      "statement": "await page.goto('https://stgsupport.keysight.com/us/en/home');",
+      "captures": [
+        {
+          "captureRef": "9ddb31a6-c0e3-4f0a-930e-cbb72d2e2115",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "action:0",
+          "capturedAt": "2026-09-13T16:12:37.483Z",
+          "route": "blank",
+          "artifact": "aura-9ddb31a6-c0e3-4f0a-930e-cbb72d2e2115.png"
+        }
+      ],
+      "httpStatus": 200,
+      "route": "https://stgsupport.keysight.com/us/en/home",
+      "title": "Support Home",
+      "cloudflareBlock": false,
+      "result": "NAVIGATION_SUCCEEDED"
+    },
+    {
+      "recordingStepKey": "action:1",
+      "label": "A — initial Log In",
+      "pageObject": "InitialLandingPage",
+      "method": "logIn",
+      "locator": "page.locator('header').getByRole('link', { name: 'Log In' })",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "generatedFile": "ai/autocode/quarantine/ksp.TC_SMOKE_021.2026-09-13T09-12-14-284Z.spec.ts.txt",
+      "generatedLine": 30,
+      "statement": "await (await initialLandingPage.logIn()).click();",
+      "route": "https://stgsupport.keysight.com/us/en/home",
+      "captures": [
+        {
+          "captureRef": "07340907-afc0-439f-bba6-65565572cf2a",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "action:1",
+          "capturedAt": "2026-09-13T16:12:42.175Z",
+          "route": "/us/en/home",
+          "artifact": "aura-07340907-afc0-439f-bba6-65565572cf2a.png"
+        }
+      ],
+      "provenance": "USER_CONFIRMED",
+      "savedExecutionMode": "PAGE_OBJECT_METHOD",
+      "validationStatus": "USER AUTHORED — NOT VALIDATED",
+      "locatorWaits": [],
+      "resolutionElapsedMs": 1,
+      "matchCount": 1,
+      "visible": true,
+      "enabled": true,
+      "result": "CLICK_SUCCEEDED",
+      "resultingRoute": "https://stgwww.keysight.com/ssoauth/login",
+      "elapsedMs": 3837
+    },
+    {
+      "recordingStepKey": "action:2",
+      "label": "B — email control",
+      "pageObject": "SsoauthLoginPage",
+      "method": "enterEmailField",
+      "locator": "getByRole('textbox', { name: 'Enter email' })",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "generatedFile": "ai/autocode/quarantine/ksp.TC_SMOKE_021.2026-09-13T09-12-14-284Z.spec.ts.txt",
+      "generatedLine": 34,
+      "statement": "await (await ssoauthLoginPage.enterEmailField()).click();",
+      "route": "https://stgwww.keysight.com/ssoauth/login",
+      "captures": [
+        {
+          "recordingStepKey": "action:2",
+          "captureType": "PRE_STEP",
+          "unavailable": true
+        },
+        {
+          "captureRef": "9bea1040-04ed-4de8-9a78-867d87a7e570",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "action:2",
+          "capturedAt": "2026-09-13T16:12:49.395Z",
+          "route": "/ssoauth/login",
+          "artifact": "aura-9bea1040-04ed-4de8-9a78-867d87a7e570.png",
+          "phase": "BEFORE_ACTION_AFTER_RESOLUTION"
+        }
+      ],
+      "provenance": "USER_CONFIRMED",
+      "savedExecutionMode": "PAGE_OBJECT_METHOD",
+      "locatorWaits": [],
+      "resolutionElapsedMs": 1173,
+      "matchCount": 1,
+      "visible": true,
+      "enabled": true,
+      "result": "CLICK_SUCCEEDED",
+      "resultingRoute": "https://stgwww.keysight.com/ssoauth/login",
+      "elapsedMs": 1913
+    },
+    {
+      "recordingStepKey": "action:3",
+      "label": "C — fill scoped account",
+      "pageObject": "SsoauthLoginPage",
+      "method": "enterEmailField",
+      "locator": "getByRole('textbox', { name: 'Enter email' })",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "generatedFile": "ai/autocode/quarantine/ksp.TC_SMOKE_021.2026-09-13T09-12-14-284Z.spec.ts.txt",
+      "generatedLine": 38,
+      "statement": "await (await ssoauthLoginPage.enterEmailField()).fill(appCredentials.email);",
+      "route": "https://stgwww.keysight.com/ssoauth/login",
+      "captures": [
+        {
+          "captureRef": "2da0fc17-a639-4e40-8408-8116adcaf68a",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "action:3",
+          "capturedAt": "2026-09-13T16:12:49.654Z",
+          "route": "/ssoauth/login",
+          "artifact": "aura-2da0fc17-a639-4e40-8408-8116adcaf68a.png"
+        }
+      ],
+      "provenance": "USER_CONFIRMED",
+      "savedExecutionMode": "AUTO",
+      "locatorWaits": [],
+      "resolutionElapsedMs": 4,
+      "matchCount": 1,
+      "visible": true,
+      "enabled": true,
+      "result": "FILL_SUCCEEDED",
+      "resultingRoute": "https://stgwww.keysight.com/ssoauth/login",
+      "elapsedMs": 23
+    },
+    {
+      "recordingStepKey": "action:4",
+      "label": "D — password control",
+      "pageObject": "SsoauthLoginPage",
+      "method": "passwordField",
+      "locator": "getByRole('textbox', { name: 'Password' })",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "generatedFile": "ai/autocode/quarantine/ksp.TC_SMOKE_021.2026-09-13T09-12-14-284Z.spec.ts.txt",
+      "generatedLine": 42,
+      "statement": "await (await ssoauthLoginPage.passwordField()).fill(appCredentials.password);",
+      "route": "https://stgwww.keysight.com/ssoauth/login",
+      "captures": [
+        {
+          "captureRef": "a24a8265-edcf-4c20-8b43-6abae545bd0b",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "action:4",
+          "capturedAt": "2026-09-13T16:12:49.832Z",
+          "route": "/ssoauth/login",
+          "artifact": "aura-a24a8265-edcf-4c20-8b43-6abae545bd0b.png"
+        }
+      ],
+      "provenance": "USER_CONFIRMED",
+      "savedExecutionMode": "AUTO",
+      "locatorWaits": [],
+      "resolutionElapsedMs": 3,
+      "matchCount": 1,
+      "visible": true,
+      "enabled": true,
+      "result": "CONTROL_RESOLVED",
+      "resultingRoute": "https://stgwww.keysight.com/ssoauth/login",
+      "elapsedMs": 10
+    },
+    {
+      "recordingStepKey": "action:4",
+      "label": "E — fill scoped secret",
+      "pageObject": "SsoauthLoginPage",
+      "method": "passwordField",
+      "locator": "getByRole('textbox', { name: 'Password' })",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "generatedFile": "ai/autocode/quarantine/ksp.TC_SMOKE_021.2026-09-13T09-12-14-284Z.spec.ts.txt",
+      "generatedLine": 42,
+      "statement": "await (await ssoauthLoginPage.passwordField()).fill(appCredentials.password);",
+      "route": "https://stgwww.keysight.com/ssoauth/login",
+      "captures": [
+        {
+          "captureRef": "3d5a491e-d3a4-4c54-9172-251efa1f061b",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "action:4",
+          "capturedAt": "2026-09-13T16:12:49.977Z",
+          "route": "/ssoauth/login",
+          "artifact": "aura-3d5a491e-d3a4-4c54-9172-251efa1f061b.png"
+        }
+      ],
+      "provenance": "USER_CONFIRMED",
+      "savedExecutionMode": "AUTO",
+      "locatorWaits": [],
+      "resolutionElapsedMs": 3,
+      "matchCount": 1,
+      "visible": true,
+      "enabled": true,
+      "result": "FILL_SUCCEEDED",
+      "resultingRoute": "https://stgwww.keysight.com/ssoauth/login",
+      "elapsedMs": 23
+    },
+    {
+      "recordingStepKey": "action:5",
+      "label": "F — authentication Log In",
+      "pageObject": "SsoauthLoginPage",
+      "method": "logInButton",
+      "locator": "getByRole('button', { name: 'Log In', exact: true })",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "generatedFile": "ai/autocode/quarantine/ksp.TC_SMOKE_021.2026-09-13T09-12-14-284Z.spec.ts.txt",
+      "generatedLine": 46,
+      "statement": "await (await ssoauthLoginPage.logInButton()).click();",
+      "route": "https://stgwww.keysight.com/ssoauth/login",
+      "captures": [
+        {
+          "captureRef": "357389cd-f30e-435c-8833-a71d604a82eb",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "action:5",
+          "capturedAt": "2026-09-13T16:12:50.142Z",
+          "route": "/ssoauth/login",
+          "artifact": "aura-357389cd-f30e-435c-8833-a71d604a82eb.png"
+        }
+      ],
+      "provenance": "USER_CONFIRMED",
+      "savedExecutionMode": "AUTO",
+      "locatorWaits": [],
+      "resolutionElapsedMs": 3,
+      "matchCount": 1,
+      "visible": true,
+      "enabled": true,
+      "result": "CLICK_SUCCEEDED",
+      "resultingRoute": "https://idcs-53cf237d465040bd976bfb33fd4a799c.identity.oraclecloud.com/sso/v1/sdk/session",
+      "elapsedMs": 1145
+    },
+    {
+      "recordingStepKey": "action:5",
+      "causedRecordingNavigationKeys": [
+        "action:6",
+        "action:7",
+        "action:8",
+        "action:9"
+      ],
+      "label": "G — browser-managed redirects",
+      "executionMode": "BROWSER_CONSEQUENCE",
+      "pageObject": null,
+      "method": null,
+      "matchCount": null,
+      "visible": null,
+      "enabled": null,
+      "route": "https://idcs-53cf237d465040bd976bfb33fd4a799c.identity.oraclecloud.com/sso/v1/sdk/session",
+      "captures": [
+        {
+          "recordingStepKey": "action:5",
+          "captureType": "PRE_STEP",
+          "unavailable": true
+        }
+      ],
+      "result": "RETURNED_TO_APPLICATION_ORIGIN",
+      "resultingRoute": "https://stgsupport.keysight.com/saml/authn-request.jsp"
+    },
+    {
+      "recordingStepKey": "assertion:0",
+      "label": "H — dashboard assertion",
+      "pageObject": "UsEnHomePage",
+      "method": "myDashboardState",
+      "locator": "getByRole('heading', { name: 'My Dashboard', exact: true })",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "generatedFile": "ai/autocode/quarantine/ksp.TC_SMOKE_021.2026-09-13T09-12-14-284Z.spec.ts.txt",
+      "generatedLine": 50,
+      "statement": "await expect(await usEnHomePage.myDashboardState()).toContainText('My Dashboard');",
+      "route": "https://stgsupport.keysight.com/saml/authn-request.jsp",
+      "captures": [
+        {
+          "recordingStepKey": "assertion:0",
+          "captureType": "PRE_STEP",
+          "unavailable": true
+        },
+        {
+          "captureRef": "0b10ab77-c6a0-4608-a8bd-f817aaea1095",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "assertion:0",
+          "capturedAt": "2026-09-13T16:13:00.182Z",
+          "route": "/us/en/home",
+          "artifact": "aura-0b10ab77-c6a0-4608-a8bd-f817aaea1095.png",
+          "phase": "BEFORE_ACTION_AFTER_RESOLUTION"
+        },
+        {
+          "captureRef": "bcb27e93-72fd-4ad1-a6e4-b1cff4c3382f",
+          "captureType": "POST_STEP",
+          "recordingStepKey": "assertion:0",
+          "capturedAt": "2026-09-13T16:13:00.341Z",
+          "route": "/us/en/home",
+          "artifact": "aura-bcb27e93-72fd-4ad1-a6e4-b1cff4c3382f.png"
+        }
+      ],
+      "provenance": "AUTO",
+      "savedExecutionMode": "AUTO",
+      "locatorWaits": [],
+      "resolutionElapsedMs": 5273,
+      "matchCount": 1,
+      "visible": true,
+      "enabled": true,
+      "result": "ASSERTION_PASSED",
+      "resultingRoute": "https://stgsupport.keysight.com/us/en/home",
+      "elapsedMs": 5630
+    }
+  ],
+  "navigations": [
+    {
+      "at": "2026-09-13T16:12:41.105Z",
+      "url": "https://stgsupport.keysight.com/us/en/home",
+      "kind": "OBSERVED_BROWSER_NAVIGATION"
+    },
+    {
+      "at": "2026-09-13T16:12:42.484Z",
+      "url": "https://stgsupport.keysight.com/us/en/home",
+      "kind": "OBSERVED_BROWSER_NAVIGATION"
+    },
+    {
+      "at": "2026-09-13T16:12:44.555Z",
+      "url": "https://idcs-53cf237d465040bd976bfb33fd4a799c.identity.oraclecloud.com/sso/v1/user/login",
+      "kind": "OBSERVED_BROWSER_NAVIGATION"
+    },
+    {
+      "at": "2026-09-13T16:12:46.010Z",
+      "url": "https://stgwww.keysight.com/ssoauth/login",
+      "kind": "OBSERVED_BROWSER_NAVIGATION"
+    },
+    {
+      "at": "2026-09-13T16:12:50.933Z",
+      "url": "https://stgwww.keysight.com/ssoauth/auth_cred_submit",
+      "kind": "OBSERVED_BROWSER_NAVIGATION"
+    },
+    {
+      "at": "2026-09-13T16:12:51.286Z",
+      "url": "https://idcs-53cf237d465040bd976bfb33fd4a799c.identity.oraclecloud.com/sso/v1/sdk/session",
+      "kind": "OBSERVED_BROWSER_NAVIGATION"
+    },
+    {
+      "at": "2026-09-13T16:12:51.694Z",
+      "url": "https://idcs-53cf237d465040bd976bfb33fd4a799c.identity.oraclecloud.com/fed/v1/user/response/login",
+      "kind": "OBSERVED_BROWSER_NAVIGATION"
+    },
+    {
+      "at": "2026-09-13T16:12:53.320Z",
+      "url": "https://stgsupport.keysight.com/saml/authn-request.jsp",
+      "kind": "OBSERVED_BROWSER_NAVIGATION"
+    },
+    {
+      "at": "2026-09-13T16:12:54.570Z",
+      "url": "https://idcs-53cf237d465040bd976bfb33fd4a799c.identity.oraclecloud.com/fed/v1/user/response/login",
+      "kind": "OBSERVED_BROWSER_NAVIGATION"
+    },
+    {
+      "at": "2026-09-13T16:12:56.402Z",
+      "url": "https://stgsupport.keysight.com/secur/frontdoor.jsp",
+      "kind": "OBSERVED_BROWSER_NAVIGATION"
+    },
+    {
+      "at": "2026-09-13T16:12:57.938Z",
+      "url": "https://stgsupport.keysight.com/us/en/home",
+      "kind": "OBSERVED_BROWSER_NAVIGATION"
+    },
+    {
+      "at": "2026-09-13T16:12:59.635Z",
+      "url": "https://stgsupport.keysight.com/us/en/home",
+      "kind": "OBSERVED_BROWSER_NAVIGATION"
+    }
+  ],
+  "consoleErrors": [
+    "The Content-Security-Policy directive 'default-src' contains 'script-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'style-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'img-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'font-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'connect-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'frame-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'frame-ancestors' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'object-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'base-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'form-action' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains the keyword 'none' alongside with other source expressions. The keyword 'none' must be the only source expression in the directive value, otherwise it is ignored.",
+    "The Content-Security-Policy directive 'default-src' contains 'script-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'style-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'img-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'font-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'connect-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'frame-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'frame-ancestors' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'object-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'base-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'form-action' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains the keyword 'none' alongside with other source expressions. The keyword 'none' must be the only source expression in the directive value, otherwise it is ignored.",
+    "The Content-Security-Policy directive 'default-src' contains 'script-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'style-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'img-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'font-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'connect-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'frame-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'frame-ancestors' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'object-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'base-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'form-action' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains the keyword 'none' alongside with other source expressions. The keyword 'none' must be the only source expression in the directive value, otherwise it is ignored.",
+    "The Content-Security-Policy directive 'default-src' contains 'script-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'style-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'img-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'font-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'connect-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'frame-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+    "The Content-Security-Policy directive 'default-src' contains 'frame-ancestors' as a source expression. Did you want to add it as a directive and forget a semicolon?"
+  ],
+  "liveDiagnosisPassed": true,
+  "quarantineRerun": {
+    "attempted": false,
+    "reason": "BROWSER_MODE_NOT_PROPAGATED: quarantine request/service/verifier do not forward headed mode."
+  },
+  "credentialProfile": {
+    "id": "cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed",
+    "name": "kspuserCommon"
+  },
+  "preflight": {
+    "profileActive": true,
+    "environmentId": "stg",
+    "usernameAvailable": true,
+    "passwordAvailable": true
+  },
+  "credentialsResolved": true,
+  "initialBinding": {
+    "key": "action:1",
+    "recommended": null,
+    "confirmed": "InitialLandingPage",
+    "route": null,
+    "explicit": true,
+    "provenance": "USER_CONFIRMED",
+    "userSelection": {
+      "applicationId": "ksp",
+      "page": "initialLandingPage",
+      "pageObject": "InitialLandingPage",
+      "method": "logIn",
+      "executionMode": "PAGE_OBJECT_METHOD"
+    },
+    "frameworkRecommendation": {
+      "pageObject": null
+    }
+  },
+  "generatedFile": "ai/autocode/quarantine/ksp.TC_SMOKE_021.2026-09-13T09-12-14-284Z.spec.ts.txt",
+  "generatedSha256": "7059452ed2ac271ad9288d9efd5ff6a4b4cbe2d9dbe481ce7d85913e177e84da",
+  "artifactIntegrity": {
+    "filesBefore": 160,
+    "filesAfter": 160,
+    "changed": [],
+    "added": []
+  },
+  "finishedAt": "2026-09-13T16:13:00.891Z"
+}

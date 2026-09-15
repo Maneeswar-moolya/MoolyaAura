@@ -24,8 +24,9 @@ import '../testing/isolated-checkout';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { targetEvidence } from '../testing/synthetic-data';
 import { evidenceUnavailable } from './dom-evidence';
-import { mapRecording, readAssertions } from './from-recording';
+import { mapRecording, readAssertions, readEvidence } from './from-recording';
 import {
   artifactPath, assertionsPath, discardArtifact, evidencePath, parseRecording,
   persistRecording, readArtifact, type RecordedAssertion,
@@ -92,7 +93,7 @@ function roundTrip(caseId: string): ReturnType<typeof parseRecording> {
     throw new Error(`no artifact was persisted for ${caseId}`);
   // The same three arguments `generateFromRecording` passes at from-recording.ts.
   return parseRecording(source, {
-    startUrl: '', browser: '', durationMs: 0, evidence: evidenceUnavailable('not under test here'),
+    startUrl: '', browser: '', durationMs: 0, evidence: readEvidence(caseId),
     stateAssertions: readAssertions(caseId),
   });
 }
@@ -107,7 +108,8 @@ function checkPersistence(): void {
 
   // THE REAL PRODUCTION WRITE. Nothing in this file creates the sidecar.
   const written = persistRecording(
-      CASE_ID, SCRIPT, evidenceUnavailable('recorded without evidence'), [OFF, ON]);
+      CASE_ID, SCRIPT, { available: true, capturedAt: new Date(0).toISOString(), limits: {} as any,
+        targets: [targetEvidence(OFF.locator, { target: { tag: 'input', type: 'checkbox' } })] }, [OFF, ON]);
   check('2: the save reports where it put the artifact', typeof written === 'string', String(written));
   check('2: persistRecording wrote the assertions file',
       fs.existsSync(assertionsPath(CASE_ID)), assertionsPath(CASE_ID));

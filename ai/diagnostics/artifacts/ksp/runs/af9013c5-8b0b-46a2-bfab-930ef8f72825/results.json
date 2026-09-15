@@ -1,0 +1,108 @@
+{
+  "config": {
+    "rootDir": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e"
+  },
+  "suites": [
+    {
+      "title": "chromium",
+      "suites": [
+        {
+          "title": "generated\\ksp\\TC_SMOKE_039.spec.ts",
+          "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_039.spec.ts",
+          "line": 0,
+          "column": 0,
+          "suites": [
+            {
+              "title": "Test Cases",
+              "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_039.spec.ts",
+              "line": 17,
+              "column": 6,
+              "suites": [],
+              "specs": [
+                {
+                  "title": "TC_SMOKE_039 - Verify notifications header on the notifications",
+                  "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_039.spec.ts",
+                  "line": 18,
+                  "column": 7,
+                  "ok": true,
+                  "id": "9273c4646870f581580f-aa25c45eff1f97d4eb11",
+                  "tests": [
+                    {
+                      "projectName": "chromium",
+                      "expectedStatus": "passed",
+                      "status": "flaky",
+                      "annotations": [
+                        {
+                          "type": "execution-profile",
+                          "description": "{\"applicationId\":\"ksp\",\"environmentId\":\"stg\",\"testCaseId\":\"TC_SMOKE_039\",\"executionRowId\":\"override-2-1\",\"credentialProfileId\":\"cred_fd9713de-8067-4a7e-a6d1-897ab2ad85eb\",\"credentialProfileName\":\"camsuserCommon\",\"role\":\"custom\",\"dataProfileId\":null,\"tags\":[\"recorded\",\"signed-in\"]}"
+                        },
+                        {
+                          "type": "test-case-id",
+                          "description": "TC_SMOKE_039"
+                        },
+                        {
+                          "type": "module",
+                          "description": ""
+                        },
+                        {
+                          "type": "scenario",
+                          "description": "Verify notifications header on the notifications"
+                        },
+                        {
+                          "type": "source",
+                          "description": "ksp-test-cases.xlsx :: Test Cases"
+                        }
+                      ],
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 82159,
+                          "startTime": "2026-09-15T11:48:21.829Z",
+                          "retry": 0,
+                          "errors": [
+                            {
+                              "message": "LocatorPolicyError: LOCATOR_TIMEOUT_READINESS_UNKNOWN: locator.apply: Timeout 40000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('menuitem', { name: 'Account Settings' })\u001b[22m\n",
+                              "stack": "LocatorPolicyError: LOCATOR_TIMEOUT_READINESS_UNKNOWN: locator.apply: Timeout 40000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('menuitem', { name: 'Account Settings' })\u001b[22m\n\n    at Proxy.<anonymous> (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\locator-policy.ts:127:15)\n    at C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_039.spec.ts:66:7\n    at runStep (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\steps.ts:171:20)\n    at C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_039.spec.ts:65:5"
+                            }
+                          ],
+                          "error": {
+                            "message": "LocatorPolicyError: LOCATOR_TIMEOUT_READINESS_UNKNOWN: locator.apply: Timeout 40000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('menuitem', { name: 'Account Settings' })\u001b[22m\n",
+                            "stack": "LocatorPolicyError: LOCATOR_TIMEOUT_READINESS_UNKNOWN: locator.apply: Timeout 40000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('menuitem', { name: 'Account Settings' })\u001b[22m\n\n    at Proxy.<anonymous> (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\locator-policy.ts:127:15)\n    at C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_039.spec.ts:66:7\n    at runStep (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\steps.ts:171:20)\n    at C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_039.spec.ts:65:5"
+                          },
+                          "stdout": [],
+                          "stderr": [],
+                          "attachments": []
+                        },
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 52540,
+                          "startTime": "2026-09-15T11:49:47.003Z",
+                          "retry": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "attachments": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "specs": []
+        }
+      ],
+      "specs": []
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-15T11:48:19.158Z",
+    "duration": 141059.65000000002
+  }
+}

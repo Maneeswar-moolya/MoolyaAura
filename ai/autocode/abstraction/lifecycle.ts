@@ -248,7 +248,8 @@ function writerVerdict(
  * for exactly the elements this phase is about.
  */
 export function decideLifecycle(input: LifecycleInput): LifecycleDecision[] {
-  const { testCaseId, generationId, timestamp, mapping } = input;
+  const { testCaseId, generationId, timestamp } = input;
+  const mapping = { ...input.mapping, steps: input.mapping.steps.flatMap(step => step.components ?? [step]) };
   const decisions: LifecycleDecision[] = [];
 
   const base = (step: MappedStep): Pick<LifecycleDecision,
@@ -271,6 +272,7 @@ export function decideLifecycle(input: LifecycleInput): LifecycleDecision[] {
   //    indistinguishable from four that were never in question. So a step whose method
   //    was created in this pass reports the CREATION, and reuse means what it says.
   for (const step of mapping.steps) {
+    if (step.subject) continue;
     if (step.kind !== 'page-object' || !step.pageObject || !step.method)
       continue;
     const createdHere = input.proposals.find(entry =>
@@ -304,7 +306,8 @@ export function decideLifecycle(input: LifecycleInput): LifecycleDecision[] {
   // 2. EVERYTHING ELSE. Each one must find a record, and the branch at the end is what
   //    guarantees it - there is no path out of this loop that appends nothing.
   for (const step of mapping.steps) {
-    if (!REQUIRES_PAGE_OBJECT.has(step.kind))
+    if (step.subject) continue;
+    if (step.subject || !REQUIRES_PAGE_OBJECT.has(step.kind))
       continue;
 
     const proposal = input.proposals.find(entry =>

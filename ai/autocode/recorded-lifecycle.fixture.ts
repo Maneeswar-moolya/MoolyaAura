@@ -1,4 +1,5 @@
 import '../testing/isolated-checkout';
+import { syntheticLoginEvidence, targetEvidence } from '../testing/synthetic-data';
 /**
  * The recorded-test lifecycle, pinned offline.
  *
@@ -69,6 +70,9 @@ function keep(id: string, source: string): void {
   const file = artifactPath(id);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, source, 'utf8');
+  fs.writeFileSync(file.replace(/\.spec\.ts$/, '.evidence.json'), JSON.stringify(syntheticLoginEvidence([
+    targetEvidence("page.locator('#loginForm')"), targetEvidence("page.locator('#project_banner')"),
+  ])));
   written.push(file);
 }
 
@@ -83,7 +87,7 @@ function generate(id: string, scenario: string, source: string) {
 const INTERLEAVED = `import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://portal.fixture.invalid/');
+  await page.goto('https://portal.fixture.invalid/'); // @aura-navigation intentional
   await page.getByRole('textbox', { name: 'Email' }).fill('someone@moolya.com');
   await expect(page.locator('#loginForm')).toContainText('Sign In');
   await page.getByRole('textbox', { name: 'Password' }).fill('[type=password]');
@@ -95,7 +99,7 @@ test('test', async ({ page }) => {
 const NO_ASSERTION = `import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://portal.fixture.invalid/');
+  await page.goto('https://portal.fixture.invalid/'); // @aura-navigation intentional
   await page.getByRole('textbox', { name: 'Email' }).fill('someone@moolya.com');
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
 });
@@ -104,7 +108,7 @@ test('test', async ({ page }) => {
 const RAW_LOCATOR = `import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://portal.fixture.invalid/');
+  await page.goto('https://portal.fixture.invalid/'); // @aura-navigation intentional
   await page.locator('#some_unknown_widget .thing').click();
   await expect(page.locator('#project_banner')).toContainText('Multi tasking is hard. Focus is good.');
 });
@@ -113,7 +117,7 @@ test('test', async ({ page }) => {
 async function main(): Promise<void> {
   process.stdout.write('\n== TEST A — recorded order is preserved ==\n');
 
-  const parsedRecording = parseRecording(INTERLEAVED, { startUrl: '', browser: '', durationMs: 0 });
+  const parsedRecording = parseRecording(INTERLEAVED, { startUrl: '', browser: '', durationMs: 0, evidence: syntheticLoginEvidence([targetEvidence("page.locator('#loginForm')"), targetEvidence("page.locator('#project_banner')")]) });
   check('every assertion carries its position',
       parsedRecording.assertions.every(a => a.afterActions !== undefined),
       JSON.stringify(parsedRecording.assertions.map(a => a.afterActions)));
@@ -124,7 +128,7 @@ async function main(): Promise<void> {
 
   const sourceA = fs.readFileSync(abs(a.spec), 'utf8');
   const at = (needle: string) => sourceA.indexOf(needle);
-  const signIn = at('loginPage.signIn(');
+  const signIn = at('loginPage.signInButton(');
   const firstAssert = at("expect(page.locator('#loginForm'))");
   const secondAssert = at("expect(page.locator('#project_banner'))");
   check('ASSERT1 is emitted BEFORE the sign-in it preceded', firstAssert > 0 && firstAssert < signIn,
@@ -170,8 +174,8 @@ async function main(): Promise<void> {
       surveyed.skipped[0]?.reason ?? '');
 
   process.stdout.write('\n== TEST C — existing Page Object reuse ==\n');
-  check('sign-in reused LoginPage.signIn', sourceA.includes('loginPage.signIn('));
-  check('navigation reused a Page Object open()', sourceA.includes('loginPage.open()'));
+  check('interleaved authentication preserves proven control operations', sourceA.includes('loginPage.signInButton('));
+  check('explicit navigation retained', sourceA.includes('page.goto('));
   check('reuse counted', a.result.metrics.reusedPageObjectMethods >= 2,
       String(a.result.metrics.reusedPageObjectMethods));
   check('no new Page Object method invented', a.result.metrics.newPageObjectMethods === 0);

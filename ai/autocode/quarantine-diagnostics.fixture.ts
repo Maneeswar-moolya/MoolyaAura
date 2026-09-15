@@ -1,0 +1,23 @@
+import '../testing/isolated-checkout';
+import assert from 'node:assert/strict';import path from 'node:path';import fs from 'node:fs';
+import { workspaceData } from '../testing/workspace-data';import { writeFixtureFile } from '../testing/synthetic-data';
+import { gate } from './verify';
+const {scope}=workspaceData();
+fs.writeFileSync(scope.paths.fixturesFile,fs.readFileSync(scope.paths.fixturesFile,'utf8').replace('interface Fixtures {', 'interface Fixtures {\n  appCredentials: import("./support/env").Credentials | null;\n  step: import("./support/base-fixtures").StepFn;'));
+fs.copyFileSync('excel/fixture-cases.xlsx','excel/north.xlsx');
+const file=path.join(scope.paths.generatedDir,'TC_CREDENTIAL_GUARD.spec.ts');
+writeFixtureFile(path.relative(process.cwd(),file),`import { test, expect, trace } from '../../north.fixtures';
+import { requireCredentials } from '../../support/base-fixtures';
+test('TC_CREDENTIAL_GUARD - Configured account reaches the screen', async ({page,appCredentials,step}) => {
+  requireCredentials(appCredentials);
+  await trace({testCaseId:'TC_CREDENTIAL_GUARD',module:'Diagnostics',scenario:'Configured account reaches the screen',sourceWorkbook:'north.xlsx',sourceWorksheet:'Cases'});
+  await step('Read screen',async()=>{ await expect(page.getByRole('heading',{name:'Account'})).toBeVisible(); });
+});
+`);
+const result=gate(path.relative(process.cwd(),file).replace(/\\/g,'/'),'TC_CREDENTIAL_GUARD','Configured account reaches the screen','excel/north.xlsx',()=>{});
+console.log(JSON.stringify(result));
+assert.equal(result.detail.cleanStatus,'Skipped','actual Playwright credential guard skipped');
+assert.equal(result.detail.code,'CREDENTIAL_CONFIGURATION_FAILURE','a credential skip must not masquerade as a runtime locator failure');
+assert.match(result.reason,/declares no credentials/);
+assert.ok((result.detail as any).diagnostics,'the exact runtime report must survive quarantine');
+console.log('PASS skipped credential guard retains its reason and diagnostics');

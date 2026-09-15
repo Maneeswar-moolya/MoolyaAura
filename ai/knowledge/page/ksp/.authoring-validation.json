@@ -1,0 +1,85 @@
+{
+  "applicationId": "ksp",
+  "methods": [
+    {
+      "owner": "LoginButton",
+      "method": "logIn",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "InitialLandingPage",
+      "method": "logIn",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "UsEnHomePage",
+      "method": "homeLinkState",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "SsoauthLoginPage",
+      "method": "formState",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "LandingPage",
+      "method": "logIn",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "UsEnHomePage",
+      "method": "productHelp",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "MySupportCasesPage",
+      "method": "headingState",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "MySupportCasesPage",
+      "method": "enterEmail",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "UsEnHomePage",
+      "method": "mySupportCaseUnderProductHelp",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "MySupportCasesPage",
+      "method": "filterButton",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "MySupportCasesPage",
+      "method": "filterStatusNew",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "MySupportCasesPage",
+      "method": "filterApplyButton",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "MySupportCasesPage",
+      "method": "caseDetailsNew",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "UsEnHomePage",
+      "method": "settionsIcon",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "UsEnHomePage",
+      "method": "accountSettingsUnderSettingsIconMenu",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    },
+    {
+      "owner": "Notifications",
+      "method": "notificationsHeader",
+      "status": "USER AUTHORED — NOT VALIDATED"
+    }
+  ]
+}

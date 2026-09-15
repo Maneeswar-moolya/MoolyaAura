@@ -1,0 +1,56 @@
+{
+  "TC_SMOKE_021": {
+    "module": "",
+    "scenario": "TC_SMOKE_021",
+    "status": "Automated",
+    "sourceWorkbook": "",
+    "sourceWorksheet": "",
+    "testFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+    "testName": "TC_SMOKE_021 - TC_SMOKE_021",
+    "lastGeneratedAt": "2026-09-14T10:08:59.554Z"
+  },
+  "TC_SMOKE_026": {
+    "module": "",
+    "scenario": "Log In â€” form contains \"Email:\"",
+    "status": "Generated",
+    "sourceWorkbook": "ksp-test-cases.xlsx",
+    "sourceWorksheet": "Test Cases",
+    "testFile": "tests-e2e/generated/ksp/TC_SMOKE_026.spec.ts",
+    "testName": "TC_SMOKE_026 - Log In â€” form contains \"Email:\"",
+    "sourceRow": 27,
+    "lastGeneratedAt": "2026-09-14T05:00:16.262Z"
+  },
+  "TC_SMOKE_037": {
+    "module": "",
+    "scenario": "My Support Cases â€” heading contains \"My Support Cases\"",
+    "status": "Automated",
+    "sourceWorkbook": "excel/ksp-test-cases.xlsx",
+    "sourceWorksheet": "Test Cases",
+    "testFile": "tests-e2e/generated/ksp/TC_SMOKE_037.spec.ts",
+    "testName": "TC_SMOKE_037 - My Support Cases â€” heading contains \"My Support Cases\"",
+    "sourceRow": 38,
+    "lastGeneratedAt": "2026-09-15T10:47:54.246Z"
+  },
+  "TC_SMOKE_038": {
+    "module": "",
+    "scenario": "Msc-filter-apply-btn â€” #msc-case-details-section-content contains \"New\"",
+    "status": "Automated",
+    "sourceWorkbook": "ksp-test-cases.xlsx",
+    "sourceWorksheet": "Test Cases",
+    "testFile": "tests-e2e/generated/ksp/TC_SMOKE_038.spec.ts",
+    "testName": "TC_SMOKE_038 - Msc-filter-apply-btn â€” #msc-case-details-section-content contains \"New\"",
+    "sourceRow": 39,
+    "lastGeneratedAt": "2026-09-15T11:01:41.683Z"
+  },
+  "TC_SMOKE_039": {
+    "module": "",
+    "scenario": "Account Settings â€” c-notifications-settings-header contains \"Notifications\"",
+    "status": "Automated",
+    "sourceWorkbook": "excel/ksp-test-cases.xlsx",
+    "sourceWorksheet": "Test Cases",
+    "testFile": "tests-e2e/generated/ksp/TC_SMOKE_039.spec.ts",
+    "testName": "TC_SMOKE_039 - Account Settings â€” c-notifications-settings-header contains \"Notifications\"",
+    "sourceRow": 40,
+    "lastGeneratedAt": "2026-09-15T11:45:25.279Z"
+  }
+}

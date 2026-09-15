@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 1,
+  "applicationId": "ksp",
+  "environmentId": "stg",
+  "testCaseId": "TC_SMOKE_032",
+  "runId": "c825a143-bda4-4562-8462-514c436d3ad3",
+  "attemptId": "e2da34c8-42b4-4698-8615-34fce70452f4",
+  "kind": "clean",
+  "createdAt": "2026-09-15T06:09:04.394Z",
+  "locatorTimeoutMs": 40000,
+  "executionContext": {
+    "applicationId": "ksp",
+    "environmentId": "stg",
+    "sourceEnvironmentId": "stg",
+    "credentialProfileId": "cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed",
+    "executionRowId": "override-1-1",
+    "browserEngine": "chromium",
+    "browserChannel": "chrome",
+    "headed": true,
+    "locatorTimeoutMs": 40000
+  },
+  "sourceEnvironmentId": "stg",
+  "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_032.spec.ts",
+  "steps": [
+    {
+      "recordingStepKey": "action:0",
+      "label": "Open recorded destination",
+      "locator": "",
+      "provenance": "AUTO",
+      "executionMode": "AUTO",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_032.spec.ts",
+      "generatedLineStart": 26,
+      "generatedLineEnd": 28,
+      "statement": "{\n      await page.goto('https://stgsupport.keysight.com/us/en/home');\n    }"
+    },
+    {
+      "recordingStepKey": "action:1",
+      "label": "Use Log In",
+      "page": "initialLandingPage",
+      "pageObject": "InitialLandingPage",
+      "method": "logIn",
+      "locator": "page.locator('header').getByRole('link', { name: 'Log In' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "validationStatus": "USER AUTHORED — NOT VALIDATED",
+      "implementation": "tests-e2e/pages/ksp/InitialLandingPage.ts",
+      "implementationLine": 6,
+      "implementationSource": "logIn() { const page = this.page; return page.locator('header').getByRole('link', { name: 'Log In' }); }",
+      "calls": [
+        {
+          "pageObject": "InitialLandingPage",
+          "method": "logIn",
+          "implementation": "tests-e2e/pages/ksp/InitialLandingPage.ts",
+          "implementationLine": 6,
+          "implementationSource": "logIn() { const page = this.page; return page.locator('header').getByRole('link', { name: 'Log In' }); }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_032.spec.ts",
+      "generatedLineStart": 31,
+      "generatedLineEnd": 33,
+      "statement": "{\n      await (await initialLandingPage.logIn()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "action:2",
+      "label": "Use Enter email",
+      "page": "ksp__ssoauth-login",
+      "pageObject": "SsoauthLoginPage",
+      "method": "enterEmailField",
+      "locator": "page.getByRole('textbox', { name: 'Enter email' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 27,
+      "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "enterEmailField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 27,
+          "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_032.spec.ts",
+      "generatedLineStart": 36,
+      "generatedLineEnd": 38,
+      "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "action:3",
+      "label": "Enter account from configured credentials",
+      "page": "ksp__ssoauth-login",
+      "pageObject": "SsoauthLoginPage",
+      "method": "enterEmailField",
+      "locator": "page.getByRole('textbox', { name: 'Enter email' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 27,
+      "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "enterEmailField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 27,
+          "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_032.spec.ts",
+      "generatedLineStart": 41,
+      "generatedLineEnd": 43,
+      "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).fill(appCredentials.email);\n    }"
+    },
+    {
+      "recordingStepKey": "action:4",
+      "label": "Use Password",
+      "page": "ksp__ssoauth-login",
+      "pageObject": "SsoauthLoginPage",
+      "method": "passwordField",
+      "locator": "page.getByRole('textbox', { name: 'Password' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 39,
+      "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "passwordField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 39,
+          "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_032.spec.ts",
+      "generatedLineStart": 46,
+      "generatedLineEnd": 48,
+      "statement": "{\n      await (await ssoauthLoginPage.passwordField()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "action:5",
+      "label": "Enter password from configured credentials",
+      "page": "ksp__ssoauth-login",
+      "pageObject": "SsoauthLoginPage",
+      "method": "passwordField",
+      "locator": "page.getByRole('textbox', { name: 'Password' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 39,
+      "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "passwordField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 39,
+          "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_032.spec.ts",
+      "generatedLineStart": 51,
+      "generatedLineEnd": 53,
+      "statement": "{\n      await (await ssoauthLoginPage.passwordField()).fill(appCredentials.password);\n    }"
+    },
+    {
+      "recordingStepKey": "action:6",
+      "label": "Use Log In",
+      "page": "ksp__ssoauth-login",
+      "pageObject": "SsoauthLoginPage",
+      "method": "logInButton",
+      "locator": "page.getByRole('button', { name: 'Log In' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 51,
+      "implementationSource": "logInButton(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.logInButton', [\n      { strategy: 'getByRole(\\'button\\', { name: \\'Log In\\', exact: true })', build: page => page.getByRole('button', { name: 'Log In', exact: true }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "logInButton",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 51,
+          "implementationSource": "logInButton(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.logInButton', [\n      { strategy: 'getByRole(\\'button\\', { name: \\'Log In\\', exact: true })', build: page => page.getByRole('button', { name: 'Log In', exact: true }) },\n    ]);\n  }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_032.spec.ts",
+      "generatedLineStart": 56,
+      "generatedLineEnd": 58,
+      "statement": "{\n      await (await ssoauthLoginPage.logInButton()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "action:9",
+      "label": "Click Product Help",
+      "page": "ksp__us-en-home",
+      "pageObject": "UsEnHomePage",
+      "method": "productHelp",
+      "locator": "page.getByRole('button', { name: 'Product Help' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "validationStatus": "USER AUTHORED — NOT VALIDATED",
+      "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+      "implementationLine": 85,
+      "implementationSource": "productHelp() { const page = this.page; return page.getByRole('button', { name: 'Product Help' }); }",
+      "calls": [
+        {
+          "pageObject": "UsEnHomePage",
+          "method": "productHelp",
+          "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+          "implementationLine": 85,
+          "implementationSource": "productHelp() { const page = this.page; return page.getByRole('button', { name: 'Product Help' }); }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_032.spec.ts",
+      "generatedLineStart": 61,
+      "generatedLineEnd": 63,
+      "statement": "{\n      await (await usEnHomePage.productHelp()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "action:10",
+      "label": "Click My Support Cases",
+      "page": "ksp__us-en-home",
+      "pageObject": "UsEnHomePage",
+      "method": "mySupportCaseUnderProductHelp",
+      "locator": "page.getByRole('menuitem', { name: 'My Support Cases' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "validationStatus": "USER AUTHORED — NOT VALIDATED",
+      "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+      "implementationLine": 88,
+      "implementationSource": "mySupportCaseUnderProductHelp() { const page = this.page; return page.getByRole('menuitem', { name: 'My Support Cases' }); }",
+      "calls": [
+        {
+          "pageObject": "UsEnHomePage",
+          "method": "mySupportCaseUnderProductHelp",
+          "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+          "implementationLine": 88,
+          "implementationSource": "mySupportCaseUnderProductHelp() { const page = this.page; return page.getByRole('menuitem', { name: 'My Support Cases' }); }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_032.spec.ts",
+      "generatedLineStart": 66,
+      "generatedLineEnd": 68,
+      "statement": "{\n      await (await usEnHomePage.mySupportCaseUnderProductHelp()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "assertion:0",
+      "label": "heading contains \"My Support Cases\"",
+      "pageObject": "MySupportCasesPage",
+      "method": "headingState",
+      "locator": "page.getByTestId('msc-case-list-panel').getByRole('heading')",
+      "implementation": "tests-e2e/pages/ksp/MySupportCasesPage.ts",
+      "implementationLine": 6,
+      "implementationSource": "headingState() { const page = this.page; return page.getByTestId('msc-case-list-panel').getByRole('heading'); }",
+      "calls": [
+        {
+          "pageObject": "MySupportCasesPage",
+          "method": "headingState",
+          "implementation": "tests-e2e/pages/ksp/MySupportCasesPage.ts",
+          "implementationLine": 6,
+          "implementationSource": "headingState() { const page = this.page; return page.getByTestId('msc-case-list-panel').getByRole('heading'); }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_032.spec.ts",
+      "generatedLineStart": 71,
+      "generatedLineEnd": 73,
+      "statement": "{\n      await expect(await mySupportCasesPage.headingState()).toContainText('My Support Cases');\n    }"
+    }
+  ],
+  "artifacts": [
+    "artifacts/.last-run.json",
+    "artifacts/generated-ksp-TC_SMOKE_032-c42a7--contains-My-Support-Cases--chromium/aura-eaa740ab-865e-4110-b8e7-208589584667.png",
+    "executed-dependencies.json",
+    "generated-steps.json",
+    "results.json",
+    "steps/TC_SMOKE_032.6d3da791ca8e43b6-1.json"
+  ],
+  "trace": null,
+  "tracePolicy": "Sanitized action timeline. Native DOM snapshots, response bodies, video and unmasked screenshots are excluded.",
+  "unavailable": []
+}

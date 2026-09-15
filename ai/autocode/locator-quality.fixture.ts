@@ -1,5 +1,5 @@
 import '../testing/isolated-checkout';
-import { recordingSource } from '../testing/synthetic-data';
+import { recordingSource, targetEvidence } from '../testing/synthetic-data';
 /**
  * The locator-quality engine, pinned offline.
  *
@@ -18,7 +18,7 @@ import {
   analyseIdentifier, assessLocator, assessNewPageObject, methodNameFor, parseChain,
 } from './locator-quality';
 import { generateFromRecording, mapRecording, locatorMetrics } from './from-recording';
-import { artifactPath, parseRecording } from '../dashboard/recorder';
+import { artifactPath, evidencePath, parseRecording } from '../dashboard/recorder';
 import { recordedSpecPathFor } from './orchestrate';
 import type { TestCase } from '../excel/types';
 import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
@@ -194,12 +194,18 @@ async function main(): Promise<void> {
       !/\[id\^=|\*|first\(\)/.test(JSON.stringify(t037)), 'no [id^=] / wildcard / first()');
   check('U: the reason names the rule that fired', t037.reason.includes('separator-digits'));
 
-  const mappedSynthetic = mapRecording(parseRecording(recordingSource([
+  const positiveRecording = parseRecording(recordingSource([
     'await page.getByRole("link", { name: "Notifications" }).click();',
     'await page.getByRole("button", { name: "Notification settings" }).click();',
     'await expect(page.locator("#summary_900001")).toContainText("Draft summary");',
     'await page.getByText("Quarterly draft").click();',
-  ]), { startUrl: '', browser: '', durationMs: 0 }));
+  ]), { startUrl: '', browser: '', durationMs: 0 });
+  positiveRecording.evidence = { available: true, capturedAt: new Date(0).toISOString(), limits: {} as any,
+    targets: positiveRecording.actions.slice(0, 2).map((action, at) => targetEvidence(action.locator, {
+      documentId: 'synthetic-notifications', elementRef: `synthetic-notifications:${at}`,
+      target: { tag: at === 0 ? 'a' : 'button', role: at === 0 ? 'link' : 'button', accessibleName: action.target, accessibleNameVerified: true },
+    })) };
+  const mappedSynthetic = mapRecording(positiveRecording);
   const syntheticMetrics = locatorMetrics(mappedSynthetic);
   check('integration: dynamic and unmeasured bare text each require review', mappedSynthetic.needsReview.length === 2);
   check('integration: both existing capabilities are reused', syntheticMetrics.existingPageObjectReuseCount === 2);
@@ -290,11 +296,13 @@ async function main(): Promise<void> {
   fs.writeFileSync(artifactPath(id), `import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://portal.fixture.invalid/');
+  await page.goto('https://portal.fixture.invalid/'); // @aura-navigation intentional
   await expect(page.locator('#project_banner')).toContainText('Multi tasking is hard. Focus is good.');
 });
 `, 'utf8');
   written.push(artifactPath(id));
+  fs.writeFileSync(evidencePath(id), JSON.stringify({ available: true, capturedAt: new Date(0).toISOString(), limits: {}, targets: [targetEvidence("page.locator('#project_banner')")] }));
+  written.push(evidencePath(id));
   const spec = recordedSpecPathFor(id);
   written.push(path.resolve(ROOT, spec));
   const generated = generateFromRecording(syntheticCase(id), spec, 'excel/fixture-cases.xlsx');

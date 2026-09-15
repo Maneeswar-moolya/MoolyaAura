@@ -1,0 +1,811 @@
+{
+  "applicationId": "ksp",
+  "environmentId": "stg",
+  "runId": "cd85c9cd-6919-4ba6-9f57-f5738962721d",
+  "attemptId": "d1d15f272671a7d2-1",
+  "attemptNumber": 1,
+  "testCaseId": "TC_SMOKE_021",
+  "testTitle": "TC_SMOKE_021 - Log In â€” dashboard-heading contains \"My Dashboard\"",
+  "steps": [
+    {
+      "applicationId": "ksp",
+      "environmentId": "stg",
+      "runId": "cd85c9cd-6919-4ba6-9f57-f5738962721d",
+      "attemptId": "d1d15f272671a7d2-1",
+      "attemptNumber": 1,
+      "stepId": "6900dac6-c0a0-4e90-a24a-9a959cbb2ccf",
+      "index": 1,
+      "title": "Open recorded destination",
+      "diagnostic": {
+        "recordingStepKey": "generated:25",
+        "label": "Open recorded destination",
+        "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+        "generatedLineStart": 25,
+        "generatedLineEnd": 27,
+        "statement": "{\n      await page.goto('https://stgsupport.keysight.com/us/en/home');\n    }"
+      },
+      "captures": [
+        {
+          "captureRef": "7d2a02e3-31fe-42af-b825-e2dd69e09f7c",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "generated:25",
+          "capturedAt": "2026-09-14T05:20:46.883Z",
+          "route": "blank",
+          "artifact": "aura-7d2a02e3-31fe-42af-b825-e2dd69e09f7c.png"
+        }
+      ],
+      "status": "passed",
+      "durationMs": 3609
+    },
+    {
+      "applicationId": "ksp",
+      "environmentId": "stg",
+      "runId": "cd85c9cd-6919-4ba6-9f57-f5738962721d",
+      "attemptId": "d1d15f272671a7d2-1",
+      "attemptNumber": 1,
+      "stepId": "f27db145-6c1c-4ef2-ac7b-bd4f61b7101e",
+      "index": 2,
+      "title": "Use Log In",
+      "diagnostic": {
+        "pageObject": "InitialLandingPage",
+        "method": "logIn",
+        "implementation": "tests-e2e/pages/ksp/InitialLandingPage.ts",
+        "implementationLine": 6,
+        "implementationSource": "logIn() { const page = this.page; return page.locator('header').getByRole('link', { name: 'Log In' }); }",
+        "calls": [
+          {
+            "pageObject": "InitialLandingPage",
+            "method": "logIn",
+            "implementation": "tests-e2e/pages/ksp/InitialLandingPage.ts",
+            "implementationLine": 6,
+            "implementationSource": "logIn() { const page = this.page; return page.locator('header').getByRole('link', { name: 'Log In' }); }"
+          }
+        ],
+        "recordingStepKey": "generated:29",
+        "label": "Use Log In",
+        "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+        "generatedLineStart": 29,
+        "generatedLineEnd": 31,
+        "statement": "{\n      await (await initialLandingPage.logIn()).click();\n    }"
+      },
+      "captures": [
+        {
+          "captureRef": "a38e77cb-f653-4426-9602-74fd6b009b2b",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "generated:29",
+          "capturedAt": "2026-09-14T05:20:50.714Z",
+          "route": "/us/en/home",
+          "artifact": "aura-a38e77cb-f653-4426-9602-74fd6b009b2b.png"
+        }
+      ],
+      "status": "passed",
+      "durationMs": 3838
+    },
+    {
+      "applicationId": "ksp",
+      "environmentId": "stg",
+      "runId": "cd85c9cd-6919-4ba6-9f57-f5738962721d",
+      "attemptId": "d1d15f272671a7d2-1",
+      "attemptNumber": 1,
+      "stepId": "bd82cb09-c7dc-4673-9ed1-3e4226f7dea6",
+      "index": 3,
+      "title": "Use Enter email",
+      "diagnostic": {
+        "pageObject": "SsoauthLoginPage",
+        "method": "enterEmailField",
+        "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+        "implementationLine": 27,
+        "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }",
+        "calls": [
+          {
+            "pageObject": "SsoauthLoginPage",
+            "method": "enterEmailField",
+            "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+            "implementationLine": 27,
+            "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }"
+          }
+        ],
+        "recordingStepKey": "generated:33",
+        "label": "Use Enter email",
+        "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+        "generatedLineStart": 33,
+        "generatedLineEnd": 35,
+        "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).click();\n    }"
+      },
+      "captures": [
+        {
+          "captureRef": "24a80f48-3008-4855-b18e-b529873b9d3a",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "generated:33",
+          "capturedAt": "2026-09-14T05:20:55.417Z",
+          "route": "/ssoauth/login",
+          "artifact": "aura-24a80f48-3008-4855-b18e-b529873b9d3a.png"
+        }
+      ],
+      "status": "passed",
+      "durationMs": 1301
+    },
+    {
+      "applicationId": "ksp",
+      "environmentId": "stg",
+      "runId": "cd85c9cd-6919-4ba6-9f57-f5738962721d",
+      "attemptId": "d1d15f272671a7d2-1",
+      "attemptNumber": 1,
+      "stepId": "45cd98ba-a53e-4d5e-b461-396b748756d0",
+      "index": 4,
+      "title": "Enter account from configured credentials",
+      "diagnostic": {
+        "pageObject": "SsoauthLoginPage",
+        "method": "enterEmailField",
+        "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+        "implementationLine": 27,
+        "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }",
+        "calls": [
+          {
+            "pageObject": "SsoauthLoginPage",
+            "method": "enterEmailField",
+            "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+            "implementationLine": 27,
+            "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }"
+          }
+        ],
+        "recordingStepKey": "generated:37",
+        "label": "Enter account from configured credentials",
+        "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+        "generatedLineStart": 37,
+        "generatedLineEnd": 39,
+        "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).fill(appCredentials.email);\n    }"
+      },
+      "captures": [
+        {
+          "captureRef": "ccf74aa5-cf4e-4078-af22-919d9e738736",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "generated:37",
+          "capturedAt": "2026-09-14T05:20:56.234Z",
+          "route": "/ssoauth/login",
+          "artifact": "aura-ccf74aa5-cf4e-4078-af22-919d9e738736.png"
+        }
+      ],
+      "status": "passed",
+      "durationMs": 768
+    },
+    {
+      "applicationId": "ksp",
+      "environmentId": "stg",
+      "runId": "cd85c9cd-6919-4ba6-9f57-f5738962721d",
+      "attemptId": "d1d15f272671a7d2-1",
+      "attemptNumber": 1,
+      "stepId": "cab66a02-35fb-4f84-b2b6-fad7b893d588",
+      "index": 5,
+      "title": "Enter password from configured credentials",
+      "diagnostic": {
+        "pageObject": "SsoauthLoginPage",
+        "method": "passwordField",
+        "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+        "implementationLine": 39,
+        "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }",
+        "calls": [
+          {
+            "pageObject": "SsoauthLoginPage",
+            "method": "passwordField",
+            "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+            "implementationLine": 39,
+            "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }"
+          }
+        ],
+        "recordingStepKey": "generated:41",
+        "label": "Enter password from configured credentials",
+        "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+        "generatedLineStart": 41,
+        "generatedLineEnd": 43,
+        "statement": "{\n      await (await ssoauthLoginPage.passwordField()).fill(appCredentials.password);\n    }"
+      },
+      "captures": [
+        {
+          "captureRef": "7b576e20-2254-449a-b3cb-de208d9a2989",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "generated:41",
+          "capturedAt": "2026-09-14T05:20:56.351Z",
+          "route": "/ssoauth/login",
+          "artifact": "aura-7b576e20-2254-449a-b3cb-de208d9a2989.png"
+        }
+      ],
+      "status": "passed",
+      "durationMs": 111
+    },
+    {
+      "applicationId": "ksp",
+      "environmentId": "stg",
+      "runId": "cd85c9cd-6919-4ba6-9f57-f5738962721d",
+      "attemptId": "d1d15f272671a7d2-1",
+      "attemptNumber": 1,
+      "stepId": "bdb6ecdd-4b57-49ac-acd1-96f0e62241d8",
+      "index": 6,
+      "title": "Use Log In",
+      "diagnostic": {
+        "pageObject": "SsoauthLoginPage",
+        "method": "logInButton",
+        "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+        "implementationLine": 51,
+        "implementationSource": "logInButton(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.logInButton', [\n      { strategy: 'getByRole(\\'button\\', { name: \\'Log In\\', exact: true })', build: page => page.getByRole('button', { name: 'Log In', exact: true }) },\n    ]);\n  }",
+        "calls": [
+          {
+            "pageObject": "SsoauthLoginPage",
+            "method": "logInButton",
+            "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+            "implementationLine": 51,
+            "implementationSource": "logInButton(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.logInButton', [\n      { strategy: 'getByRole(\\'button\\', { name: \\'Log In\\', exact: true })', build: page => page.getByRole('button', { name: 'Log In', exact: true }) },\n    ]);\n  }"
+          }
+        ],
+        "recordingStepKey": "generated:45",
+        "label": "Use Log In",
+        "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+        "generatedLineStart": 45,
+        "generatedLineEnd": 47,
+        "statement": "{\n      await (await ssoauthLoginPage.logInButton()).click();\n    }"
+      },
+      "captures": [
+        {
+          "captureRef": "71f8140a-1afe-45bf-8f46-74b75998d051",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "generated:45",
+          "capturedAt": "2026-09-14T05:20:56.452Z",
+          "route": "/ssoauth/login",
+          "artifact": "aura-71f8140a-1afe-45bf-8f46-74b75998d051.png"
+        }
+      ],
+      "status": "passed",
+      "durationMs": 843
+    },
+    {
+      "applicationId": "ksp",
+      "environmentId": "stg",
+      "runId": "cd85c9cd-6919-4ba6-9f57-f5738962721d",
+      "attemptId": "d1d15f272671a7d2-1",
+      "attemptNumber": 1,
+      "stepId": "6e37ceb3-1970-430f-a3be-187c4c17c1d8",
+      "index": 7,
+      "title": "dashboard-heading contains \"My Dashboard\"",
+      "diagnostic": {
+        "pageObject": "UsEnHomePage",
+        "method": "myDashboardState",
+        "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+        "implementationLine": 27,
+        "implementationSource": "myDashboardState(): Promise<Locator> {\n    return this.resolve('usenhome.myDashboardState', [\n      { strategy: 'getByRole(\\'heading\\', { name: \\'My Dashboard\\', exact: true })', build: page => page.getByRole('heading', { name: 'My Dashboard', exact: true }) },\n    ]);\n  }",
+        "calls": [
+          {
+            "pageObject": "UsEnHomePage",
+            "method": "myDashboardState",
+            "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+            "implementationLine": 27,
+            "implementationSource": "myDashboardState(): Promise<Locator> {\n    return this.resolve('usenhome.myDashboardState', [\n      { strategy: 'getByRole(\\'heading\\', { name: \\'My Dashboard\\', exact: true })', build: page => page.getByRole('heading', { name: 'My Dashboard', exact: true }) },\n    ]);\n  }"
+          }
+        ],
+        "recordingStepKey": "generated:49",
+        "label": "dashboard-heading contains \"My Dashboard\"",
+        "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+        "generatedLineStart": 49,
+        "generatedLineEnd": 51,
+        "statement": "{\n      await expect(await usEnHomePage.myDashboardState()).toContainText('My Dashboard');\n    }"
+      },
+      "captures": [],
+      "status": "failed",
+      "durationMs": 5073,
+      "error": "Could not resolve \"usenhome.myDashboardState\" on https://idcs-53cf237d465040bd976bfb33fd4a799c.identity.oraclecloud.com/fed/v1/user/response/login to exactly one element. | Tried 1 strateg(ies): | - getByRole('heading', { name: 'My Dashboard', exact: true }) - nothing attached | This is a genuine locator failure - add a candidate strategy that identifies the element, or the element is gone. A strategy that matched several elements is NOT narrowed with first(): that would pick an element nobody c",
+      "screenshotPath": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\autocode-h6VL0q\\artifacts\\generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium\\aura-aed39d54-9778-4cc8-a597-72661d1b25a6.png",
+      "captureTiming": "after-failure"
+    }
+  ],
+  "console": [
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'script-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.138Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'style-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.141Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'img-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.143Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'font-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.145Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'connect-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.147Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.150Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-ancestors' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.152Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'object-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.154Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'base-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.156Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'form-action' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.159Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains the keyword 'none' alongside with other source expressions. The keyword 'none' must be the only source expression in the directive value, otherwise it is ignored.",
+      "at": "2026-09-14T05:20:49.162Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'script-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.408Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'style-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.411Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'img-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.413Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'font-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.415Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'connect-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.417Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.419Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-ancestors' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.421Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'object-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.423Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'base-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.425Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'form-action' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.426Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains the keyword 'none' alongside with other source expressions. The keyword 'none' must be the only source expression in the directive value, otherwise it is ignored.",
+      "at": "2026-09-14T05:20:49.428Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'script-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.431Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'style-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.433Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'img-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.435Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'font-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.437Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'connect-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.439Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.441Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-ancestors' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.442Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'object-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.444Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'base-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.445Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'form-action' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:49.447Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains the keyword 'none' alongside with other source expressions. The keyword 'none' must be the only source expression in the directive value, otherwise it is ignored.",
+      "at": "2026-09-14T05:20:49.448Z",
+      "recordingStepKey": "generated:25"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'script-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.545Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'style-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.547Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'img-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.549Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'font-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.550Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'connect-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.552Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.554Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-ancestors' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.556Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'object-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.558Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'base-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.560Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'form-action' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.561Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains the keyword 'none' alongside with other source expressions. The keyword 'none' must be the only source expression in the directive value, otherwise it is ignored.",
+      "at": "2026-09-14T05:20:50.563Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'script-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.567Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'style-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.569Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'img-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.571Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'font-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.573Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'connect-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.575Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.580Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-ancestors' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.582Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'object-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.584Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'base-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.586Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'form-action' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:50.589Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains the keyword 'none' alongside with other source expressions. The keyword 'none' must be the only source expression in the directive value, otherwise it is ignored.",
+      "at": "2026-09-14T05:20:50.592Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 401 ()",
+      "at": "2026-09-14T05:20:50.666Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "at": "2026-09-14T05:20:52.993Z",
+      "recordingStepKey": "generated:29"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: net::ERR_NAME_NOT_RESOLVED",
+      "at": "2026-09-14T05:20:54.313Z",
+      "recordingStepKey": "generated:33"
+    },
+    {
+      "type": "console",
+      "message": "Failed to find a valid digest in the 'integrity' attribute for resource 'https://stgwww.keysight.com/ssoauth//js/bootstrap.min.js' with computed SHA-384 integrity 'G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y'. The resource has been blocked.",
+      "at": "2026-09-14T05:20:55.337Z",
+      "recordingStepKey": "generated:33"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "at": "2026-09-14T05:20:57.766Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "at": "2026-09-14T05:20:58.306Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'script-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:59.481Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'style-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:59.485Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'img-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:59.488Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'font-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:59.490Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'connect-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:59.492Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:59.494Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-ancestors' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:59.496Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'object-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:59.497Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'base-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:59.499Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'form-action' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:20:59.501Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains the keyword 'none' alongside with other source expressions. The keyword 'none' must be the only source expression in the directive value, otherwise it is ignored.",
+      "at": "2026-09-14T05:20:59.503Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 404 ()",
+      "at": "2026-09-14T05:21:00.040Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "at": "2026-09-14T05:21:00.701Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'script-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:21:02.300Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'style-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:21:02.302Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'img-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:21:02.304Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'font-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:21:02.306Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'connect-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:21:02.309Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:21:02.310Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'frame-ancestors' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:21:02.312Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'object-src' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:21:02.314Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'base-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:21:02.315Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains 'form-action' as a source expression. Did you want to add it as a directive and forget a semicolon?",
+      "at": "2026-09-14T05:21:02.317Z",
+      "recordingStepKey": "generated:49"
+    },
+    {
+      "type": "console",
+      "message": "The Content-Security-Policy directive 'default-src' contains the keyword 'none' alongside with other source expressions. The keyword 'none' must be the only source expression in the directive value, otherwise it is ignored.",
+      "at": "2026-09-14T05:21:02.318Z",
+      "recordingStepKey": "generated:49"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › tests-e2e\generated\ksp\TC_SMOKE_026.spec.ts:11:7 › Test Cases › TC_SMOKE_026 - Log In â€” form contains "Email:"
+  1) [chromium] › tests-e2e\generated\ksp\TC_SMOKE_026.spec.ts:11:7 › Test Cases › TC_SMOKE_026 - Log In â€” form contains "Email:" 
+
+    Error: Select a configured source environment for execution
+
+       at support\execution-environment.ts:10
+
+       8 |   const application = readRegistry().applications.find(a => a.applicationId === scope.applicationId)!;
+       9 |   const sourceId = process.env.AURA_SOURCE_ENVIRONMENT;
+    > 10 |   if (!sourceId || !Object.hasOwn(application.environments, sourceId)) throw Error('Select a configured source environment for execution');
+         |                                                                              ^
+      11 |   const target = new URL(scope.baseUrl);
+      12 |   const source = new URL(application.environments[sourceId].baseUrl);
+      13 |   const candidate = new URL(raw, target);
+        at executionUrl (C:\Users\[REDACTED]\ClientProjects\MoolyaAura\MoolyaAura\tests-e2e\support\execution-environment.ts:10:78)
+        at _Page.goto (C:\Users\[REDACTED]\ClientProjects\MoolyaAura\MoolyaAura\tests-e2e\support\base-fixtures.ts:73:52)
+        at C:\Users\[REDACTED]\ClientProjects\MoolyaAura\MoolyaAura\tests-e2e\generated\ksp\TC_SMOKE_026.spec.ts:23:18
+        at withLocatorOperation (C:\Users\[REDACTED]\ClientProjects\MoolyaAura\MoolyaAura\tests-e2e\support\locator-policy.ts:57:54)
+        at runStep (C:\Users\[REDACTED]\ClientProjects\MoolyaAura\MoolyaAura\tests-e2e\support\steps.ts:171:46)
+        at C:\Users\[REDACTED]\ClientProjects\MoolyaAura\MoolyaAura\tests-e2e\generated\ksp\TC_SMOKE_026.spec.ts:22:5
+
+    attachment #8: PRE_STEP-1 (image/png) ──────────────────────────────────────────────────────────
+    ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-QvTTzm\artifacts\generated-ksp-TC_SMOKE_026-ef9c6-In-â€”-form-contains-Email--chromium\attachments\PRE-STEP-1-fdb16584d962d06f58f0fcb836ab9790d51571d7.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #9: FAILURE-1 (image/png) ───────────────────────────────────────────────────────────
+    ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-QvTTzm\artifacts\generated-ksp-TC_SMOKE_026-ef9c6-In-â€”-form-contains-Email--chromium\attachments\FAILURE-1-5d4e112f59f38d877978dee68f97b6ea3637fa38.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #10: step-1 (image/png) ─────────────────────────────────────────────────────────────
+    ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-QvTTzm\artifacts\generated-ksp-TC_SMOKE_026-ef9c6-In-â€”-form-contains-Email--chromium\attachments\step-1-cd904153035de807d0f35be53fb1213f4907de26.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #11: screenshot (image/png) ─────────────────────────────────────────────────────────
+    ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-QvTTzm\artifacts\generated-ksp-TC_SMOKE_026-ef9c6-In-â€”-form-contains-Email--chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-QvTTzm\artifacts\generated-ksp-TC_SMOKE_026-ef9c6-In-â€”-form-contains-Email--chromium\error-context.md
+
+    attachment #13: trace (application/zip) ────────────────────────────────────────────────────────
+    ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-QvTTzm\artifacts\generated-ksp-TC_SMOKE_026-ef9c6-In-â€”-form-contains-Email--chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-QvTTzm\artifacts\generated-ksp-TC_SMOKE_026-ef9c6-In-â€”-form-contains-Email--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+  1 failed
+    [chromium] › tests-e2e\generated\ksp\TC_SMOKE_026.spec.ts:11:7 › Test Cases › TC_SMOKE_026 - Log In â€” form contains "Email:" 

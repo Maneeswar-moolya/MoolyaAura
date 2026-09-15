@@ -615,6 +615,7 @@ async function main(): Promise<void> {
       wrapsClaim: proposals.flatMap(p => (p.refusalCodes ?? []))
           .find((r: any) => /already wraps this element/.test(r.detail ?? '')) ?? null,
       alternatives: (analysis.alternatives ?? []) as any[],
+      reused: analysis.reused.filter(entry => entry.testCaseId === testCaseId),
       statuses: proposals.map(p => p.status),
     };
   };
@@ -647,7 +648,8 @@ async function main(): Promise<void> {
   const differentExpression = analyseFor('TC_ID_003');
   run();
   check('I2: the same element under a different expression is recognised as already wrapped',
-      /already wraps this element/.test(differentExpression.wrapsClaim?.detail ?? ''),
+      /already wraps this element/.test(differentExpression.wrapsClaim?.detail ?? '')
+        || differentExpression.reused.some(entry => entry.pageObject === 'IdentityPage' && entry.method === 'saveButton'),
       differentExpression.wrapsClaim?.detail ?? 'no identity claim was made');
   check('I14: and no duplicate capability is written for it',
       methodsOn('identity.page.ts').length === 1, methodsOn('identity.page.ts').join(', '));

@@ -1,0 +1,9 @@
+{
+  "at": "2026-09-13T04:00:54.172Z",
+  "beforeCount": 287,
+  "afterCount": 287,
+  "changed": [
+    "ai\\autocode\\apps-readiness.fixture.ts"
+  ],
+  "unexpected": []
+}

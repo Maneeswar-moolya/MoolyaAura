@@ -1,0 +1,58 @@
+{
+  "applicationId": "ksp",
+  "environmentId": "stg",
+  "runId": "2026-09-13T17-09-36-076Z-zppwcv",
+  "attemptId": "4bd6e2af49804afe-1",
+  "attemptNumber": 1,
+  "testCaseId": "TC_SMOKE_026",
+  "testTitle": "TC_SMOKE_026 - Log In â€” form contains \"Email:\"",
+  "steps": [
+    {
+      "applicationId": "ksp",
+      "environmentId": "stg",
+      "runId": "2026-09-13T17-09-36-076Z-zppwcv",
+      "attemptId": "4bd6e2af49804afe-1",
+      "attemptNumber": 1,
+      "stepId": "ee958cc6-e6ac-4161-ace7-1b3557733dde",
+      "index": 1,
+      "title": "Open recorded destination",
+      "diagnostic": {
+        "recordingStepKey": "action:0",
+        "label": "Open recorded destination",
+        "locator": "",
+        "provenance": "AUTO",
+        "executionMode": "AUTO",
+        "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_026.spec.ts",
+        "generatedLineStart": 22,
+        "generatedLineEnd": 24,
+        "statement": "{\n      await page.goto('https://stgsupport.keysight.com/us/en/home');\n    }"
+      },
+      "captures": [
+        {
+          "captureRef": "3628fadd-791d-4771-8eb7-c11e53317cff",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "action:0",
+          "capturedAt": "2026-09-13T17:09:48.432Z",
+          "route": "blank",
+          "artifact": "aura-3628fadd-791d-4771-8eb7-c11e53317cff.png"
+        },
+        {
+          "captureRef": "0946cda3-6b52-4d50-8ea8-d9ebfedeef4f",
+          "captureType": "FAILURE",
+          "recordingStepKey": "action:0",
+          "capturedAt": "2026-09-13T17:09:48.530Z",
+          "route": "blank",
+          "artifact": "aura-0946cda3-6b52-4d50-8ea8-d9ebfedeef4f.png"
+        }
+      ],
+      "locatorTimeoutMs": 40000,
+      "locatorWaits": [],
+      "status": "failed",
+      "durationMs": 187,
+      "error": "Select a configured source environment for execution",
+      "screenshotPath": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\autocode-QvTTzm\\artifacts\\generated-ksp-TC_SMOKE_026-ef9c6-In-â€”-form-contains-Email--chromium\\step-ee958cc6-e6ac-4161-ace7-1b3557733dde.png",
+      "captureTiming": "after-failure"
+    }
+  ],
+  "console": []
+}

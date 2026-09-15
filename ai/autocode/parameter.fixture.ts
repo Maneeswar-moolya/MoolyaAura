@@ -1,4 +1,6 @@
 import '../testing/isolated-checkout';
+import { actionResolverUnderTest } from '../testing/function-under-test';
+import { targetEvidence } from '../testing/synthetic-data';
 /**
  * Parameters: arity, extraction, and reuse of one method by many recordings.
  *
@@ -254,10 +256,10 @@ function sectionArity(): void {
     // 11: entry points are emitted with no argument BY CONSTRUCTION - their regex
     // matches a literal `()`. Asserted behaviourally: a bare navigation still opens
     // the screen through its declared entry point, with an empty call.
-    const navigate = stepsFor("  await page.goto('https://portal.fixture.invalid/');");
+    const navigate = stepsFor("  await page.goto('https://portal.fixture.invalid/'); // @aura-navigation intentional");
     const opener = navigate.find(step => step.kind === 'navigate');
-    check('11: a declared entry point is still called with no argument',
-        Boolean(opener && /\.\w+\(\s*\);/.test(opener.code)), opener?.code ?? 'no navigate step');
+    check('11: explicit navigation is retained without inferring a Page Object call',
+        Boolean(opener && /page\.goto/.test(opener.code)), opener?.code ?? 'no navigate step');
   }
 
   checkArity();
@@ -496,7 +498,7 @@ function sectionReuse(): void {
   function checkNoRegression(): void {
     process.stdout.write('\n== existing behaviour is untouched ==\n');
 
-    // 18/19: a non-parameterised existing method still wins, by name, as before.
+    // 18/19: a non-parameterised method still reuses its identity-proven locator.
     const script = [
       "import { test, expect } from '@playwright/test';",
       '',
@@ -504,7 +506,9 @@ function sectionReuse(): void {
       "  await page.getByRole('link', { name: 'Notifications' }).click();",
       '});',
     ].join('\n');
-    const steps = mapRecording(parseRecording(script, { startUrl: '', browser: '', durationMs: 0 })).steps;
+    const steps = mapRecording(parseRecording(script, { startUrl: '', browser: '', durationMs: 0,
+      evidence: { available: true, capturedAt: new Date(0).toISOString(), limits: {},
+        targets: [targetEvidence("page.getByRole('link', { name: 'Notifications' })")] } as any })).steps;
     check('18: non-parameterised reuse still works',
         steps.some(step => step.kind === 'page-object' && /notificationsBell/.test(step.code.join(' '))));
 
@@ -514,14 +518,18 @@ function sectionReuse(): void {
     // other, which is a fact about formatting rather than about the pipeline; a third
     // resolver between them broke the regex while the invariant it stood for was
     // untouched. What matters is the sequence, so that is what is measured.
-    const source = fs.readFileSync(path.join(ROOT, 'ai', 'autocode', 'from-recording.ts'), 'utf8');
-    const chain = source.slice(source.indexOf('const match = findMethod(action.target'));
-    const at = (name: string) => chain.indexOf(`${name}(`);
-    check('19: findMethod is consulted before findParameterisedMethod',
-        at('findMethod') >= 0 && at('findMethod') < at('findParameterisedMethod'));
-    check('19: and the proven-locator resolver sits between them',
-        at('findMethod') < at('findMethodByProvenLocator')
-        && at('findMethodByProvenLocator') < at('findParameterisedMethod'));
+    // Execute the parsed production expression with resolver doubles. Each winner
+    // must short-circuit later resolvers, including the explicit user binding.
+    const resolvers = ['userMethod', 'findMethod', 'findMethodByProvenLocator', 'findParameterisedMethod'];
+    for (let winner = 0; winner <= resolvers.length; winner++) {
+      const calls: string[] = [], answer = { method: 'chosen' };
+      const bindings: Record<string, unknown> = { action: { target: 'Synthetic control' }, actionKnowledge: [], index: {}, actionEvidence: null, position: 0 };
+      resolvers.forEach((name, at) => { bindings[name] = () => { calls.push(name); return at === winner ? answer : null; }; });
+      const result = actionResolverUnderTest(bindings)();
+      check(`19: resolver precedence and short-circuit winner ${resolvers[winner] ?? 'none'}`,
+          result === (winner < resolvers.length ? answer : null)
+          && calls.join(',') === resolvers.slice(0, Math.min(winner + 1, resolvers.length)).join(','));
+    }
     check('22: knowledge declares the method exactly once',
         (fs.readFileSync(path.join(ROOT, 'ai', 'knowledge', 'page', 'fixtureapp__issues-id.yaml'), 'utf8')
             .match(/page_object_method:\s*issueCheckboxState/g) ?? []).length === 1);

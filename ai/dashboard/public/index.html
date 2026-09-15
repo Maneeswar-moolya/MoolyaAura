@@ -434,7 +434,527 @@
             font-size: 11px; font-weight: 650; white-space: nowrap;
             background: #f3ecfb; border: 1px solid #dcc8f0; color: #6b3fa0; }
   .origin .icon-sm { width: 11px; height: 11px; }
+
+:root {
+  --bg:#f5f7fb;
+  --accent:#087f83;
+  --accent-deep:#07676a;
+  --accent-soft:#e7f5f3;
+  --line:#e0e6ed;
+  --r:12px;
+}
+[hidden] {
+  display: none !important;
+}
+.app {
+  grid-template-columns: 232px minmax(0, 1fr);
+}
+.rail {
+  background: #112b35;
+  padding: 24px 14px;
+}
+.rail .nav button {
+  min-height: 44px;
+  border-radius: 8px;
+}
+.rail .nav button[aria-selected=true] {
+  background: #214650;
+  box-shadow: inset 3px 0 #58c8bc;
+}
+.brand .name {
+  font-size: 16px;
+  letter-spacing: -.4px;
+}
+#sidebarToggle {
+  align-self: flex-end;
+  min-width: 36px;
+  color: var(--rail-ink);
+  background: transparent;
+  border: 1px solid #43616a;
+}
+.app.sidebar-collapsed {
+  grid-template-columns: 76px minmax(0, 1fr);
+}
+.sidebar-collapsed .rail {
+  padding-inline: 12px;
+}
+.sidebar-collapsed .nav-text,
+.sidebar-collapsed .nav-label,
+.sidebar-collapsed .count,
+.sidebar-collapsed .rail-foot,
+.sidebar-collapsed .brand > div:last-child {
+  display: none;
+}
+.sidebar-collapsed .nav button {
+  justify-content: center;
+  padding: 10px;
+}
+.sidebar-collapsed .brand {
+  padding: 0;
+  justify-content: center;
+}
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fffffffA;
+  border-bottom: 1px solid var(--line);
+  padding: 20px 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.top h1 {
+  font-size: 21px;
+}
+.top .tagline {
+  font-size: 12px;
+}
+#breadcrumb {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.top .env {
+  margin-left: auto;
+  gap: 16px;
+  align-items: flex-start;
+}
+.top .env .item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+}
+.top .env .item > button {
+  font-size: 11px;
+  padding: 0;
+  min-height: 22px;
+  border: 0;
+  text-align: left;
+}
+main {
+  padding: 24px 28px 40px;
+}
+.card {
+  box-shadow: 0 2px 6px #112b3505;
+  border-radius: 12px;
+  overflow: hidden;
+}
+button,
+input,
+select {
+  min-height: 36px;
+}
+input[type=checkbox],
+input[type=radio] {
+  min-height: 16px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+th {
+  font-size: 11px;
+  letter-spacing: .035em;
+  background: #f8fafc;
+}
+td {
+  vertical-align: middle;
+}
+.sheet-label {
+  min-height: 42px;
+}
+details > summary {
+  cursor: pointer;
+}
+.inspector-top {
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.inspector-top h2 {
+  font-size: 19px;
+}
+.eyebrow {
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: var(--accent);
+  margin-bottom: 5px;
+}
+.report-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.report-filters label {
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 115px;
+  flex: 1;
+}
+.report-filters select {
+  width: 100%;
+  min-width: 0;
+  font-weight: 500;
+  color: var(--ink);
+}
+.inspector-layout {
+  display: grid;
+  grid-template-columns: var(--step-width,34%) 8px minmax(0, 1fr);
+  min-height: 450px;
+}
+.step-panel {
+  padding: 16px;
+  max-height: 620px;
+  overflow: auto;
+}
+.step-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.step-choice {
+  width: 100%;
+  text-align: left;
+  white-space: normal;
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 9px;
+  align-items: start;
+  background: white;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.step-choice[aria-pressed=true] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 var(--accent);
+}
+.step-number {
+  border-radius: 50%;
+  background: #edf1f5;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  font-size: 11px;
+}
+.step-title {
+  font-weight: 600;
+}
+.step-meta {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.step-error {
+  padding: 8px 12px;
+  color: var(--fail);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.step-error pre {
+  white-space: pre-wrap;
+  font: inherit;
+}
+#reportDivider {
+  background: #eef2f6;
+  cursor: col-resize;
+  touch-action: none;
+  border-inline: 1px solid var(--line);
+}
+#reportDivider:hover,
+#reportDivider:focus {
+  background: var(--accent-line);
+}
+.evidence-panel {
+  min-width: 0;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+}
+.evidence-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid var(--line);
+}
+.evidence-toolbar button {
+  min-width: 34px;
+}
+#evidenceCaption {
+  padding: 10px 18px;
+  font-size: 12px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+#evidenceCanvas {
+  position: relative;
+  flex: 1;
+  min-height: 340px;
+  overflow: auto;
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding: 20px;
+}
+#evidenceCanvas.fit img {
+  max-width: 100%;
+  max-height: 500px;
+  object-fit: contain;
+  width: auto;
+}
+#evidenceCanvas img {
+  display: block;
+  background: white;
+  box-shadow: 0 3px 18px #112b3518;
+}
+#evidenceMessage {
+  align-self: center;
+  text-align: center;
+  color: var(--muted);
+  padding: 40px 16px;
+}
+#evidenceCanvas:fullscreen {
+  background: #eef2f6;
+  align-items: center;
+}
+#evidenceCanvas:fullscreen img {
+  max-height: 90vh;
+}
+.inspector-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.report-scope {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nav button,
+  .step-choice {
+    transition: background .12s, border-color .12s;
+  }
+}
+@media (max-width: 1050px) {
+  .app {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+  .rail {
+    position: sticky;
+    height: 100vh;
+  }
+  .top {
+    padding: 16px 20px;
+  }
+  .top .env {
+    margin: 0;
+    width: 100%;
+  }
+  main {
+    padding: 20px;
+  }
+}
+@media (max-width: 720px) {
+  .app,
+  .app.sidebar-collapsed {
+    display: block;
+  }
+  .rail {
+    height: auto;
+    position: static;
+    padding: 12px;
+    gap: 10px;
+  }
+  .rail .brand {
+    justify-content: flex-start;
+  }
+  #sidebarToggle {
+    position: absolute;
+    right: 16px;
+    top: 14px;
+  }
+  .rail .nav {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .nav-label,
+  .rail-foot {
+    display: none;
+  }
+  .rail .nav button {
+    flex-direction: column;
+    font-size: 10px;
+    gap: 3px;
+    padding: 8px 2px;
+  }
+  .sidebar-collapsed .rail .nav {
+    display: none;
+  }
+  .sidebar-collapsed .brand > div:last-child {
+    display: block;
+  }
+  .top {
+    position: relative;
+    padding: 16px;
+  }
+  .top .env {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .top select {
+    min-width: 0 !important;
+    width: 100%;
+  }
+  main {
+    padding: 16px 10px;
+  }
+  .inspector-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  #reportDivider {
+    display: none;
+  }
+  .step-panel {
+    max-height: 290px;
+  }
+  .inspector-top {
+    padding: 18px 16px;
+  }
+  .evidence-toolbar {
+    padding: 10px;
+  }
+  .report-filters {
+    gap: 8px;
+  }
+  .drawer {
+    max-width: 100%;
+  }
+}
+.settings-drawer {
+  width: 520px;
+}
+.settings-body {
+  padding: 22px;
+  overflow: auto;
+  display: grid;
+  gap: 18px;
+}
+.settings-body form {
+  display: grid;
+  gap: 14px;
+}
+.settings-body label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.settings-body input {
+  width: 100%;
+}
+.settings-list {
+  display: grid;
+  gap: 8px;
+}
+.settings-list button {
+  text-align: left;
+  white-space: normal;
+  justify-content: flex-start;
+}
+.settings-actions {
+  display: flex;
+  gap: 8px;
+}
+.execution-targets {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.execution-targets label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  font-size: 12px;
+}
+.execution-targets label:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.environment-target-card {
+  padding: 18px 22px;
+}
+.kpis {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+#onboardingWelcome {
+  padding: 28px;
+  margin-bottom: 20px;
+  background:
+    linear-gradient(
+      110deg,
+      #fff,
+      #eff8f7);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+#onboardingWelcome h2 {
+  font-size: 24px;
+}
+#onboardingWelcome p {
+  max-width: 620px;
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  #onboardingWelcome {
+    padding: 20px;
+    display: block;
+  }
+  .settings-drawer {
+    width: 100%;
+  }
+  .environment-target-card {
+    padding: 16px;
+  }
+}
+#fullscreenExit {
+  display: none;
+}
+#evidenceCanvas:fullscreen #fullscreenExit {
+  display: block;
+  position: fixed;
+  right: 18px;
+  top: 18px;
+  z-index: 5;
+}
 </style>
+  <link rel="stylesheet" href="/authoring-workspace.css">
+  <link rel="stylesheet" href="/quarantine-workspace.css">
 </head>
 <body>
 
@@ -470,7 +990,7 @@
 
 <div class="app">
   <!-- ---------------- Rail ---------------- -->
-  <nav class="rail" aria-label="Sections">
+  <nav class="rail" aria-label="Sections"><button type="button" id="sidebarToggle" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">‹</button>
     <div class="brand">
       <div class="mark" aria-hidden="true"><svg class="icon"><use href="#i-spark"/></svg></div>
       <div>
@@ -506,7 +1026,7 @@
   <div>
     <header class="top">
       <div>
-        <h1>Moolya AURA</h1>
+        <div id="breadcrumb" aria-label="Breadcrumb">Workspace / Overview</div><h1>MoolyaAura</h1>
         <div class="tagline">Intelligent Test Automation &amp; Quality Engineering</div>
       </div>
       <div class="grow"></div>
@@ -521,10 +1041,10 @@
           <label class="k" for="project">Project</label>
           <select id="project" style="min-width:150px"></select>
           <button id="addProjectOpen" class="ghost" type="button"
-                  title="Create a new project: its own workbook, artefacts and history">+ Add Project</button>
+                  title="Create a new project: its own workbook, artefacts and history">+ Add Project</button><button id="projectSettingsOpen" class="ghost" type="button">Project settings</button>
         </div>
         <div class="item">
-          <label class="k" for="environment">Environment</label>
+          <label class="k" for="environment">Source environment</label>
           <select id="environment" style="min-width:120px"></select>
         </div>
         <div class="item">
@@ -613,7 +1133,7 @@
 
     <main>
       <!-- ============ OVERVIEW ============ -->
-      <div class="view" id="view-overview" role="tabpanel" aria-labelledby="tab-overview">
+      <div class="view" id="view-overview" role="tabpanel" aria-labelledby="tab-overview"><section class="card" id="onboardingWelcome" hidden><div class="grow"><div class="eyebrow">Your quality workspace</div><h2>Start with your first project</h2><p>Add an application to create its workbook and isolated workspace. Then author cases, record a flow, and inspect your execution evidence.</p></div><button class="primary" id="welcomeAddProject" type="button">+ Add project</button></section>
         <div class="kpis">
           <div class="kpi">
             <div class="k">Total test cases</div>
@@ -710,7 +1230,7 @@
       </div>
 
       <!-- ============ TEST CASES ============ -->
-      <div class="view" id="view-cases" role="tabpanel" aria-labelledby="tab-cases" hidden>
+      <div class="view" id="view-cases" role="tabpanel" aria-labelledby="tab-cases" hidden><section class="card environment-target-card"><div class="eyebrow">Run configuration</div><h2>Execution environments</h2><div id="executionTargets" class="execution-targets" role="group" aria-label="Execution environments"></div><p class="inspector-note">Targets run sequentially. The Source Environment in the header identifies recorded URLs; generation verification uses one selected target.</p></section>
         <div class="cols">
           <section class="card">
             <div class="head">
@@ -787,6 +1307,10 @@
                         <option value="firefox">Firefox</option>
                         <option value="webkit">WebKit</option>
                       </select>
+                    </div>
+                    <div class="field">
+                      <label for="browserChannel">Browser channel</label>
+                      <select id="browserChannel"><option value="">Bundled browser</option><option value="chrome">Installed Chrome</option><option value="msedge">Installed Edge</option></select>
                     </div>
                     <div class="field">
                       <label for="workers">Parallel workers</label>
@@ -901,6 +1425,20 @@
                   <option value="webkit">WebKit</option>
                 </select>
               </div>
+              <!--
+                Naming the account protects the ACCOUNT NAME, not just the password.
+                The password was always caught because the field is called "password";
+                the email you type into "Username" looked like ordinary data and was
+                kept. Say which profile you are signing in with and the recorder
+                recognises both and stores neither. Only the profile ID is sent - the
+                values are decrypted on the server and never come back to this page.
+              -->
+              <div class="field">
+                <label for="recCredential">Signing in as <span class="hint">optional</span></label>
+                <select id="recCredential">
+                  <option value="">Not signing in / no profile</option>
+                </select>
+              </div>
             </div>
             <div class="note info show">
               A browser opens. Do what the test should do. To record a state or content assertion,
@@ -908,7 +1446,9 @@
               itself — then select the element you mean. It reads what is true of that element right
               now and offers only the assertions it can support. Close the browser or press Stop when
               you are done. Nothing is saved until you review it. <strong>Passwords are never captured</strong> —
-              a sensitive field is stored as <code>[type=password]</code>.
+              a sensitive field is stored as <code>[type=password]</code>. Name the credential profile
+              above and the <strong>account name is never captured either</strong>: both are replaced by
+              a reference to the profile, so the recording works for any account.
             </div>
             <div class="btn-row" style="margin-top:var(--s4)">
               <button id="recStart" class="primary" type="button"><svg class="icon-sm"><use href="#i-record"/></svg> Start recording</button>
@@ -1370,6 +1910,14 @@
 
       <!-- ============ EXECUTIONS ============ -->
       <div class="view" id="view-executions" role="tabpanel" aria-labelledby="tab-executions" hidden>
+<section class="card" id="reportInspector" aria-labelledby="inspectorTitle">
+ <div class="inspector-top"><div class="eyebrow">Execution evidence</div><h2 id="inspectorTitle">Step-by-step report</h2><p class="inspector-note">Follow each action and inspect the screenshot captured for that step.</p>
+ <div class="report-scope"><span class="chip" id="reportProject">No project selected</span><span class="muted" id="reportRunIdentity">Choose an execution to inspect</span></div>
+ <div class="report-filters"><label>Execution<select id="reportRun" aria-label="Report execution"><option value="">Select an execution</option></select></label><label>Environment<select id="reportEnvironment" aria-label="Report environment" disabled></select></label><label>Test case<select id="reportCase" aria-label="Report test case" disabled></select></label><label>Attempt<select id="reportAttempt" aria-label="Report attempt" disabled></select></label></div></div>
+ <div class="inspector-layout"><div class="step-panel"><ol class="step-list" id="reportSteps" aria-label="Execution steps"></ol></div><div id="reportDivider" role="separator" aria-label="Resize steps and screenshot panels" aria-orientation="vertical" aria-valuemin="24" aria-valuemax="60" aria-valuenow="34" tabindex="0"></div>
+ <div class="evidence-panel"><div class="evidence-toolbar"><button id="stepPrevious" type="button" aria-label="Previous step" disabled>‹</button><button id="stepNext" type="button" aria-label="Next step" disabled>›</button><span class="grow" id="stepPosition">No step selected</span><button type="button" id="evidenceFit" disabled>Fit</button><button type="button" id="evidenceZoomOut" aria-label="Zoom out" disabled>−</button><button type="button" id="evidenceZoomIn" aria-label="Zoom in" disabled>+</button><button type="button" id="evidenceFullscreen" disabled>Fullscreen</button></div><div id="evidenceCaption">Execution screenshots only · no locator snapshots</div><div id="evidenceCanvas" class="fit"><button type="button" id="fullscreenExit">Exit fullscreen</button><p id="evidenceMessage" role="status" aria-live="polite">Select an execution to explore its steps.</p></div></div></div>
+</section>
+
         <section class="card">
           <div class="head">
             <h2><svg class="icon"><use href="#i-check"/></svg> Execution results</h2>
@@ -1420,6 +1968,14 @@
     </main>
   </div>
 </div>
+
+
+<div class="scrim" id="settingsScrim" hidden></div>
+<aside class="drawer settings-drawer" id="projectSettings" hidden role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+ <div class="drawer-head"><div class="grow"><div class="eyebrow">Project settings</div><h2 id="settingsTitle">Environments</h2><div class="muted" id="settingsProject"></div></div><button id="settingsClose" type="button" aria-label="Close project settings">×</button></div>
+ <div class="settings-body"><p class="muted">Configure destinations for this project. Credential fields accept variable names only; secret values stay in your runtime environment.</p><div id="settingsEnvironments" class="settings-list"></div><button id="newEnvironment" type="button">+ Add environment</button>
+ <form id="environmentForm"><label>Environment ID<input id="envId" required pattern="[a-z][a-z0-9-]*" autocomplete="off"></label><label>Display name<input id="envName" required maxlength="100" autocomplete="off"></label><label>Base URL<input id="envBaseUrl" type="url" required autocomplete="off" placeholder="Enter the approved environment URL"></label><label>Base URL variable reference (optional)<input id="envUrlRef" pattern="[A-Z][A-Z0-9_]*" autocomplete="off"></label><label>Email variable reference (optional)<input id="envEmailRef" pattern="[A-Z][A-Z0-9_]*" autocomplete="off"></label><label>Password variable reference (optional)<input id="envPasswordRef" pattern="[A-Z][A-Z0-9_]*" autocomplete="off"></label><div class="settings-actions"><button type="submit" id="saveEnvironment" class="primary">Save environment</button></div><p id="environmentFeedback" role="status" aria-live="polite"></p></form></div>
+</aside>
 
 <!-- ---------------- Test case detail drawer ---------------- -->
 <div class="scrim" id="drawerScrim" hidden></div>
@@ -1538,12 +2094,16 @@ function pill(row, text, kind) {
 }
 
 /* ---------------- Views ---------------- */
+let currentView = 'overview';
+const viewScroll = new Map();
 function setView(name) {
+  viewScroll.set(currentView, window.scrollY); currentView = name;
+  if ($('breadcrumb')) $('breadcrumb').textContent = 'Workspace / ' + ({overview:'Overview',cases:'Test cases',generation:'Generation',executions:'Executions'}[name] || name);
   for (const button of document.querySelectorAll('.nav button[data-view]'))
-    button.setAttribute('aria-selected', String(button.dataset.view === name));
+    { button.setAttribute('aria-selected', String(button.dataset.view === name)); button.tabIndex=button.dataset.view===name?0:-1; }
   for (const view of document.querySelectorAll('.view'))
     view.hidden = view.id !== 'view-' + name;
-  window.scrollTo({ top: 0, behavior: 'auto' });
+  window.scrollTo({ top: viewScroll.get(name) || 0, behavior: 'auto' });
 }
 for (const button of document.querySelectorAll('.nav button[data-view]'))
   button.addEventListener('click', () => setView(button.dataset.view));
@@ -1798,6 +2358,10 @@ function renderCases() {
       : 'Load this case into the form below';
     edit.addEventListener('click', () => loadCaseIntoForm(c.testCaseId));
     group.appendChild(edit);
+    const code = el('button', 'edit-link', 'Code');
+    code.title = `Related code and evidence for ${c.testCaseId}`;
+    code.addEventListener('click', () => window.authoringCode?.open(c.testCaseId));
+    group.appendChild(code);
     actions.appendChild(group);
     tr.appendChild(actions);
 
@@ -1944,8 +2508,11 @@ function runHandle(id) {
 
 /* ---------------- Workbook ---------------- */
 async function loadWorkbook() {
-  const res = await fetch(`/api/workbook?workbook=${encodeURIComponent($('workbook').value)}`);
+  const requestedWorkbook = $('workbook').value;
+  const requestedProject = selectedProject()?.applicationId;
+  const res = await fetch(`/api/workbook?workbook=${encodeURIComponent($('workbook').value)}&${new URLSearchParams(scopeBody())}`);
   const data = await res.json();
+  if (requestedWorkbook !== $('workbook').value || requestedProject !== selectedProject()?.applicationId) return;
   if (data.error) return showError(data.error);
   cases = data.cases;
   selected = new Set();
@@ -1999,7 +2566,7 @@ const EVIDENCE_ICON = { screenshot: 'camera', video: 'play', trace: 'doc' };
 function setReportLink(runId, hasReport) {
   const link = $('reportLink');
   if (runId && hasReport) {
-    link.href = `/api/runs/${encodeURIComponent(runId)}/report/`;
+    link.href = `/api/projects/${encodeURIComponent(selectedProject()?.applicationId || "")}/runs/${encodeURIComponent(runId)}/report/`;
     link.style.display = '';
   } else {
     link.style.display = 'none';
@@ -2043,14 +2610,14 @@ function stepsRow(steps, testCaseId, failed) {
 
     if (step.screenshotUrl) {
       const link = document.createElement('a');
-      link.href = step.screenshotUrl;
+      link.href = scopedEvidenceUrl(step.screenshotUrl);
       link.target = '_blank';
       link.rel = 'noopener';
       link.title = 'Open the full-size screenshot';
       const img = document.createElement('img');
       img.className = 'step-shot';
       img.loading = 'lazy';
-      img.src = step.screenshotUrl;
+      img.src = scopedEvidenceUrl(step.screenshotUrl);
       img.alt = `Screen at step ${step.index}: ${step.title}`;
       link.appendChild(img);
       li.appendChild(link);
@@ -2087,11 +2654,14 @@ function renderResults(results, evidence, caption, steps) {
 
   for (const r of results) {
     // Remember it for the case table's Execution column.
-    if (r.testCaseId)
+    if (r.testCaseId && !r.executionProfile && (!r.environmentId || r.environmentId === selectedEnvironment()?.environmentId))
       execByCase.set(r.testCaseId, { status: r.executionStatus, flaky: Boolean(r.flaky) });
+    if(r.testCaseId && r.executionProfile){const instances=results.filter(x=>x.testCaseId===r.testCaseId&&x.executionProfile);execByCase.set(r.testCaseId,{status:`${instances.filter(x=>x.executionStatus==='Passed').length} passed / ${instances.filter(x=>x.executionStatus==='Failed').length} quarantined`,flaky:false});}
 
     const tr = document.createElement('tr');
-    cell(tr, r.testCaseId || r.testName, 'id');
+    const identityCell = cell(tr, r.testCaseId || r.testName, 'id');
+    if (r.environmentId) identityCell.append(el('div','step-meta',r.environmentId));
+    if (r.executionProfile) identityCell.append(el('div','step-meta',r.executionProfile.credentialProfileName||'Application configuration'));
 
     const status = document.createElement('td');
     status.appendChild(execPill(r.executionStatus, r.flaky ? ' · flaky' : ''));
@@ -2112,7 +2682,7 @@ function renderResults(results, evidence, caption, steps) {
         shown.add(item.name);
         const link = document.createElement('a');
         link.className = 'ev';
-        link.href = item.url;
+        link.href = scopedEvidenceUrl(item.url);
         link.target = '_blank';
         link.rel = 'noopener';
         link.textContent = EVIDENCE_LABEL[item.name] || item.name;
@@ -2156,40 +2726,53 @@ function showSummary(record) {
 
 function connectStream() {
   stream?.close();
-  stream = new EventSource('/api/stream');
-  stream.addEventListener('log', e => {
+  const streamProject = selectedProject()?.applicationId;
+  const connection = stream = new EventSource('/api/stream'+scopeQuery());
+  connection.addEventListener('environment',e=>{ const record=JSON.parse(e.data); if(record.applicationId===selectedProject()?.applicationId){inspectRun(record);loadRuns();} });
+  connection.addEventListener('log', e => {
+    if (streamProject !== selectedProject()?.applicationId) return;
     const pre = $('console');
     if (pre.textContent === 'Nothing has run yet.') pre.textContent = '';
     const atBottom = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 30;
     pre.textContent += JSON.parse(e.data).text;
     if (atBottom) pre.scrollTop = pre.scrollHeight;
   });
-  stream.addEventListener('done', e => {
+  connection.addEventListener('done', e => {
     const record = JSON.parse(e.data);
+    if (record.applicationId !== selectedProject()?.applicationId) return;
+    inspectRun(record);
+    window.TestData?.renderInstances(record);
     renderResults(record.results, record.evidence, 'this execution', record.steps);
-    setReportLink(record.id, record.hasReport);
     showSummary(record);
     setRunning(false);
-    stream.close();
+    connection.close();
     loadRuns();
   });
-  stream.addEventListener('idle', () => { stream.close(); setRunning(false); });
-  stream.onerror = () => { stream.close(); setRunning(false); };
+  connection.addEventListener('idle', () => { connection.close(); if(streamProject===selectedProject()?.applicationId)setRunning(false); });
+  connection.onerror = () => { connection.close(); if(streamProject===selectedProject()?.applicationId)setRunning(false); };
 }
 
 async function showRun(id, row) {
-  const detail = await (await fetch(`/api/runs/${encodeURIComponent(id)}`)).json();
+  const token = ++reportFetchToken; clearReport('Loading execution…');
+  try {
+  const response = await fetch(`/api/runs/${encodeURIComponent(id)}${scopeQuery()}`);
+  const detail = await response.json();
+  if (token !== reportFetchToken) return;
+  if (!response.ok) { clearReport(detail.error || 'Execution could not be loaded'); return; }
+  inspectRun(detail);
+  window.TestData?.renderInstances(detail);
   renderResults(detail.results, detail.evidence, runHandle(id), detail.steps);
-  setReportLink(id, detail.hasReport);
   $('console').textContent = (detail.log || []).join('') || '(no output recorded)';
   showSummary(detail);
   for (const other of document.querySelectorAll('tr.selected-run')) other.classList.remove('selected-run');
   row?.classList.add('selected-run');
   setView('executions');
+  } catch { if(token === reportFetchToken) clearReport('Connection failed. Select the execution to retry.'); }
 }
 
 function runResultPill(run) {
   if (run.note) return el('span', 'pill skip', 'no results');
+  if (run.status === 'queued' || run.status === 'running' || run.status === 'cancelled') return el('span','pill skip',run.status);
   const failed = run.summary.failed;
   const span = el('span', 'pill ' + (failed ? 'fail' : 'pass'),
       failed ? `${failed} of ${run.count} failed` : `${run.summary.passed} passed`);
@@ -2201,7 +2784,7 @@ function reportCellFor(run) {
   const group = el('div', 'row-actions');
   if (run.hasReport) {
     const link = document.createElement('a');
-    link.href = `/api/runs/${encodeURIComponent(run.id)}/report/`;
+    link.href = `/api/projects/${encodeURIComponent(selectedProject()?.applicationId || "")}/runs/${encodeURIComponent(run.id)}/report/`;
     link.target = '_blank';
     link.rel = 'noopener';
     link.textContent = 'Report';
@@ -2221,8 +2804,13 @@ function reportCellFor(run) {
 }
 
 async function loadRuns() {
-  const { runs } = await (await fetch(`/api/runs${scopeQuery()}`)).json();
+  const requestedProject = selectedProject()?.applicationId;
+  const { runs, active } = await (await fetch(`/api/runs${scopeQuery()}`)).json();
+  if (requestedProject !== selectedProject()?.applicationId) return;
   lastRuns = runs;
+  setRunning(Boolean(active));
+  if (active && (!stream || stream.readyState === EventSource.CLOSED)) connectStream();
+  refreshReportRuns(runs);
   $('navRuns').textContent = String(runs.length);
   renderLastRunKpis(runs[0]);
 
@@ -2333,7 +2921,7 @@ async function openCase(id) {
   info.textContent = '';
   info.appendChild(el('div', 'skeleton', ''));
 
-  const res = await fetch(`/api/case?workbook=${encodeURIComponent($('workbook').value)}&id=${encodeURIComponent(id)}`);
+  const res = await fetch(`/api/case?workbook=${encodeURIComponent($('workbook').value)}&id=${encodeURIComponent(id)}&${new URLSearchParams(scopeBody())}`);
   const draft = await res.json();
 
   info.textContent = '';
@@ -2413,6 +3001,10 @@ async function openCase(id) {
 /* ---------------- Run ---------------- */
 $('run').addEventListener('click', async () => {
   showError('');
+  let executionData;
+  try { executionData=await window.TestData?.confirmRun({testCaseIds:[...selected],workbook:$('workbook').value,environmentIds:executionEnvironmentIds()}); }
+  catch(error){showError(error.message);return;}
+  if(executionData===null)return;
   setRunning(true);
   $('console').textContent = '';
   renderResults([], [], '', {});
@@ -2422,11 +3014,13 @@ $('run').addEventListener('click', async () => {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      ...scopeBody(),
+      ...scopeBody(), ...executionSettings(),
+      environmentIds: executionEnvironmentIds(),
       workbook: $('workbook').value,
       testCaseIds: [...selected],
+      executionData,
       browser: $('browser').value,
-      workers: Number($('workers').value),
+      workers: 1,
       headed: $('headed').checked,
       inPlace: $('inPlace').checked,
       screenshot: $('screenshot').value,
@@ -2439,7 +3033,10 @@ $('run').addEventListener('click', async () => {
   connectStream();
 });
 
-$('stop').addEventListener('click', () => fetch('/api/stop', { method: 'POST' }));
+$('stop').addEventListener('click', async () => {
+  try { const response = await fetch('/api/stop' + scopeQuery(), { method: 'POST' }); if (!response.ok) throw Error((await response.json()).error); }
+  catch (error) { showError(error.message); setView('cases'); }
+});
 $('selNone').addEventListener('click', () => { selected = new Set(); renderCases(); });
 $('selMaster').addEventListener('change', e => {
   for (const c of visibleCases()) {
@@ -2507,6 +3104,7 @@ async function refreshSuggestedId() {
     worksheet: targetSheet(),
     module: $('fModule').value,
   });
+  for (const [key,value] of Object.entries(scopeBody())) params.set(key,value);
   const res = await fetch(`/api/next-id?${params}`);
   if (!res.ok || token !== idPreviewToken) return;
   const suggestion = await res.json();
@@ -2576,7 +3174,7 @@ function resetAuthorForm() {
 }
 
 async function loadCaseIntoForm(id) {
-  const res = await fetch(`/api/case?workbook=${encodeURIComponent($('workbook').value)}&id=${encodeURIComponent(id)}`);
+  const res = await fetch(`/api/case?workbook=${encodeURIComponent($('workbook').value)}&id=${encodeURIComponent(id)}&${new URLSearchParams(scopeBody())}`);
   const draft = await res.json();
   if (!res.ok) return authorProblem(draft.error);
   closeDrawer();
@@ -2677,9 +3275,11 @@ function renderSystemInfo(id) {
 
 /** Ask the generator for one case, explicitly. Never implied by an edit. */
 async function startGenerationFor(id) {
+  let configuration;
+  try { configuration=executionSettings(true); } catch(error) { return authorProblem(error.message); }
   const res = await fetch('/api/autocode', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workbook: $('workbook').value, testCaseIds: [id] }),
+    body: JSON.stringify({ ...scopeBody(), ...configuration, executionData:window.TestData?.selection(), workbook: $('workbook').value, testCaseIds: [id] }),
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok)
@@ -2701,7 +3301,7 @@ $('authorSave').addEventListener('click', async () => {
   const res = await fetch('/api/case', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ workbook: $('workbook').value, draft: authorFields(), isNew: !editingId }),
+    body: JSON.stringify({ ...scopeBody(), ...executionSettings(), executionData:window.TestData?.selection(), workbook: $('workbook').value, draft: authorFields(), isNew: !editingId }),
   });
   const body = await res.json();
   if (!res.ok) return authorProblem(body.error);
@@ -2928,6 +3528,7 @@ function genPill(status) {
 const GEN_HISTORY_LABEL_LIMIT = 5;
 
 async function loadGenerations() {
+  const requestedProject = selectedProject()?.applicationId;
   // A dashboard started before this feature existed has no such route. The version
   // banner already says so plainly, and everything init() does AFTER this - picking up
   // a generation already in progress, and a recorder somebody left open - matters more
@@ -2935,6 +3536,7 @@ async function loadGenerations() {
   // page with a live generation it never noticed.
   const res = await fetch(`/api/generations${scopeQuery()}`);
   const body = res.ok ? await res.json() : {};
+  if (requestedProject !== selectedProject()?.applicationId) return;
   const generations = body.generations ?? [];
   const limit = body.limit ?? GEN_HISTORY_LABEL_LIMIT;
   $('genHistoryLimit').textContent = `latest ${limit}`;
@@ -3082,7 +3684,7 @@ $('upload').addEventListener('change', async e => {
   const note = $('uploadNote');
   note.className = 'note info show';
   note.textContent = `Uploading ${file.name}…`;
-  const res = await fetch(`/api/upload?name=${encodeURIComponent(file.name)}`, { method: 'POST', body: file });
+  const res = await fetch(`/api/upload?name=${encodeURIComponent(file.name)}&${new URLSearchParams({...scopeBody(),...executionSettings()})}`, { method: 'POST', body: file });
   const body = await res.json();
   if (!res.ok) {
     note.className = 'note bad show';
@@ -3162,6 +3764,16 @@ function recProblem(id, message) {
  */
 let PROJECTS = [];
 let SOLE_APPLICATION = true;
+const sourceChoices = new Map();
+
+/** Execution settings keep the selected source separate from target environments and users. */
+function executionSettings(single=false) {
+  const targets=executionEnvironmentIds();
+  if(single && targets.length!==1)throw Error('Select exactly one target environment for generation verification.');
+  return {applicationId:selectedProject()?.applicationId,
+    ...(targets.length ? {environmentId:targets[0]} : {}), sourceEnvironmentId:$('environment').value,
+    browserEngine:$('browser').value,browserChannel:$('browserChannel').value,headed:$('headed').checked};
+}
 
 function selectedProject() {
   const id = $('project').value;
@@ -3172,9 +3784,7 @@ function selectedEnvironment() {
   const project = selectedProject();
   if (!project) return null;
   const id = $('environment').value;
-  return project.environments.find(e => e.environmentId === id)
-    || project.environments.find(e => e.isDefault)
-    || project.environments[0] || null;
+  return project.environments.find(e => e.environmentId === id) || null;
 }
 
 /** The two fields every application-specific request carries. */
@@ -3204,22 +3814,23 @@ function scopeQuery() {
 function renderEnvironments() {
   const project = selectedProject();
   const select = $('environment');
-  const previous = select.value;
+  const previous = sourceChoices.get(project?.applicationId) || '';
   select.innerHTML = '';
   if (!project) return;
+  const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Select Source Environment';select.appendChild(placeholder);
   // ONLY this project's environments. Rebuilt on every project change rather than
   // filtered in place, so an environment belonging to the previous project cannot
   // survive as a stale selection.
   for (const environment of project.environments) {
     const option = document.createElement('option');
     option.value = environment.environmentId;
-    option.textContent = environment.environmentId
+    option.textContent = (environment.displayName || environment.environmentId)
       + (environment.isDefault ? ' (default)' : '');
     option.title = environment.baseUrl;
     select.appendChild(option);
   }
   const keep = project.environments.some(e => e.environmentId === previous);
-  select.value = keep ? previous : (project.defaultEnvironmentId || project.environments[0]?.environmentId || '');
+  select.value = keep ? previous : (project.defaultSourceEnvironmentId || (project.environments.length===1 ? project.environments[0].environmentId : ''));
   renderEnvironmentHint();
 }
 
@@ -3273,6 +3884,7 @@ async function loadWorkbookOptions() {
     return false;
   }
   const previous = select.value;
+  const requestedProject = selectedProject()?.applicationId;
   let body = { workbooks: [] };
   try {
     body = await (await fetch('/api/workbooks' + scopeQuery())).json();
@@ -3280,6 +3892,7 @@ async function loadWorkbookOptions() {
     // Leave the list as it is rather than emptying it on a transport blip.
     return false;
   }
+  if (requestedProject !== selectedProject()?.applicationId) return false;
   select.innerHTML = '';
   for (const file of body.workbooks || []) {
     const option = document.createElement('option');
@@ -3314,18 +3927,61 @@ async function loadWorkbookOptions() {
  * project's rows under the new project's name for as long as the fetch takes is a
  * misattribution somebody can act on.
  */
+/**
+ * The credential profiles this application/environment can record with.
+ *
+ * NAMES AND IDS ONLY. `/api/test-data` returns the catalogue, which carries
+ * `usernameConfigured` / `passwordConfigured` per environment and never a value - so the
+ * list can say which profiles are usable here without this page ever holding an account or
+ * a password. A profile with nothing bound for the selected environment is shown disabled
+ * rather than hidden, because "not configured here" is an answer a person needs.
+ */
+async function loadRecordingCredentials() {
+  const select = $('recCredential');
+  if (!select) return;
+  const previous = select.value;
+  select.innerHTML = '<option value="">Not signing in / no profile</option>';
+  const scope = scopeBody();
+  if (!scope.applicationId || !scope.environmentId) return;
+  try {
+    const res = await fetch('/api/test-data?' + new URLSearchParams(scope));
+    if (!res.ok) return;
+    const body = await res.json();
+    // A profile has to serve BOTH environments this attempt touches: the source, where the
+    // browser records, and every target the generation will validate against - the preflight
+    // is run for the target, so offering a profile bound only to the source would let a person
+    // choose one and be refused later with CREDENTIAL_CONFIGURATION_FAILURE for a reason the
+    // list could have shown them up front.
+    const needed = [...new Set([scope.environmentId, ...executionEnvironmentIds()])];
+    for (const profile of body.credentialProfiles || []) {
+      const bound = id => { const b = (profile.environments || {})[id]; return b && b.usernameConfigured && b.passwordConfigured; };
+      const missing = needed.filter(id => !bound(id));
+      const usable = profile.active && !missing.length;
+      const option = document.createElement('option');
+      option.value = profile.id;
+      option.textContent = profile.name + (profile.role ? ' — ' + profile.role : '')
+        + (usable ? '' : !profile.active ? ' (inactive)' : ` (not configured for ${missing.join(', ').toUpperCase()})`);
+      option.disabled = !usable;
+      select.appendChild(option);
+    }
+    if ([...select.options].some(o => o.value === previous && !o.disabled)) select.value = previous;
+  } catch { /* the list is an aid; recording without a profile still works */ }
+}
+
 async function switchProject() {
   localStorage.setItem('aura.project', $('project').value);
   renderEnvironments();
   cases = [];
   selected = new Set();
-  try { render(); } catch { /* the table may not be mounted on this view yet */ }
+  renderKpis(); renderCases();
+  loadRecordingCredentials();
   const hasWorkbook = await loadWorkbookOptions();
   if (hasWorkbook) await loadWorkbook();
 }
 
 $('project').addEventListener('change', switchProject);
 $('environment').addEventListener('change', renderEnvironmentHint);
+$('environment').addEventListener('change', loadRecordingCredentials);
 
 /* ------------------------------------------------------------ Add Project ---- */
 
@@ -3408,7 +4064,7 @@ $('apCreate').addEventListener('click', async () => {
 
     cases = [];
     selected = new Set();
-    try { render(); } catch { /* the table may not be mounted on this view yet */ }
+    renderKpis(); renderCases();
     await loadWorkbookOptions();
     if (body.workbook) $('workbook').value = body.workbook;
     if ($('workbook').value) await loadWorkbook();
@@ -3425,7 +4081,7 @@ $('apCreate').addEventListener('click', async () => {
   }
 });
 
-loadProjects();
+const projectsReady = loadProjects().then(() => loadRecordingCredentials());
 
 $('recStart').addEventListener('click', async () => {
   recProblem('recError', '');
@@ -3439,12 +4095,28 @@ $('recStart').addEventListener('click', async () => {
       ...scopeBody(),
       url: $('recUrl').value,
       browser: $('recBrowser').value,
+      // An ID. The server resolves it; the values never travel in either direction.
+      credentialProfileId: $('recCredential').value,
+      // The environment being recorded against, so the generation this leads to rebases
+      // from the same place without anyone restating it after the save.
+      sourceEnvironmentId: $('environment').value,
     }),
   });
   const body = await res.json();
   if (!res.ok || !body.started) {
     recProblem('recError', body.error || 'The recorder could not start.');
     return;
+  }
+  // WHAT THIS RECORDING WILL BE ABLE TO PROVE, said before the session is spent.
+  // A codegen recording carries no interaction-time identity and no navigation journal, so
+  // every step will need an explicit binding and automatic inference will refuse. Presenting
+  // that as an ordinary recording is what sends someone back to re-record the same way.
+  if (body.transportProblem || body.browserEvidence === false) {
+    $('recLiveNote').textContent = body.transportProblem
+      || 'Codegen transport: this recording carries NO browser evidence. Steps will need explicit '
+        + 'Page Object or recorded-locator bindings. Set RECORDER_TRANSPORT=live for a recording '
+        + 'intended for automatic generation.';
+    $('recLiveNote').className = 'note bad show';
   }
   recStage('recording');
   recStartedMs = Date.now();
@@ -3532,6 +4204,7 @@ async function openReview(draft) {
   renderRecSteps();
   renderRecAsserts();
   await recSuggestId();
+  await window.authoringOwnership?.load();
   $('recordPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -3542,6 +4215,7 @@ async function recSuggestId() {
     worksheet: $('recSheet').value,
     module: $('recModule').value,
   });
+  for (const [key,value] of Object.entries(scopeBody())) params.set(key,value);
   const res = await fetch(`/api/next-id?${params}`);
   if (!res.ok) return;
   const suggestion = await res.json();
@@ -3774,7 +4448,12 @@ async function recSaveCase() {
   const res = await fetch('/api/case', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ workbook: $('workbook').value, draft: recDraft(), isNew: true }),
+    // `credentialProfileId` is the RECORDING's own selection, and the whole point of
+    // sending it: generating a case that was just recorded must not require opening the
+    // Execution Data dialog, which asks which EXISTING workbook rows to run and rightly
+    // refuses when none are checked. A brand new case is checked nowhere by definition.
+    // An explicit Execution Data selection, when somebody made one, still wins server-side.
+    body: JSON.stringify({ ...scopeBody(), ...executionSettings(), executionData:window.TestData?.selection(), credentialProfileId: $('recCredential').value, workbook: $('workbook').value, draft: recDraft(), isNew: true, ownershipRevision: window.authoringOwnership?.revision() }),
   });
   const body = await res.json();
   if (!res.ok) {
@@ -3782,6 +4461,26 @@ async function recSaveCase() {
     return null;
   }
   return body;
+}
+
+/**
+ * What this generation is actually running as - names and IDs the server sent back.
+ *
+ * `executionProfile` has no field for an account or a password, so there is nothing here to
+ * withhold; what it can show is the thing a person needs to confirm before a validation run,
+ * which is WHICH profile, WHICH source environment and WHICH browser were used.
+ */
+function generationConfigurationLines(autocode) {
+  const context = autocode?.executionContext;
+  if (!context) return [];
+  const lines = ['', 'Generation configuration'];
+  lines.push(`  Credential Profile   ${autocode.executionProfile?.credentialProfileName
+      ?? (autocode.executionProfile?.credentialProfileId ? 'selected profile' : 'application configuration')}`);
+  lines.push(`  Source Environment   ${(context.sourceEnvironmentId || '—').toUpperCase()}`);
+  lines.push(`  Target Environment   ${(context.environmentId || '—').toUpperCase()}`);
+  lines.push(`  Browser              ${context.browserEngine}${context.browserChannel ? ' / ' + context.browserChannel : ''}`
+      + ` / ${context.headed ? 'Headed' : 'Headless'}`);
+  return lines;
 }
 
 function recSavedMessage(body) {
@@ -3794,6 +4493,7 @@ function recSavedMessage(body) {
     lines.push(`Runs now via ${body.runner}.`);
   else
     lines.push(`Not executable yet and the generator did not start (${body.autocode?.reason ?? 'no runner covers this module'}).`);
+  lines.push(...generationConfigurationLines(body.autocode));
   const ok = $('recSaveOk');
   ok.textContent = lines.join('\n');
   ok.style.whiteSpace = 'pre-line';
@@ -3820,10 +4520,17 @@ $('recSave').addEventListener('click', async () => {
  * registered, runnable test.
  */
 $('recSaveRun').addEventListener('click', async () => {
+  // Read BEFORE the panel resets: recStage('setup') below clears the recording stage, and
+  // the profile this attempt is running as must survive into the run leg.
+  const recordingProfileId = $('recCredential').value;
   const body = await recSaveCase();
   if (!body) return;
   recSavedMessage(body);
   const id = body.testCaseId;
+  // Optional chaining all the way down: with no Test Data module, no profile chosen, or a
+  // catalogue that will not load, this stays undefined and the run leg is the request it
+  // always was. A failure to decorate a run must not stop the run.
+  const runData = await window.TestData?.generationSelection?.(recordingProfileId)?.catch(() => undefined);
   await loadWorkbook();
   recording = null;
   recStage('setup');
@@ -3834,7 +4541,7 @@ $('recSaveRun').addEventListener('click', async () => {
         + 'so there is nothing to run yet.');
       return;
     }
-    return startRunFor(id);
+    return startRunFor(id, runData);
   }
 
   watchAutocode([id]);
@@ -3857,11 +4564,18 @@ $('recSaveRun').addEventListener('click', async () => {
     setView('generation');
     return;
   }
-  await startRunFor(id);
+  await startRunFor(id, runData);
 });
 
-/** Run one case through the EXISTING run endpoint and UI. */
-async function startRunFor(id) {
+/**
+ * Run one case through the EXISTING run endpoint and UI.
+ *
+ * `executionData` is supplied only by the "Save, generate & run" path, and only when that
+ * recording named a profile: the run leg is part of the same attempt, so falling back to the
+ * application binding there would validate as somebody the person did not choose. With no
+ * profile named, nothing is passed and this is exactly the request it always was.
+ */
+async function startRunFor(id, executionData) {
   selected = new Set([id]);
   renderCases();
   showError('');
@@ -3874,11 +4588,13 @@ async function startRunFor(id) {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      ...scopeBody(),
+      ...scopeBody(), ...executionSettings(),
+      environmentIds: executionEnvironmentIds(),
       workbook: $('workbook').value,
       testCaseIds: [id],
+      ...(executionData ? { executionData } : {}),
       browser: $('browser').value,
-      workers: Number($('workers').value),
+      workers: 1,
       headed: $('headed').checked,
       inPlace: $('inPlace').checked,
       screenshot: $('screenshot').value,
@@ -3901,7 +4617,7 @@ $('recCancel').addEventListener('click', () => {
 });
 
 /** The API this page expects. Must match API_VERSION in server.ts. */
-const EXPECTED_API = 7;
+const EXPECTED_API = 10;
 
 /**
  * Catch the "old server, new page" trap.
@@ -3931,6 +4647,7 @@ async function checkServerVersion() {
 
 (async function init() {
   await checkServerVersion();
+  await projectsReady;
   $('envBrowser').textContent = $('browser').selectedOptions[0].textContent;
   // Project-aware from the first paint: `loadProjects()` has already run and set the
   // remembered selection, so this asks for THAT project's workbooks rather than for
@@ -3940,7 +4657,7 @@ async function checkServerVersion() {
   // Generation history is read from disk, so it survives this page being closed and
   // the dashboard process being restarted - which is the whole point of it.
   await loadGenerations();
-  const { active } = await (await fetch('/api/runs')).json();
+  const { active } = await (await fetch('/api/runs'+scopeQuery())).json();
   if (active) { setRunning(true); connectStream(); }
   // A generation already in progress when the page opens: pick it up, with the
   // ids the server reports so progress is real rather than assumed.
@@ -3958,6 +4675,433 @@ async function checkServerVersion() {
     setView('cases');
   }
 })();
+
+for (const b of document.querySelectorAll(".nav button[data-view]")) {
+  b.setAttribute("aria-label", { overview: "Overview", cases: "Test cases", generation: "Generation", executions: "Executions" }[b.dataset.view]);
+  b.title = b.getAttribute("aria-label");
+  b.tabIndex = b.getAttribute("aria-selected") === "true" ? 0 : -1;
+  for (const n of [...b.childNodes]) if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) n.replaceWith(el("span", "nav-text", n.textContent.trim()));
+  b.addEventListener("keydown", (e) => {
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
+    e.preventDefault();
+    const tabs = [...document.querySelectorAll(".nav button[data-view]")];
+    let i = tabs.indexOf(b);
+    i = e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : (i + (e.key === "ArrowDown" ? 1 : -1) + tabs.length) % tabs.length;
+    tabs[i].focus();
+    tabs[i].click();
+  });
+}
+function sidebarState(collapsed) {
+  document.querySelector(".app").classList.toggle("sidebar-collapsed", collapsed);
+  const b = $("sidebarToggle");
+  b.textContent = collapsed ? "›" : "‹";
+  b.setAttribute("aria-expanded", String(!collapsed));
+  b.setAttribute("aria-label", collapsed ? "Expand sidebar" : "Collapse sidebar");
+  b.title = b.getAttribute("aria-label");
+  localStorage.setItem("aura.sidebar", collapsed ? "collapsed" : "expanded");
+}
+sidebarState(localStorage.getItem("aura.sidebar") === "collapsed");
+$("sidebarToggle").addEventListener("click", () => sidebarState($("sidebarToggle").getAttribute("aria-expanded") === "true"));
+let reportFetchToken = 0, imageToken = 0, imageAbort = null, evidenceObjectUrl = null;
+let reportRecord = null, reportChildren = [], visibleSteps = [], selectedStep = -1, evidenceScale = 1;
+function optionsFor(select, rows, chosen) {
+  select.replaceChildren();
+  for (const [value, label] of rows) select.add(new Option(label, value));
+  if (rows.some((r) => r[0] === chosen)) select.value = chosen;
+  select.disabled = !rows.length;
+}
+function clearEvidence(message) {
+  imageToken++;
+  imageAbort?.abort();
+  imageAbort = null;
+  if (evidenceObjectUrl) URL.revokeObjectURL(evidenceObjectUrl);
+  evidenceObjectUrl = null;
+  $("evidenceCanvas").querySelector("img")?.remove();
+  $("evidenceMessage").textContent = message;
+  $("evidenceMessage").hidden = false;
+  for (const id of ["evidenceFit", "evidenceZoomOut", "evidenceZoomIn", "evidenceFullscreen"]) $(id).disabled = true;
+}
+function clearReport(message) {
+  reportRecord = null;
+  visibleSteps = [];
+  selectedStep = -1;
+  clearEvidence(message);
+  $("reportSteps").replaceChildren();
+  $("stepPosition").textContent = "No step selected";
+  $("stepPrevious").disabled = $("stepNext").disabled = true;
+  for (const id of ["reportEnvironment", "reportCase", "reportAttempt"]) optionsFor($(id), []);
+  $("reportRunIdentity").textContent = message;
+  $("evidenceCaption").textContent = "Execution screenshots only · no locator snapshots";
+  $("reportProject").textContent = selectedProject()?.displayName || "No project selected";
+}
+function refreshReportRuns(runs) {
+  const old = $("reportRun").value;
+  optionsFor($("reportRun"), [["", "Select an execution"], ...runs.filter((r) => !r.parentExecutionId).map((r) => [r.id, `${runHandle(r.id)} · ${r.environmentId || (r.environmentRuns ? "Multiple environments" : "Environment unknown")}`])], old);
+}
+function inspectRun(record) {
+  const previous = reportRecord?.id === record.id ? {
+    environment: reportChildren[Number($("reportEnvironment").value)]?.id,
+    testCase: $("reportCase").value, attempt: $("reportAttempt").value,
+    step: visibleSteps[selectedStep]?.stepId, scroll: $("reportSteps").scrollTop,
+  } : null;
+  clearReport("Loading steps…");
+  reportRecord = record;
+  reportChildren = record.environmentRuns || [record];
+  $("reportProject").textContent = selectedProject()?.displayName || record.applicationId || "Project unknown";
+  $("reportRunIdentity").textContent = `Run ${record.id} · ${record.status || (record.finishedAt ? "Completed" : "Running")}`;
+  if (![...$("reportRun").options].some((o) => o.value === record.id)) $("reportRun").add(new Option(runHandle(record.id), record.id));
+  $("reportRun").value = record.id;
+  optionsFor($("reportEnvironment"), reportChildren.map((r, i) => [String(i), `${r.environmentDisplayName || r.environmentId || "Environment unknown"}${r.executionProfile ? " / " + (r.executionProfile.credentialProfileName || "Application configuration") : ""} · ${r.status || (r.finishedAt ? "completed" : "unknown")}${r.finishedAt ? " · " + r.summary.passed + " passed / " + r.summary.failed + " failed" : ""}`]));
+  if (previous) {
+    const index = reportChildren.findIndex(r => r.id === previous.environment);
+    if (index >= 0) $("reportEnvironment").value = String(index);
+  }
+  reportEnvironmentChanged();
+  if (previous && [...$("reportCase").options].some(o => o.value === previous.testCase)) {
+    $("reportCase").value = previous.testCase; reportCaseChanged();
+    if ([...$("reportAttempt").options].some(o => o.value === previous.attempt)) {
+      $("reportAttempt").value = previous.attempt; renderReportSteps();
+      const index = visibleSteps.findIndex(step => step.stepId && step.stepId === previous.step);
+      if (index >= 0) selectReportStep(index);
+      $("reportSteps").scrollTop = previous.scroll;
+    }
+  }
+}
+function reportEnvironmentChanged() {
+  clearEvidence("Select a step");
+  const run = reportChildren[Number($("reportEnvironment").value)];
+  setReportLink(run?.id, run?.hasReport);
+  const ids = [.../* @__PURE__ */ new Set([...(run?.results || []).map((r) => r.testCaseId).filter(Boolean), ...Object.keys(run?.steps || {})])];
+  optionsFor($("reportCase"), ids.map((id) => [id, id]));
+  reportCaseChanged();
+}
+function reportCaseChanged() {
+  clearEvidence("Loading steps…");
+  const run = reportChildren[Number($("reportEnvironment").value)];
+  const steps = run?.steps?.[$("reportCase").value] || [];
+  const attempts = [...new Set(steps.map((s) => s.attemptId || "unknown"))];
+  optionsFor($("reportAttempt"), attempts.map((id) => [id, id === "unknown" ? "Attempt not recorded" : `Attempt ${steps.find((step) => step.attemptId === id)?.attemptNumber || id}`]));
+  renderReportSteps();
+}
+function renderReportSteps() {
+  clearEvidence("No screenshot captured");
+  selectedStep = -1;
+  const run = reportChildren[Number($("reportEnvironment").value)];
+  visibleSteps = (run?.steps?.[$("reportCase").value] || []).filter((s) => (s.attemptId || "unknown") === $("reportAttempt").value).slice().sort((a, b) => a.index - b.index);
+  $("reportSteps").replaceChildren();
+  visibleSteps.forEach((step, index) => {
+    const li = document.createElement("li"), b = el("button", "step-choice");
+    b.type = "button";
+    b.setAttribute("aria-pressed", "false");
+    b.dataset.stepId = step.stepId || "";
+    b.append(el("span", "step-number", String(step.index)));
+    const title = el("span", "step-title", step.title);
+    title.append(el("span", "step-meta", `${step.status} · ${(step.durationMs / 1e3).toFixed(2)}s`));
+    b.append(title, el("span", step.status === "failed" ? "fail" : "pass", step.status === "failed" ? "×" : "✓"));
+    b.addEventListener("click", () => selectReportStep(index));
+    b.addEventListener("keydown", (e) => {
+      if (["ArrowDown", "ArrowUp"].includes(e.key)) {
+        e.preventDefault();
+        selectReportStep(Math.max(0, Math.min(visibleSteps.length - 1, index + (e.key === "ArrowDown" ? 1 : -1))));
+        $("reportSteps").querySelectorAll("button")[selectedStep]?.focus();
+      }
+    });
+    li.append(b);
+    if (step.error) {
+      const d = el("details", "step-error");
+      d.append(el("summary", "", "Error details"), el("pre", "", step.error));
+      li.append(d);
+    }
+    $("reportSteps").append(li);
+  });
+  if (visibleSteps.length) selectReportStep(0);
+  else {
+    $("reportSteps").append(el("li", "empty", "No step records for this selection."));
+    $("stepPosition").textContent = "No step selected";
+    $("stepPrevious").disabled = $("stepNext").disabled = true;
+    clearEvidence("No screenshot captured");
+  }
+}
+async function selectReportStep(index) {
+  clearEvidence("Loading screenshot…");
+  selectedStep = index;
+  const step = visibleSteps[index];
+  if (!step) return;
+  $("reportSteps").querySelectorAll(".step-choice").forEach((b, i) => b.setAttribute("aria-pressed", String(i === index)));
+  $("stepPosition").textContent = `Step ${index + 1} of ${visibleSteps.length}`;
+  $("stepPrevious").disabled = index <= 0;
+  $("stepNext").disabled = index >= visibleSteps.length - 1;
+  // THE PICTURE THIS STEP HOLDS, never another step's.
+  //
+  // A step carries its own captures, each with its own url and its own recorded timing.
+  // Preference is the state AFTER the step - what the step produced - then the failure
+  // state, then the state it started from; there is no fallback to a neighbouring step,
+  // because a picture of the wrong step is worse than none.
+  const ranked = ["POST_STEP", "FAILURE", "PRE_STEP"];
+  const shot = (step.captures || []).filter((c) => c && c.url)
+    .sort((a, b) => ranked.indexOf(a.captureType) - ranked.indexOf(b.captureType))[0];
+  const timing = shot ? { POST_STEP: "Captured after the step completed", FAILURE: "Captured on failure",
+    PRE_STEP: "Captured before the step ran" }[shot.captureType] || `Captured (${shot.captureType})`
+    : step.captureTiming === "after-step" ? "Captured after the step completed"
+    : step.captureTiming === "after-failure" ? "Captured on failure"
+    : step.captureUnavailable ? `No picture: ${step.captureUnavailable}` : "Capture timing not recorded";
+  $("evidenceCaption").textContent = `${step.title} · ${timing}`;
+  const source = shot ? shot.url : step.screenshotUrl;
+  if (!source) {
+    clearEvidence(step.captureUnavailable ? `No screenshot captured — ${step.captureUnavailable}` : "No screenshot captured");
+    return;
+  }
+  const token = imageToken, controller = new AbortController();
+  imageAbort = controller;
+  try {
+    const url = new URL(source, location.origin), run = reportChildren[Number($("reportEnvironment").value)];
+    if (url.origin !== location.origin || !url.pathname.startsWith(`/api/runs/${encodeURIComponent(run.id)}/evidence/`)) throw Error("Screenshot does not belong to this run");
+    url.searchParams.set("applicationId", reportRecord.applicationId || "");
+    if (run.environmentId) url.searchParams.set("environmentId", run.environmentId);
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok || !response.headers.get("content-type")?.startsWith("image/")) throw Error("Screenshot unavailable");
+    const blob = await response.blob();
+    if (token !== imageToken) return;
+    const objectUrl = URL.createObjectURL(blob), img = new Image();
+    img.alt = `Execution screenshot: ${step.title}`;
+    img.src = objectUrl;
+    try {
+      await img.decode();
+    } catch {
+      URL.revokeObjectURL(objectUrl);
+      throw Error("Screenshot could not be decoded");
+    }
+    if (token !== imageToken) {
+      URL.revokeObjectURL(objectUrl);
+      return;
+    }
+    evidenceObjectUrl = objectUrl;
+    $("evidenceCanvas").append(img);
+    $("evidenceMessage").hidden = true;
+    evidenceScale = 1;
+    $("evidenceCanvas").classList.add("fit");
+    for (const id of ["evidenceFit", "evidenceZoomOut", "evidenceZoomIn", "evidenceFullscreen"]) $(id).disabled = false;
+  } catch (error) {
+    if (token === imageToken && error.name !== "AbortError") clearEvidence(error.message || "Screenshot unavailable");
+  }
+}
+$("reportRun").addEventListener("change", () => {
+  $("reportRun").value ? showRun($("reportRun").value) : (++reportFetchToken, clearReport("Select an execution to explore its steps."));
+});
+$("reportEnvironment").addEventListener("change", reportEnvironmentChanged);
+$("reportCase").addEventListener("change", reportCaseChanged);
+$("reportAttempt").addEventListener("change", renderReportSteps);
+$("stepPrevious").addEventListener("click", () => selectReportStep(selectedStep - 1));
+$("stepNext").addEventListener("click", () => selectReportStep(selectedStep + 1));
+$("evidenceFit").addEventListener("click", () => {
+  $("evidenceCanvas").classList.add("fit");
+  const img = $("evidenceCanvas").querySelector("img");
+  if (img) img.style.width = "";
+  evidenceScale = 1;
+});
+function zoomEvidence(change) {
+  const img = $("evidenceCanvas").querySelector("img");
+  if (!img) return;
+  evidenceScale = Math.max(0.25, Math.min(4, evidenceScale + change));
+  $("evidenceCanvas").classList.remove("fit");
+  img.style.width = `${img.naturalWidth * evidenceScale}px`;
+}
+$("evidenceZoomIn").addEventListener("click", () => zoomEvidence(0.25));
+$("evidenceZoomOut").addEventListener("click", () => zoomEvidence(-0.25));
+$("evidenceFullscreen").addEventListener("click", async () => {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await $("evidenceCanvas").requestFullscreen();
+  } catch {
+    $("evidenceCaption").textContent = "Fullscreen is unavailable. Use zoom or fit.";
+  }
+});
+function resizeInspector(percent) {
+  const value = Math.max(24, Math.min(60, percent));
+  $("reportInspector").style.setProperty("--step-width", value + "%");
+  $("reportDivider").setAttribute("aria-valuenow", String(Math.round(value)));
+}
+$("reportDivider").addEventListener("keydown", (e) => {
+  if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) {
+    e.preventDefault();
+    resizeInspector(e.key === "Home" ? 24 : e.key === "End" ? 60 : Number(e.target.getAttribute("aria-valuenow")) + (e.key === "ArrowLeft" ? -2 : 2));
+  }
+});
+$("reportDivider").addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  const d = event.currentTarget;
+  d.setPointerCapture(event.pointerId);
+  const move = (e) => {
+    const box = d.parentElement.getBoundingClientRect();
+    resizeInspector((e.clientX - box.left) / box.width * 100);
+  }, end = () => {
+    d.removeEventListener("pointermove", move);
+    d.removeEventListener("pointerup", end);
+    d.removeEventListener("pointercancel", end);
+  };
+  d.addEventListener("pointermove", move);
+  d.addEventListener("pointerup", end);
+  d.addEventListener("pointercancel", end);
+});
+$("project").addEventListener("change", () => {
+  stream?.close(); stream = null; setRunning(false); $("console").textContent = "Nothing has run yet.";
+  ++reportFetchToken;
+  clearReport("Choose an execution for this project.");
+  execByCase.clear(); lastRuns = []; refreshReportRuns([]); renderLastRunKpis(null);
+  renderResults([], [], 'No execution selected', {}); setReportLink('', false);
+  $('runRows').replaceChildren(); $('genRows').replaceChildren();
+  void loadRuns(); void loadGenerations();
+});
+$('environment').addEventListener('change', () => { sourceChoices.set(selectedProject()?.applicationId,$('environment').value);execByCase.clear(); renderCases(); });
+$('browser').addEventListener('change', () => { $('browserChannel').disabled=$('browser').value!=='chromium';if($('browserChannel').disabled)$('browserChannel').value=''; });
+const executionChoices = /* @__PURE__ */ new Map();
+function executionEnvironmentIds() {
+  return [...$("executionTargets").querySelectorAll("input:checked")].map((i) => i.value);
+}
+function renderExecutionTargets() {
+  const project = selectedProject();
+  $("projectSettingsOpen").disabled = !project;
+  $("onboardingWelcome").hidden = PROJECTS.length !== 0;
+  $("executionTargets").replaceChildren();
+  if (!project) {
+    $("executionTargets").append(el("span", "muted", "Add or select a project to configure execution environments."));
+    return;
+  }
+  const chosen = executionChoices.get(project.applicationId) || [project.defaultEnvironmentId].filter(Boolean);
+  for (const env of project.environments) {
+    const label = el("label"), input = document.createElement("input");
+    input.type = "checkbox";
+    input.value = env.environmentId;
+    input.checked = chosen.includes(env.environmentId);
+    input.addEventListener("change", () => {
+      executionChoices.set(project.applicationId, executionEnvironmentIds());
+      executionOptionsChanged();
+    });
+    label.append(input, document.createTextNode(env.displayName || env.environmentId));
+    $("executionTargets").append(label);
+  }
+  executionOptionsChanged();
+}
+function executionOptionsChanged() {
+  // The recording credential list depends on the chosen targets, because the profile has to
+  // serve them as well as the environment being recorded against.
+  if (typeof loadRecordingCredentials === "function") loadRecordingCredentials();
+  $("workers").value = "1";
+  $("workers").disabled = true;
+  const multiple = executionEnvironmentIds().length > 1;
+  $("inPlace").disabled = multiple;
+  if (multiple) $("inPlace").checked = false;
+  $("inPlace").title = multiple ? "Results are retained separately per environment; workbook write-back is disabled." : "";
+}
+const originalRenderEnvironments = renderEnvironments;
+renderEnvironments = function() {
+  originalRenderEnvironments();
+  renderExecutionTargets();
+};
+const originalLoadProjects = loadProjects;
+loadProjects = async function() {
+  await originalLoadProjects();
+  renderExecutionTargets();
+};
+$("welcomeAddProject").addEventListener("click", () => {
+  $("addProjectOpen").click();
+  $("apName").focus();
+});
+let settingsOwner = "", editingEnvironment = false, settingsFocus = null;
+function closeSettings() {
+  $("projectSettings").hidden = $("settingsScrim").hidden = true;
+  document.querySelector(".app").inert = false;
+  settingsFocus?.focus();
+}
+function environmentEditor(environment) {
+  editingEnvironment = Boolean(environment);
+  $("envId").value = environment?.environmentId || "";
+  $("envId").readOnly = editingEnvironment;
+  $("envName").value = environment?.displayName || environment?.environmentId || "";
+  $("envBaseUrl").value = environment?.configuredBaseUrl || environment?.baseUrl || "";
+  $("envUrlRef").value = environment?.baseUrlEnv || "";
+  $("envEmailRef").value = environment?.credentials?.email || "";
+  $("envPasswordRef").value = environment?.credentials?.password || "";
+  $("environmentFeedback").textContent = "";
+  $("envId").focus();
+}
+function renderSettingsEnvironments() {
+  const project = PROJECTS.find((p) => p.applicationId === settingsOwner);
+  $("settingsEnvironments").replaceChildren();
+  for (const env of project?.environments || []) {
+    const b = el("button", "", `${env.displayName || env.environmentId} · ${env.environmentId}`);
+    b.type = "button";
+    b.addEventListener("click", () => environmentEditor(env));
+    $("settingsEnvironments").append(b);
+  }
+}
+$("projectSettingsOpen").addEventListener("click", () => {
+  const project = selectedProject();
+  if (!project) return;
+  settingsOwner = project.applicationId;
+  settingsFocus = document.activeElement;
+  $("settingsProject").textContent = project.displayName;
+  $("projectSettings").hidden = $("settingsScrim").hidden = false;
+  document.querySelector(".app").inert = true;
+  renderSettingsEnvironments();
+  environmentEditor(project.environments.find((e) => e.environmentId === selectedEnvironment()?.environmentId) || project.environments[0]);
+});
+$("settingsClose").addEventListener("click", closeSettings);
+$("settingsScrim").addEventListener("click", closeSettings);
+$("newEnvironment").addEventListener("click", () => environmentEditor(null));
+$("projectSettings").addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    e.preventDefault();
+    closeSettings();
+  }
+  if (e.key === "Tab") {
+    const list = [...$("projectSettings").querySelectorAll("button,input,select")].filter((n) => !n.disabled && n.offsetParent !== null);
+    if (e.shiftKey && document.activeElement === list[0]) {
+      e.preventDefault();
+      list.at(-1).focus();
+    } else if (!e.shiftKey && document.activeElement === list.at(-1)) {
+      e.preventDefault();
+      list[0].focus();
+    }
+  }
+});
+$("environmentForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const feedback = $("environmentFeedback");
+  feedback.textContent = "Saving environment…";
+  $("saveEnvironment").disabled = true;
+  try {
+    const id = $("envId").value.trim();
+    const response = await fetch(`/api/projects/${encodeURIComponent(settingsOwner)}/environments${editingEnvironment ? "/" + encodeURIComponent(id) : ""}`, { method: editingEnvironment ? "PUT" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ applicationId: settingsOwner, environmentId: id, displayName: $("envName").value.trim(), baseUrl: $("envBaseUrl").value.trim(), baseUrlEnv: $("envUrlRef").value.trim(), credentials: { email: $("envEmailRef").value.trim(), password: $("envPasswordRef").value.trim() } }) });
+    const result = await response.json();
+    if (!response.ok) throw Error(result.error || "Environment could not be saved");
+    PROJECTS = result.projects;
+    renderSettingsEnvironments();
+    renderEnvironments();
+    editingEnvironment = true;
+    $("envId").readOnly = true;
+    feedback.textContent = "Environment saved. Secret values remain in your runtime configuration.";
+    feedback.className = "pass";
+  } catch (error) {
+    feedback.textContent = error.message || "Connection failed. Try saving again.";
+    feedback.className = "fail";
+  } finally {
+    $("saveEnvironment").disabled = false;
+  }
+});
+function scopedEvidenceUrl(raw) {
+  const url = new URL(raw, location.origin);
+  url.searchParams.set("applicationId", selectedProject()?.applicationId || "");
+  return url.pathname + url.search;
+}
+renderExecutionTargets();
+$("fullscreenExit").addEventListener("click", () => document.exitFullscreen());
 </script>
+<script src="/diagnostic-viewer.js"></script>
+<script src="/recording-review.js"></script>
+<script src="/authoring-workspace.js"></script>
+<script src="/quarantine-workspace.js"></script>
+<link rel="stylesheet" href="/test-data.css">
+<script src="/test-data.js"></script>
 </body>
 </html>

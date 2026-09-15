@@ -1,26 +1,8 @@
 import '../testing/isolated-checkout';
-/**
- * P0.8 — the project card is drawn before it is wired, and the suite must wait
- * for the wiring, not for a clock.
- *
- *   npx tsx ai/autocode/apps-readiness.fixture.ts
- *
- * Offline: no browser, no model, no network. Two halves:
- *
- *   - the Page Object's readiness, asserted on its SOURCE, because "waits for
- *     load" and "waits 2 seconds" are indistinguishable at runtime and only one
- *     of them is acceptable;
- *   - the assembler's output, driven through the real `mapRecording` with the
- *     real knowledge files, because the defect was not that `open()` was wrong -
- *     it was that nothing ever emitted it.
- *
- * WHAT WAS MEASURED (ai/reports/diagnostics/TC_LOGIN_064): cards hit-testable at
- * ~1350ms, delegated click handler bound at ~2294ms in the same 100ms sample as
- * `[data-original-title]` appearing on 23 elements, load at ~2539ms. Clicking in
- * the gap succeeds as an action and does nothing to the application: 6 of 9 runs
- * stayed on /apps for 30s.
+/** Post-authentication ordering: preserve explicit actions; never manufacture a redirect goto.
+ * Offline synthetic measurements exercise Page Object reuse and raw-action ordering.
  */
-
+import { syntheticLoginEvidence, targetEvidence } from '../testing/synthetic-data';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -44,12 +26,19 @@ function recording(actions: any[]): any {
     startUrl: 'https://portal.fixture.invalid/',
     actions,
     assertions: [],
-    evidence: { available: false, reason: 'this fixture carries no DOM evidence on purpose' },
+    // Only the authored Create Project interaction has additional identity proof.
+    // Keep the draft clicks unmeasured so they still exercise raw-action ordering.
+    evidence: syntheticLoginEvidence(actions.filter(action =>
+      action.locator === "page.getByRole('button', { name: 'Create Project' })").map(action =>
+      targetEvidence(action.locator, {
+        documentId: 'synthetic-apps', elementRef: 'synthetic-apps:create-project', route: '/apps',
+        target: { tag: 'button', role: 'button', accessibleName: 'Create Project', accessibleNameVerified: true },
+      }))),
   };
 }
 
 const SIGN_IN = [
-  { type: 'navigate', target: 'https://portal.fixture.invalid/', value: 'https://portal.fixture.invalid/', locator: null },
+  { type: 'navigate', navigationCause: 'intentional', target: 'https://portal.fixture.invalid/', value: 'https://portal.fixture.invalid/', locator: null },
   { type: 'fill', target: 'Email', value: 'someone@moolya.com', locator: "page.getByRole('textbox', { name: 'Email' })" },
   { type: 'fill', target: 'Password', value: '[type=password]', locator: "page.getByRole('textbox', { name: 'Password' })", redacted: true },
   { type: 'click', target: 'Sign In', value: null, locator: "page.getByRole('button', { name: 'Sign In', exact: true })" },
@@ -69,27 +58,27 @@ function checkAssembler(): void {
   const openAt = code.findIndex(line => line.includes('projectsPage.open()'));
   const clickAt = code.findIndex(line => line.includes("hasText: 'Quarterly draft'"));
   check('H: the sign-in is emitted', signInAt >= 0);
-  check('H: projectsPage.open() is emitted for a raw action', openAt >= 0, code.join(' | '));
+  check('H: observed landing does not invent a Page Object open', openAt === -1, code.join(' | '));
   check('H: the recorded click is still emitted', clickAt >= 0);
-  check('H: the order is signIn -> open -> recorded click',
-      signInAt >= 0 && openAt > signInAt && clickAt > openAt,
+  check('H: signIn precedes the recorded click without an invented navigation',
+      signInAt >= 0 && clickAt > signInAt && openAt === -1,
       `signIn@${signInAt} open@${openAt} click@${clickAt}`);
-  check('H: the step is labelled as the redirect a recording cannot capture',
-      raw.steps.some((step: any) => step.from === 'post-sign-in redirect'));
+  check('H: no fabricated redirect step',
+      !raw.steps.some((step: any) => step.from === 'post-sign-in redirect'));
 
   process.stdout.write('\n== I — never emitted twice ==\n');
   const twoRaw = mapRecording(recording([...SIGN_IN,
     { type: 'click', target: 'Quarterly draft', value: null, locator: CLICK_LOCATOR },
     { type: 'click', target: 'Annual draft', value: null, locator: "page.getByText('Annual draft')" }]) as any);
   const opens = codeOf(twoRaw).filter(line => line.includes('projectsPage.open()'));
-  check('I: two raw actions still open the screen once', opens.length === 1, String(opens.length));
+  check('I: two raw actions do not manufacture navigation', opens.length === 0, String(opens.length));
 
   const matched = mapRecording(recording([...SIGN_IN,
     { type: 'click', target: 'Create Project', value: null, locator: "page.getByRole('button', { name: 'Create Project' })" },
     { type: 'click', target: 'Quarterly draft', value: null, locator: CLICK_LOCATOR }]) as any);
   const matchedOpens = codeOf(matched).filter(line => line.includes('projectsPage.open()'));
-  check('I: a Page Object match followed by a raw action opens it once',
-      matchedOpens.length === 1, `${matchedOpens.length}: ${codeOf(matched).join(' | ')}`);
+  check('I: Page Object reuse does not manufacture navigation',
+      matchedOpens.length === 0, `${matchedOpens.length}: ${codeOf(matched).join(' | ')}`);
 
   process.stdout.write('\n== J — Page Object priority is unchanged ==\n');
   const poCode = codeOf(matched);

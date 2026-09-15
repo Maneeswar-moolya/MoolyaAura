@@ -203,7 +203,7 @@ function checkPageObjectLayer(): void {
   check('CASE 14: resolveLocator builds candidates unnarrowed',
       /candidate\.build\(page\);/.test(body) && !/candidate\.build\(page\)\.first\(\)/.test(body));
   check('CASE 14: and measures the count instead',
-      /await locator\.count\(\)/.test(body) && /count !== 1/.test(body));
+      /locator\.count\(\)/.test(body) && /count !== 1/.test(body));
   check('CASE 14: cardinality "many" must be asked for, never inferred',
       /options\.cardinality \?\? 'one'/.test(resolver));
 

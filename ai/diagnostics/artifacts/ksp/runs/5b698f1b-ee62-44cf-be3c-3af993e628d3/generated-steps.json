@@ -1,0 +1,223 @@
+{
+  "steps": [
+    {
+      "recordingStepKey": "action:0",
+      "label": "Open recorded destination",
+      "locator": "",
+      "provenance": "AUTO",
+      "executionMode": "AUTO",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_039.spec.ts",
+      "generatedLineStart": 30,
+      "generatedLineEnd": 32,
+      "statement": "{\n      await page.goto('https://stgsupport.keysight.com/us/en/home');\n    }"
+    },
+    {
+      "recordingStepKey": "action:1",
+      "label": "Use Log In",
+      "page": "initialLandingPage",
+      "pageObject": "InitialLandingPage",
+      "method": "logIn",
+      "locator": "page.locator('header').getByRole('link', { name: 'Log In' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "validationStatus": "USER AUTHORED — NOT VALIDATED",
+      "implementation": "tests-e2e/pages/ksp/InitialLandingPage.ts",
+      "implementationLine": 6,
+      "implementationSource": "logIn() { const page = this.page; return page.locator('header').getByRole('link', { name: 'Log In' }); }",
+      "calls": [
+        {
+          "pageObject": "InitialLandingPage",
+          "method": "logIn",
+          "implementation": "tests-e2e/pages/ksp/InitialLandingPage.ts",
+          "implementationLine": 6,
+          "implementationSource": "logIn() { const page = this.page; return page.locator('header').getByRole('link', { name: 'Log In' }); }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_039.spec.ts",
+      "generatedLineStart": 35,
+      "generatedLineEnd": 37,
+      "statement": "{\n      await (await initialLandingPage.logIn()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "action:2",
+      "label": "Use Enter email",
+      "page": "ksp__ssoauth-login",
+      "pageObject": "SsoauthLoginPage",
+      "method": "enterEmailField",
+      "locator": "page.getByRole('textbox', { name: 'Enter email' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 27,
+      "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "enterEmailField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 27,
+          "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_039.spec.ts",
+      "generatedLineStart": 40,
+      "generatedLineEnd": 42,
+      "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "action:3",
+      "label": "Enter account from configured credentials",
+      "page": "ksp__ssoauth-login",
+      "pageObject": "SsoauthLoginPage",
+      "method": "enterEmailField",
+      "locator": "page.getByRole('textbox', { name: 'Enter email' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 27,
+      "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "enterEmailField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 27,
+          "implementationSource": "enterEmailField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.enterEmailField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Enter email\\' })', build: page => page.getByRole('textbox', { name: 'Enter email' }) },\n    ]);\n  }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_039.spec.ts",
+      "generatedLineStart": 45,
+      "generatedLineEnd": 47,
+      "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).fill(appCredentials.email);\n    }"
+    },
+    {
+      "recordingStepKey": "action:4",
+      "label": "Enter password from configured credentials",
+      "page": "ksp__ssoauth-login",
+      "pageObject": "SsoauthLoginPage",
+      "method": "passwordField",
+      "locator": "page.getByRole('textbox', { name: 'Password' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 39,
+      "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "passwordField",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 39,
+          "implementationSource": "passwordField(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.passwordField', [\n      { strategy: 'getByRole(\\'textbox\\', { name: \\'Password\\' })', build: page => page.getByRole('textbox', { name: 'Password' }) },\n    ]);\n  }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_039.spec.ts",
+      "generatedLineStart": 50,
+      "generatedLineEnd": 52,
+      "statement": "{\n      await (await ssoauthLoginPage.passwordField()).fill(appCredentials.password);\n    }"
+    },
+    {
+      "recordingStepKey": "action:5",
+      "label": "Use Log In",
+      "page": "ksp__ssoauth-login",
+      "pageObject": "SsoauthLoginPage",
+      "method": "logInButton",
+      "locator": "page.getByRole('button', { name: 'Log In' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 51,
+      "implementationSource": "logInButton(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.logInButton', [\n      { strategy: 'getByRole(\\'button\\', { name: \\'Log In\\', exact: true })', build: page => page.getByRole('button', { name: 'Log In', exact: true }) },\n    ]);\n  }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "logInButton",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 51,
+          "implementationSource": "logInButton(): Promise<Locator> {\n    return this.resolve('ssoauthlogin.logInButton', [\n      { strategy: 'getByRole(\\'button\\', { name: \\'Log In\\', exact: true })', build: page => page.getByRole('button', { name: 'Log In', exact: true }) },\n    ]);\n  }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_039.spec.ts",
+      "generatedLineStart": 55,
+      "generatedLineEnd": 57,
+      "statement": "{\n      await (await ssoauthLoginPage.logInButton()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "action:10",
+      "label": "Click Settings",
+      "page": "ksp__us-en-home",
+      "pageObject": "UsEnHomePage",
+      "method": "settionsIcon",
+      "locator": "page.getByRole('button', { name: 'Settings' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "validationStatus": "USER AUTHORED — NOT VALIDATED",
+      "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+      "implementationLine": 103,
+      "implementationSource": "settionsIcon() { const page = this.page; return page.getByRole('button', { name: 'Settings' }); }",
+      "calls": [
+        {
+          "pageObject": "UsEnHomePage",
+          "method": "settionsIcon",
+          "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+          "implementationLine": 103,
+          "implementationSource": "settionsIcon() { const page = this.page; return page.getByRole('button', { name: 'Settings' }); }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_039.spec.ts",
+      "generatedLineStart": 60,
+      "generatedLineEnd": 62,
+      "statement": "{\n      await (await usEnHomePage.settionsIcon()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "action:11",
+      "label": "Click Account Settings",
+      "page": "ksp__us-en-home",
+      "pageObject": "UsEnHomePage",
+      "method": "accountSettingsUnderSettingsIconMenu",
+      "locator": "page.getByRole('menuitem', { name: 'Account Settings' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "validationStatus": "USER AUTHORED — NOT VALIDATED",
+      "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+      "implementationLine": 106,
+      "implementationSource": "accountSettingsUnderSettingsIconMenu() { const page = this.page; return page.getByRole('menuitem', { name: 'Account Settings' }); }",
+      "calls": [
+        {
+          "pageObject": "UsEnHomePage",
+          "method": "accountSettingsUnderSettingsIconMenu",
+          "implementation": "tests-e2e/pages/ksp/us.en.home.page.ts",
+          "implementationLine": 106,
+          "implementationSource": "accountSettingsUnderSettingsIconMenu() { const page = this.page; return page.getByRole('menuitem', { name: 'Account Settings' }); }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_039.spec.ts",
+      "generatedLineStart": 65,
+      "generatedLineEnd": 67,
+      "statement": "{\n      await (await usEnHomePage.accountSettingsUnderSettingsIconMenu()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "assertion:0",
+      "label": "c-notifications-settings-header contains \"Notifications\"",
+      "pageObject": "Notifications",
+      "method": "notificationsHeader",
+      "locator": "page.locator('c-notifications-settings-header')",
+      "implementation": "tests-e2e/pages/ksp/Notifications.ts",
+      "implementationLine": 14,
+      "implementationSource": "notificationsHeader() { const page = this.page; return page.locator('c-notifications-settings-header'); }",
+      "calls": [
+        {
+          "pageObject": "Notifications",
+          "method": "notificationsHeader",
+          "implementation": "tests-e2e/pages/ksp/Notifications.ts",
+          "implementationLine": 14,
+          "implementationSource": "notificationsHeader() { const page = this.page; return page.locator('c-notifications-settings-header'); }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_039.spec.ts",
+      "generatedLineStart": 70,
+      "generatedLineEnd": 72,
+      "statement": "{\n      await expect(await notifications.notificationsHeader()).toContainText('Notifications');\n    }"
+    }
+  ]
+}

@@ -11,6 +11,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { appendLog, isRunning, run } from './orchestrate';
+import { resolveScope } from '../projects/scope';
+import { executionContextFromTransport, executionSelectionFromTransport } from '../projects/execution-context';
 
 const ROOT = process.cwd();
 const EXCEL_DIR = path.join(ROOT, 'excel');
@@ -26,7 +28,10 @@ const write = (text: string) => process.stdout.write(text);
 
 async function once(workbook: string, ids: string[] | undefined, dryRun: boolean,
     createPageObjects = true): Promise<void> {
-  const result = await run({ workbook, onlyIds: ids, dryRun, createPageObjects, onLog: write });
+  const scope=resolveScope({workbook,environmentId:process.env.AURA_ENVIRONMENT || undefined});
+  const executionSelection=executionSelectionFromTransport();
+  const executionContext=dryRun ? undefined : executionContextFromTransport(scope,executionSelection);
+  const result = await run({ workbook, onlyIds: ids, dryRun, createPageObjects, onLog: write,executionContext,executionSelection });
 
   // The one line that carries the runId to whoever is reading stdout.
   //

@@ -375,6 +375,16 @@ export function classify(evidence: TargetEvidence, role: TargetRole = 'action'):
     return decide('METHOD', 6, `authored, non-dynamic id "${node.id}"`);
   }
 
+  // A measured assertion reads state; it need not be an interactive control.
+  // An authored test hook distinguishes a capability from arbitrary visible data.
+  if (role === 'assertion' && !isContainerElement(node)
+      && !insideRepeatedContainer(evidence)
+      && (Object.entries(node.data ?? {}).some(([key, value]) =>
+        /^(data-testid|data-test-id|data-test|data-qa)$/.test(key) && Boolean(value))
+        || (/^h[1-6]$/.test(node.tag) && node.accessibleNameVerified === true
+          && Boolean(node.accessibleName))))
+    return decide('METHOD', 6, 'identity-proven assertion target with an authored test hook or verified heading name');
+
   // 7 - identified by its own text: that is a value, not an element.
   if ((node.text ?? '').trim() && !(node.accessibleName ?? '').trim() && !(node.id ?? '').trim())
     return decide('TEST_DATA', 7, 'identified only by its own text, which is data rather than identity');

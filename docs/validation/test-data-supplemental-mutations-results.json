@@ -1,0 +1,26 @@
+[
+  {
+    "args": [
+      "ai/testing/test-data-mutations.ts",
+      "--mutant=17"
+    ],
+    "exitCode": 0,
+    "milliseconds": 15497
+  },
+  {
+    "args": [
+      "ai/testing/test-data-mutations.ts",
+      "--mutant=18"
+    ],
+    "exitCode": 0,
+    "milliseconds": 76199
+  },
+  {
+    "args": [
+      "ai/testing/test-data-mutations.ts",
+      "--mutant=19"
+    ],
+    "exitCode": 1,
+    "milliseconds": 52068
+  }
+]

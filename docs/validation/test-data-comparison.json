@@ -1,0 +1,62 @@
+{
+  "changed": [
+    "ai/autocode/from-recording.ts",
+    "ai/autocode/verify.ts",
+    "ai/dashboard/code-workspace.ts",
+    "ai/dashboard/public/index.html",
+    "ai/dashboard/public/quarantine-workspace.js",
+    "ai/dashboard/quarantine-workspace.ts",
+    "ai/dashboard/server.ts",
+    "ai/dashboard/test-data.fixture.pending",
+    "ai/diagnostics/artifacts.ts",
+    "ai/excel/filter.ts",
+    "ai/excel/results.ts",
+    "ai/projects/scope.ts",
+    "tests-e2e/support/base-fixtures.ts",
+    "tests-e2e/support/env.ts",
+    "tests-e2e/support/steps.ts",
+    "playwright.excel.config.ts",
+    "docs/history/REMAINING.md"
+  ],
+  "added": [
+    "ai/dashboard/public/test-data.css",
+    "ai/dashboard/public/test-data.js",
+    "ai/dashboard/test-data.browser.fixture.ts",
+    "ai/dashboard/test-data.fixture.ts",
+    "ai/dashboard/test-data.security.fixture.ts",
+    "ai/diagnostics/artifacts/ksp/quarantine/1dc7dbc4-be89-4ef8-a632-9528d15a0412/original.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/1dc7dbc4-be89-4ef8-a632-9528d15a0412/revisions/442c14d2-a216-4d8f-b050-098fb5c7c88a.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/1dc7dbc4-be89-4ef8-a632-9528d15a0412/state.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/9589da11-81d3-4a6a-8c83-ecaaafde9e64/original.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/9589da11-81d3-4a6a-8c83-ecaaafde9e64/revisions/6198a1ca-30df-4245-98a3-bdd2ddcd3457.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/9589da11-81d3-4a6a-8c83-ecaaafde9e64/state.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/bd52f8dc-b382-4570-a58d-af7363ab39f1/original.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/bd52f8dc-b382-4570-a58d-af7363ab39f1/revisions/6f0d569d-8624-4f88-a446-2a846a73f824.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/bd52f8dc-b382-4570-a58d-af7363ab39f1/state.json",
+    "ai/test-data/encryption.ts",
+    "ai/test-data/execution.ts",
+    "ai/test-data/reporter.ts",
+    "ai/test-data/secrets.ts",
+    "ai/test-data/store.ts",
+    "ai/test-data/values.ts",
+    "ai/testing/test-data-mutations.ts"
+  ],
+  "applicationChanged": [],
+  "applicationAdded": [
+    "ai/diagnostics/artifacts/ksp/quarantine/1dc7dbc4-be89-4ef8-a632-9528d15a0412/original.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/1dc7dbc4-be89-4ef8-a632-9528d15a0412/revisions/442c14d2-a216-4d8f-b050-098fb5c7c88a.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/1dc7dbc4-be89-4ef8-a632-9528d15a0412/state.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/9589da11-81d3-4a6a-8c83-ecaaafde9e64/original.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/9589da11-81d3-4a6a-8c83-ecaaafde9e64/revisions/6198a1ca-30df-4245-98a3-bdd2ddcd3457.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/9589da11-81d3-4a6a-8c83-ecaaafde9e64/state.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/bd52f8dc-b382-4570-a58d-af7363ab39f1/original.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/bd52f8dc-b382-4570-a58d-af7363ab39f1/revisions/6f0d569d-8624-4f88-a446-2a846a73f824.json",
+    "ai/diagnostics/artifacts/ksp/quarantine/bd52f8dc-b382-4570-a58d-af7363ab39f1/state.json"
+  ],
+  "typescript": {
+    "before": 20,
+    "after": 20,
+    "introduced": [],
+    "removed": []
+  }
+}

@@ -73,6 +73,7 @@ export const SHARED_CAPABILITIES = [
   'validation engine',
   'AI gateway',
   'dashboard framework',
+  'managed test-data service and runtime profile resolution',
   'framework knowledge (ai/knowledge/framework)',
 ] as const;
 

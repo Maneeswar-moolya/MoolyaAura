@@ -29,7 +29,7 @@ import { PLACEHOLDER_TEXTS } from '../dashboard/placeholders';
 import { SCHEMA } from './metrics';
 import { buildCache } from '../excel/data-driven';
 import { type Mapping } from '../excel/mapping';
-import { activeScopePath, activeScope, scopedKey } from '../projects/scope';
+import { activeScopePath, activeScope, scopedKey, type ApplicationScope } from '../projects/scope';
 import { analyzeQuality, needsReview } from '../excel/quality';
 import type { ParseResult, TestCase } from '../excel/types';
 
@@ -268,8 +268,8 @@ export const GENERATION_SOURCES = [
  * different tree with this same layout. Today it resolves to `tests-e2e/pages`, byte
  * for byte what it always was, so no fingerprint moves and no budget reopens.
  */
-export function generationPageObjectDir(): string {
-  return path.relative(process.cwd(), activeScopePath('pagesDir', path.resolve(process.cwd(), 'tests-e2e', 'pages')))
+export function generationPageObjectDir(scope?: ApplicationScope): string {
+  return path.relative(process.cwd(), scope?.paths.pagesDir || activeScopePath('pagesDir', path.resolve(process.cwd(), 'tests-e2e', 'pages')))
       .split(path.sep).join('/');
 }
 
@@ -292,10 +292,10 @@ let cachedFingerprint: { key: string; value: string } | null = null;
  * The VALUE is unchanged; only the key is. No fingerprint moves, so no attempt budget
  * reopens as a result of this fix.
  */
-function fingerprintKey(root: string): string {
+function fingerprintKey(root: string, scope?: ApplicationScope): string {
   let applicationId = '';
   try {
-    applicationId = activeScope().applicationId;
+    applicationId = scope?.applicationId || activeScope().applicationId;
   } catch {
     // No registry, or a scope nobody chose. An empty component is a distinct key from
     // any real applicationId, so a legacy checkout memoises separately rather than
@@ -319,13 +319,13 @@ function fingerprintKey(root: string): string {
  * Cached per root for the life of the process: one run must see one framework, and
  * reading six files repeatedly for every row is waste.
  */
-export function frameworkFingerprint(root: string = process.cwd()): string {
-  const key = fingerprintKey(root);
+export function frameworkFingerprint(root: string = process.cwd(), scope?: ApplicationScope): string {
+  const key = fingerprintKey(root, scope);
   if (cachedFingerprint && cachedFingerprint.key === key)
     return cachedFingerprint.value;
   const hash = crypto.createHash('sha256');
   hash.update(`schema:${SCHEMA}\n`);
-  const pageObjectDir = generationPageObjectDir();
+  const pageObjectDir = generationPageObjectDir(scope);
   const pageObjects = (() => {
     const dir = path.join(root, pageObjectDir);
     if (!fs.existsSync(dir))
@@ -433,6 +433,7 @@ export function surveyWork(
   mapping: Mapping,
   state: State,
   onlyIds?: Set<string>,
+  scope?: ApplicationScope,
 ): Survey {
   const cache = buildCache(parsed, new Date().toISOString());
   const dataDriven = new Set<string>();
@@ -444,7 +445,7 @@ export function surveyWork(
 
   const unfit = needsReview(parsed, analyzeQuality(parsed));
   // Read once per survey: one run sees one framework.
-  const framework = frameworkFingerprint();
+  const framework = frameworkFingerprint(process.cwd(), scope);
 
   const work: WorkItem[] = [];
   const skipped: Array<{ testCaseId: string; reason: string }> = [];
@@ -494,7 +495,7 @@ export function surveyWork(
     }
 
     const print = fingerprint(testCase);
-    const previous = state[stateKeyFor(id)];
+    const previous = state[stateKeyFor(id, scope?.applicationId)];
 
     // Automation that a human wrote is never regenerated. Only specs this
     // module produced are its to replace.

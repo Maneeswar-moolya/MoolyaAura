@@ -1,4 +1,5 @@
 import '../testing/isolated-checkout';
+import { targetEvidence } from '../testing/synthetic-data';
 /**
  * P0.9 — the test's sign-in and the exploration browser's sign-in are two
  * different questions, and the answer to one is not the answer to the other.
@@ -241,10 +242,15 @@ async function checkIsolation(): Promise<void> {
   const after = digestRecordings();
   check('I: every recording and sidecar is byte-identical afterwards', before === after);
 
-  const recording = parseRecording("import { test, expect } from '@playwright/test';\ntest('synthetic journey', async ({ page }) => {\n  await page.goto('https://portal.fixture.invalid/apps');\n  await page.locator('#cancel_editor').click();\n});", { startUrl: '', browser: '', durationMs: 0 });
+  const recording = parseRecording("import { test, expect } from '@playwright/test';\ntest('synthetic journey', async ({ page }) => {\n  await page.goto('https://portal.fixture.invalid/apps'); // @aura-navigation intentional\n  await page.locator('#cancel_editor').click();\n});", { startUrl: '', browser: '', durationMs: 0 });
+  recording.evidence = { available: true, capturedAt: new Date(0).toISOString(), limits: {} as any,
+    targets: [targetEvidence("page.locator('#cancel_editor')", {
+      route: '/apps', documentId: 'synthetic-apps', elementRef: 'synthetic-apps:cancel',
+      target: { tag: 'button', id: 'cancel_editor', role: 'button', accessibleName: 'Cancel', accessibleNameVerified: true },
+    })] };
   const mapped = mapRecording(recording);
   const code = mapped.steps.flatMap(s => s.code).join(' ');
-  check('recorded navigation still precedes the declared action', code.indexOf('projectsPage.open()') >= 0 && code.indexOf('projectsPage.open()') < code.indexOf('projectsPage.cancelButton()'));
+  check('recorded navigation still precedes the declared action', code.indexOf('page.goto(') >= 0 && code.indexOf('page.goto(') < code.indexOf('projectsPage.cancelButton()'));
   check('no assertion is invented for a recording without a claim', recording.assertions.length === 0 && !code.includes('expect('));
 
   process.stdout.write('\n== K/L — LoginPage and knowledge selection are unchanged ==\n');

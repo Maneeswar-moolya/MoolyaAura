@@ -1,0 +1,87 @@
+{
+  "config": {
+    "rootDir": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e"
+  },
+  "suites": [
+    {
+      "title": "chromium",
+      "suites": [
+        {
+          "title": "generated\\ksp\\TC_SMOKE_039.spec.ts",
+          "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_039.spec.ts",
+          "line": 0,
+          "column": 0,
+          "suites": [
+            {
+              "title": "Test Cases",
+              "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_039.spec.ts",
+              "line": 17,
+              "column": 6,
+              "suites": [],
+              "specs": [
+                {
+                  "title": "TC_SMOKE_039 - Verify notifications header on the notifications",
+                  "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_039.spec.ts",
+                  "line": 18,
+                  "column": 7,
+                  "ok": true,
+                  "id": "9273c4646870f581580f-aa25c45eff1f97d4eb11",
+                  "tests": [
+                    {
+                      "projectName": "chromium",
+                      "expectedStatus": "passed",
+                      "status": "expected",
+                      "annotations": [
+                        {
+                          "type": "execution-profile",
+                          "description": "{\"applicationId\":\"ksp\",\"environmentId\":\"stg\",\"testCaseId\":\"TC_SMOKE_039\",\"executionRowId\":\"override-1-1\",\"credentialProfileId\":\"cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed\",\"credentialProfileName\":\"kspuserCommon\",\"role\":\"custom\",\"dataProfileId\":null,\"tags\":[\"recorded\",\"signed-in\",\"ksp\"]}"
+                        },
+                        {
+                          "type": "test-case-id",
+                          "description": "TC_SMOKE_039"
+                        },
+                        {
+                          "type": "module",
+                          "description": ""
+                        },
+                        {
+                          "type": "scenario",
+                          "description": "Verify notifications header on the notifications"
+                        },
+                        {
+                          "type": "source",
+                          "description": "ksp-test-cases.xlsx :: Test Cases"
+                        }
+                      ],
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 52730,
+                          "startTime": "2026-09-15T11:47:18.406Z",
+                          "retry": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "attachments": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "specs": []
+        }
+      ],
+      "specs": []
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-15T11:47:15.343Z",
+    "duration": 56483.892
+  }
+}

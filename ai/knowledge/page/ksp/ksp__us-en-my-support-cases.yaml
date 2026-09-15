@@ -1,0 +1,25 @@
+# ksp us en my support cases page - route /us/en/my-support-cases.
+#
+# Created by the framework from the first recording made on this screen. The id is
+# the canonical identity for this application and route (ai/knowledge/canonical.ts),
+# so one screen resolves to exactly one file and a later exploration extends this
+# one rather than writing a second.
+#
+# Only what a recording established is written here. Nothing describes what the
+# screen is for, because nothing has explored it yet.
+
+page:
+  id: ksp__us-en-my-support-cases
+  name: "ksp us en my support cases page"
+  route: /us/en/my-support-cases
+
+elements:
+  comments0_button_state:
+    usage: assertion
+    description: msc-comments-nav-link contains "Comments (0)" - read on the UsEnMySupportCasesPage screen.
+    role: button
+    accessible_name: Comments (0)
+    page_object: UsEnMySupportCasesPage
+    page_object_method: comments0ButtonState
+    locator_strategy: "page.getByRole('button', { name: 'Comments (0)', exact: true })"
+

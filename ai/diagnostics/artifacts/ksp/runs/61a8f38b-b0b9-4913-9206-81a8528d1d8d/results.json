@@ -1,0 +1,96 @@
+{
+  "config": {
+    "rootDir": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e"
+  },
+  "suites": [
+    {
+      "title": "chromium",
+      "suites": [
+        {
+          "title": "generated\\ksp\\TC_SMOKE_026.spec.ts",
+          "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts",
+          "line": 0,
+          "column": 0,
+          "suites": [
+            {
+              "title": "Test Cases",
+              "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts",
+              "line": 10,
+              "column": 6,
+              "suites": [],
+              "specs": [
+                {
+                  "title": "TC_SMOKE_026 - Log In â€” form contains \"Email:\"",
+                  "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts",
+                  "line": 11,
+                  "column": 7,
+                  "ok": false,
+                  "id": "a2c97442559000715194-f24bfb87b8db2bd528e8",
+                  "tests": [
+                    {
+                      "projectName": "chromium",
+                      "expectedStatus": "passed",
+                      "status": "unexpected",
+                      "annotations": [
+                        {
+                          "type": "execution-profile",
+                          "description": "{\"applicationId\":\"ksp\",\"environmentId\":\"stg\",\"testCaseId\":\"TC_SMOKE_026\",\"executionRowId\":\"override-1-1\",\"credentialProfileId\":\"cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed\",\"credentialProfileName\":\"kspuserCommon\",\"role\":\"custom\",\"dataProfileId\":null,\"tags\":[\"ksp\"]}"
+                        },
+                        {
+                          "type": "test-case-id",
+                          "description": "TC_SMOKE_026"
+                        },
+                        {
+                          "type": "module",
+                          "description": ""
+                        },
+                        {
+                          "type": "scenario",
+                          "description": "Log In â€” form contains \"Email:\""
+                        },
+                        {
+                          "type": "source",
+                          "description": "ksp-test-cases.xlsx :: Test Cases"
+                        }
+                      ],
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 52983,
+                          "startTime": "2026-09-14T04:59:21.503Z",
+                          "retry": 0,
+                          "errors": [
+                            {
+                              "message": "LocatorPolicyError: UI_OPERATION_TIMEOUT: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('form')\nTimeout: 39999ms\n\u001b[32m- Expected substring  -  1\u001b[39m\n\u001b[31m+ Received string     + 18\u001b[39m\n\n\u001b[32m- __autocode_mutant_no_match__\u001b[39m\n\u001b[31m+\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+                 Email:\u001b[39m\n\u001b[31m+ \u001b[43m                \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m                \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+                 Password:[REDACTED]\n\u001b[31m+ \u001b[43m                \u001b[49m\u001b[39m\n\u001b[31m+                 Forgot your password?\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+                 Log In\u001b[39m\n\u001b[31m+                 Cancel\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m            \u001b[49m\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 39999ms\u001b[22m\n\u001b[2m  - waiting for locator('form')\u001b[22m\n\u001b[2m    80 × locator resolved to <form class=\"my-3\" method=\"POST\" action=\"https://stgwww.keysight.com/ssoauth/auth_cred_submit\">…</form>\u001b[22m\n\u001b[2m       - unexpected value \"\u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m                Email:\u001b[22m\n\u001b[2m                \u001b[22m\n\u001b[2m                \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m                Password:[REDACTED]\n\u001b[2m                \u001b[22m\n\u001b[2m                Forgot your password?\u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m                Log In\u001b[22m\n\u001b[2m                Cancel\u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m            \"\u001b[22m\n",
+                              "stack": "LocatorPolicyError: UI_OPERATION_TIMEOUT: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('form')\nTimeout: 39999ms\n\u001b[32m- Expected substring  -  1\u001b[39m\n\u001b[31m+ Received string     + 18\u001b[39m\n\n\u001b[32m- __autocode_mutant_no_match__\u001b[39m\n\u001b[31m+\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+                 Email:\u001b[39m\n\u001b[31m+ \u001b[43m                \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m                \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+                 Password:[REDACTED]\n\u001b[31m+ \u001b[43m                \u001b[49m\u001b[39m\n\u001b[31m+                 Forgot your password?\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+                 Log In\u001b[39m\n\u001b[31m+                 Cancel\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m            \u001b[49m\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 39999ms\u001b[22m\n\u001b[2m  - waiting for locator('form')\u001b[22m\n\u001b[2m    80 × locator resolved to <form class=\"my-3\" method=\"POST\" action=\"https://stgwww.keysight.com/ssoauth/auth_cred_submit\">…</form>\u001b[22m\n\u001b[2m       - unexpected value \"\u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m                Email:\u001b[22m\n\u001b[2m                \u001b[22m\n\u001b[2m                \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m                Password:[REDACTED]\n\u001b[2m                \u001b[22m\n\u001b[2m                Forgot your password?\u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m                Log In\u001b[22m\n\u001b[2m                Cancel\u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m            \"\u001b[22m\n\n    at Proxy.<anonymous> (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\locator-policy.ts:208:82)\n    at C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts:33:7\n    at runStep (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\steps.ts:171:20)\n    at C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts:32:5"
+                            }
+                          ],
+                          "error": {
+                            "message": "LocatorPolicyError: UI_OPERATION_TIMEOUT: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('form')\nTimeout: 39999ms\n\u001b[32m- Expected substring  -  1\u001b[39m\n\u001b[31m+ Received string     + 18\u001b[39m\n\n\u001b[32m- __autocode_mutant_no_match__\u001b[39m\n\u001b[31m+\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+                 Email:\u001b[39m\n\u001b[31m+ \u001b[43m                \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m                \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+                 Password:[REDACTED]\n\u001b[31m+ \u001b[43m                \u001b[49m\u001b[39m\n\u001b[31m+                 Forgot your password?\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+                 Log In\u001b[39m\n\u001b[31m+                 Cancel\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m            \u001b[49m\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 39999ms\u001b[22m\n\u001b[2m  - waiting for locator('form')\u001b[22m\n\u001b[2m    80 × locator resolved to <form class=\"my-3\" method=\"POST\" action=\"https://stgwww.keysight.com/ssoauth/auth_cred_submit\">…</form>\u001b[22m\n\u001b[2m       - unexpected value \"\u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m                Email:\u001b[22m\n\u001b[2m                \u001b[22m\n\u001b[2m                \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m                Password:[REDACTED]\n\u001b[2m                \u001b[22m\n\u001b[2m                Forgot your password?\u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m                Log In\u001b[22m\n\u001b[2m                Cancel\u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m            \"\u001b[22m\n",
+                            "stack": "LocatorPolicyError: UI_OPERATION_TIMEOUT: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('form')\nTimeout: 39999ms\n\u001b[32m- Expected substring  -  1\u001b[39m\n\u001b[31m+ Received string     + 18\u001b[39m\n\n\u001b[32m- __autocode_mutant_no_match__\u001b[39m\n\u001b[31m+\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+                 Email:\u001b[39m\n\u001b[31m+ \u001b[43m                \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m                \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+                 Password:[REDACTED]\n\u001b[31m+ \u001b[43m                \u001b[49m\u001b[39m\n\u001b[31m+                 Forgot your password?\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+                 Log In\u001b[39m\n\u001b[31m+                 Cancel\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m              \u001b[49m\u001b[39m\n\u001b[31m+ \u001b[43m            \u001b[49m\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 39999ms\u001b[22m\n\u001b[2m  - waiting for locator('form')\u001b[22m\n\u001b[2m    80 × locator resolved to <form class=\"my-3\" method=\"POST\" action=\"https://stgwww.keysight.com/ssoauth/auth_cred_submit\">…</form>\u001b[22m\n\u001b[2m       - unexpected value \"\u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m                Email:\u001b[22m\n\u001b[2m                \u001b[22m\n\u001b[2m                \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m                Password:[REDACTED]\n\u001b[2m                \u001b[22m\n\u001b[2m                Forgot your password?\u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m                Log In\u001b[22m\n\u001b[2m                Cancel\u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m              \u001b[22m\n\u001b[2m            \"\u001b[22m\n\n    at Proxy.<anonymous> (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\locator-policy.ts:208:82)\n    at C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts:33:7\n    at runStep (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\steps.ts:171:20)\n    at C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts:32:5"
+                          },
+                          "stdout": [],
+                          "stderr": [],
+                          "attachments": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "specs": []
+        }
+      ],
+      "specs": []
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-14T04:59:17.817Z",
+    "duration": 57739.147000000004
+  }
+}

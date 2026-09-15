@@ -27,7 +27,7 @@ if (!process.env.AURA_SYNTHETIC_FIXTURE_ROOT && !process.argv.includes('--synthe
       recursive: true,
       filter: file => fs.statSync(file).isDirectory()
         ? !['recordings', 'reports', 'page', 'framework', 'quarantine', 'generations', 'runs'].includes(path.basename(file))
-        : /\.(?:ts|mjs|html|md)$/.test(file),
+        : /\.(?:ts|mjs|js|css|html|md)$/.test(file),
     });
     for (const dir of ['tests-e2e/support', 'tests-e2e/generic'])
       fs.cpSync(path.join(SOURCE, dir), path.join(root, dir), { recursive: true });
@@ -54,8 +54,10 @@ if (!process.env.AURA_SYNTHETIC_FIXTURE_ROOT && !process.argv.includes('--synthe
     const relative = path.relative(SOURCE, path.resolve(process.argv[1]));
     assert.ok(!relative.startsWith('..') && !path.isAbsolute(relative), 'fixture must belong to this checkout');
     const result = run(path.join(root, relative), process.argv.slice(2));
-    if (result.error) console.error(result.error);
-    code = result.status ?? 1;
+    const timedOut = (result.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT';
+    if (timedOut) console.error('Isolated fixture exceeded its 300000ms execution timeout.');
+    else if (result.error) console.error(result.error);
+    code = timedOut ? 124 : result.status ?? 1;
   } finally {
     removeFixtureTree(root);
     leaveIsolatedArtefactRoot();

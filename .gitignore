@@ -19,7 +19,8 @@ excel/.backups/
 
 # Data-driven cache: rebuilt from the workbook by globalSetup before every run,
 # so committing it would only ever create merge conflicts over derived data.
-ai/test-data/
+ai/test-data/*
+!ai/test-data/*.ts
 
 # Dashboard run history: derived records of local runs.
 ai/dashboard/runs/

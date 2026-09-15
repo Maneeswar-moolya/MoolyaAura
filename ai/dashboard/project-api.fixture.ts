@@ -1,4 +1,5 @@
 import '../testing/isolated-checkout';
+import { waitForFixtureHttp, stopFixtureProcess } from '../testing/process-fixture';
 /**
  * The dashboard's project/environment API, driven over real HTTP.
  *
@@ -126,14 +127,10 @@ async function main(): Promise<void> {
   console.log('\nDashboard project API - selection is required, never inferred\n');
   const registryFile = writeRegistry([FIXTUREAPP, FIXTURESHOP]);
   const child = startServer(registryFile);
-  child.stdout?.resume();
-  child.stderr?.resume();
+  let output = ''; child.stdout?.on('data', b => output += b); child.stderr?.on('data', b => output += b);
 
   try {
-    if (!await waitForServer(child)) {
-      check('the dashboard server started', false, `exit ${child.exitCode}`);
-      throw new Error('server did not start');
-    }
+    await waitForFixtureHttp(child, BASE + '/api/health', () => output);
     check('the dashboard server started', true, `port ${PORT}`);
 
     /* ---------------------------------------------------- 1/2. selection ---- */
@@ -240,13 +237,13 @@ async function main(): Promise<void> {
     check('serial: both guards run BEFORE the request body is read',
         runRoute.indexOf('if (active)') > 0 && !/readJsonBody/.test(runRoute),
         'nothing about the request can bypass them');
-    // One slot each, not a collection - a queue or a map would be the beginning of
-    // parallel execution, which this phase deliberately does not implement.
+    // One slot each, not a collection - the parent queue may contain multiple environments, but only one child owns
+    // the shared Playwright output at a time.
     check('serial: the run slot holds exactly one execution',
         /let active: \{[^}]*\} \| null = null;/s.test(serverSource));
     check('serial: recording and generation are refused during a run too',
-        /route === '\/api\/record\/start'[\s\S]{0,400}?if \(active\)/.test(serverSource)
-        && /startAutocode[\s\S]{0,200}?if \(active\)/.test(serverSource));
+        /route === '\/api\/record\/start'[\s\S]{0,400}?if \(active(?: \|\| executionBatch)?\)/.test(serverSource)
+        && /startAutocode[\s\S]{0,200}?if \(active(?: \|\| executionBatch)?\)/.test(serverSource));
 
     /* --------------------------- HISTORY SCOPE: an arbitrary id gets nothing --- */
     //
@@ -338,8 +335,7 @@ async function main(): Promise<void> {
         (html.match(/scopeQuery\(\)/g) ?? []).length >= 3,
         `${(html.match(/scopeQuery\(\)/g) ?? []).length} uses`);
   } finally {
-    child.kill();
-    await new Promise(resolve => setTimeout(resolve, 250));
+    await stopFixtureProcess(child);
   }
 
   /* ------------------------------------------------------------------ 12 ---- */
@@ -352,13 +348,10 @@ async function main(): Promise<void> {
   // rather than reasoned about.
   const soleFile = writeRegistry([FIXTUREAPP]);
   const soleChild = startServer(soleFile);
-  soleChild.stdout?.resume();
-  soleChild.stderr?.resume();
+  let soleOutput = ''; soleChild.stdout?.on('data', b => soleOutput += b); soleChild.stderr?.on('data', b => soleOutput += b);
   try {
-    if (!await waitForServer(soleChild)) {
-      check('12: the server started against a single-application registry', false,
-          `exit ${soleChild.exitCode}`);
-    } else {
+    await waitForFixtureHttp(soleChild, BASE + '/api/health', () => soleOutput);
+    {
       check('12: the server started against a single-application registry', true);
       const projects = await get('/api/projects');
       check('12: the page is told no selection is required',
@@ -386,8 +379,7 @@ async function main(): Promise<void> {
           complaint.slice(0, 70));
     }
   } finally {
-    soleChild.kill();
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await stopFixtureProcess(soleChild);
     fs.rmSync(TEMP_DIR, { recursive: true, force: true });
   }
 

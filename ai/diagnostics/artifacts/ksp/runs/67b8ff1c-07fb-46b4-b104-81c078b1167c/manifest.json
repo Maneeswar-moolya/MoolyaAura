@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "applicationId": "ksp",
+  "environmentId": "stg",
+  "testCaseId": "TC_SMOKE_025",
+  "runId": "2026-09-13T15-36-26-377Z-5uo6y2",
+  "attemptId": "67b8ff1c-07fb-46b4-b104-81c078b1167c",
+  "kind": "clean",
+  "createdAt": "2026-09-13T15:36:41.052Z",
+  "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_025.spec.ts",
+  "steps": [
+    {
+      "recordingStepKey": "action:0",
+      "label": "Open recorded destination",
+      "locator": "",
+      "provenance": "AUTO",
+      "executionMode": "AUTO",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_025.spec.ts",
+      "generatedLineStart": 22,
+      "generatedLineEnd": 24,
+      "statement": "{\n      await page.goto('https://stgsupport.keysight.com/us/en/home');\n    }"
+    },
+    {
+      "recordingStepKey": "action:1",
+      "label": "Click Log In",
+      "page": "ksp__us-en-home",
+      "pageObject": "LandingPage",
+      "method": "logIn",
+      "locator": "page.locator('header').getByRole('link', { name: 'Log In' })",
+      "provenance": "USER_CONFIRMED",
+      "executionMode": "PAGE_OBJECT_METHOD",
+      "validationStatus": "USER AUTHORED — NOT VALIDATED",
+      "implementation": "tests-e2e/pages/ksp/LandingPage.ts",
+      "implementationLine": 6,
+      "implementationSource": "logIn() { const page = this.page; return page.locator('header').getByRole('link', { name: 'Log In' }); }",
+      "calls": [
+        {
+          "pageObject": "LandingPage",
+          "method": "logIn",
+          "implementation": "tests-e2e/pages/ksp/LandingPage.ts",
+          "implementationLine": 6,
+          "implementationSource": "logIn() { const page = this.page; return page.locator('header').getByRole('link', { name: 'Log In' }); }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_025.spec.ts",
+      "generatedLineStart": 27,
+      "generatedLineEnd": 29,
+      "statement": "{\n      await (await landingPage.logIn()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "assertion:0",
+      "label": "form contains \"Email:\"",
+      "pageObject": "SsoauthLoginPage",
+      "method": "formState",
+      "locator": "page.locator('form')",
+      "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+      "implementationLine": 58,
+      "implementationSource": "formState() { const page = this.page; return page.locator('form'); }",
+      "calls": [
+        {
+          "pageObject": "SsoauthLoginPage",
+          "method": "formState",
+          "implementation": "tests-e2e/pages/ksp/ssoauth.login.page.ts",
+          "implementationLine": 58,
+          "implementationSource": "formState() { const page = this.page; return page.locator('form'); }"
+        }
+      ],
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_025.spec.ts",
+      "generatedLineStart": 32,
+      "generatedLineEnd": 34,
+      "statement": "{\n      await expect(await ssoauthLoginPage.formState()).toContainText('Email:');\n    }"
+    }
+  ],
+  "artifacts": [
+    "artifacts/.last-run.json",
+    "artifacts/generated-ksp-TC_SMOKE_025-673e6-In-â€”-form-contains-Email--chromium/aura-1ba2a1c9-1eec-4a72-8815-4a408e099f5b.png",
+    "artifacts/generated-ksp-TC_SMOKE_025-673e6-In-â€”-form-contains-Email--chromium/aura-7f1fe346-ee42-4c15-a465-c1bb2cbdc721.png",
+    "artifacts/generated-ksp-TC_SMOKE_025-673e6-In-â€”-form-contains-Email--chromium/trace.zip",
+    "executed-dependencies.json",
+    "generated-steps.json",
+    "results.json",
+    "steps/TC_SMOKE_025.0927a0d93e5c84af-1.json"
+  ],
+  "trace": "artifacts/generated-ksp-TC_SMOKE_025-673e6-In-â€”-form-contains-Email--chromium/trace.zip",
+  "tracePolicy": "Sanitized action timeline. Native DOM snapshots, response bodies, video and unmasked screenshots are excluded.",
+  "unavailable": []
+}

@@ -259,6 +259,38 @@ export function pageFilePathFor(owner: string): string {
  * Anchored on the fixtures module's own directory, because that is the layout root every
  * application already shares and it is resolved through the scope rather than spelled here.
  */
+/**
+ * THE ONE PAGE OBJECT SKELETON.
+ *
+ * Two paths used to emit Page Object source with different shapes: the abstraction engine
+ * wrote the full class with its explicit constructor, and the dashboard's manual creation
+ * wrote a bare `export class X extends BasePage {}` with neither the constructor nor the
+ * Page/HealingRecorder imports. Both RUN correctly - an implicit derived constructor
+ * forwards its arguments - so this was never a runtime defect, only two templates drifting
+ * apart in a repository where a Page Object is meant to look like a Page Object.
+ *
+ * Imports are computed from where the class is being written, never assumed, because a
+ * hard-coded relative path is correct for exactly one directory depth.
+ */
+export function pageObjectSkeleton(className: string, file: string, doc: string[], body: string[] = []): string {
+  const imports = frameworkImports(file);
+  return [
+    ...doc,
+    '',
+    "import type { Locator, Page } from '@playwright/test';",
+    '',
+    `import type { HealingRecorder } from '${imports.support}';`,
+    `import { BasePage } from '${imports.base}';`,
+    '',
+    `export class ${className} extends BasePage {`,
+    '  constructor(page: Page, healing?: HealingRecorder) {',
+    '    super(page, healing);',
+    '  }',
+    ...(body.length ? ['', ...body] : []),
+    '}',
+    '',
+  ].join('\n');
+}
 function frameworkImports(file: string): { base: string; support: string } {
   const layoutRoot = path.dirname(fixturesFile());
   const from = path.dirname(file);
@@ -281,8 +313,7 @@ export function renderPageObjectClass(
    */
   file: string,
 ): string {
-  const imports = frameworkImports(file);
-  return [
+  return pageObjectSkeleton(owner, file, [
     '/**',
     ` * ${owner} - created by the abstraction engine from measured recordings.`,
     ' *',
@@ -292,19 +323,7 @@ export function renderPageObjectClass(
     ' * document the press happened in, and that element is the one acted on. Nothing here',
     ' * was hand-composed, and nothing here narrows by position.',
     ' */',
-    '',
-    "import type { Locator, Page } from '@playwright/test';",
-    '',
-    `import type { HealingRecorder } from '${imports.support}';`,
-    `import { BasePage } from '${imports.base}';`,
-    '',
-    `export class ${owner} extends BasePage {`,
-    '  constructor(page: Page, healing?: HealingRecorder) {',
-    '    super(page, healing);',
-    '  }',
-    '}',
-    '',
-  ].join('\n');
+  ]);
 }
 
 /**
@@ -334,9 +353,9 @@ export function fixtureRegistered(source: string, owner: string): boolean {
  * Returns the complete new source, or null with a reason. Never partially applied:
  * all three edits or none.
  */
-export function registerFixture(source: string, owner: string):
+export function registerFixture(source: string, owner: string, locations?: { pageFile: string; fixtureFile: string }):
 { source: string } | { problem: string } {
-  if (NO_FIXTURE.has(owner))
+  if (NO_FIXTURE.has(owner) && (!locations || ['Base', 'BasePage'].includes(owner)))
     return { problem: `${owner} has no fixture by design, so no method may be written onto it` };
   if (fixtureRegistered(source, owner))
     return { source };
@@ -348,8 +367,8 @@ export function registerFixture(source: string, owner: string):
   // between the fixtures file's own directory and the class file is the only expression
   // that is correct in both layouts; POSIX separators because this is a module
   // specifier, not a filesystem path.
-  const target = pageFilePathFor(owner);
-  const fromDir = path.dirname(fixturesFile());
+  const target = locations?.pageFile ?? pageFilePathFor(owner);
+  const fromDir = path.dirname(locations?.fixtureFile ?? fixturesFile());
   const specifier = path.relative(fromDir, target).split(path.sep).join('/').replace(/\.ts$/, '');
   const relative = specifier.startsWith('.') ? specifier : `./${specifier}`;
   let next = source;
@@ -600,7 +619,7 @@ export function renderKnowledgeFile(canonicalId: string, route: string, pageName
     '',
     'page:',
     `  id: ${canonicalId}`,
-    `  name: ${pageName}`,
+    `  name: ${JSON.stringify(pageName)}`,
     `  route: ${route}`,
     '',
     'elements:',
@@ -1122,7 +1141,7 @@ export function applyProposals(
 }
 
 /** Insert one element block at the end of the `elements:` map, preserving the rest. */
-function appendElement(source: string, block: string): string {
+export function appendElement(source: string, block: string): string {
   const marker = /^elements:\s*$/m.exec(source);
   if (!marker)
     return `${source.replace(/\s*$/, '')}\n\n${block}`;

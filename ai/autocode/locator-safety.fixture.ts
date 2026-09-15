@@ -1,4 +1,5 @@
 import '../testing/isolated-checkout';
+import { targetEvidence } from '../testing/synthetic-data';
 /**
  * Two invariants, stated once and checked everywhere they can be broken.
  *
@@ -220,13 +221,19 @@ function checkRecordings(): void {
   const dashboard011 = summary.get('TC_ROW_B');
   check('14: the parameterised method is still reused',
       (dashboard011?.pageObject ?? 0) > 0, `${dashboard011?.pageObject ?? 0} page-object step(s)`);
-  const reuse = mapRecording(parseRecording([
+  const positiveRecording = parseRecording([
     "import { test, expect } from '@playwright/test';",
     '',
     "test('t', async ({ page }) => {",
     "  await page.getByRole('link', { name: 'Notifications' }).click();",
     '});',
-  ].join('\n'), { startUrl: '', browser: '', durationMs: 0 })).steps;
+  ].join('\n'), { startUrl: '', browser: '', durationMs: 0 });
+  positiveRecording.evidence = { available: true, capturedAt: new Date(0).toISOString(), limits: {} as any,
+    targets: [targetEvidence(positiveRecording.actions[0].locator, {
+      documentId: 'synthetic-notifications', elementRef: 'synthetic-notifications:bell',
+      target: { tag: 'a', role: 'link', accessibleName: 'Notifications', accessibleNameVerified: true },
+    })] };
+  const reuse = mapRecording(positiveRecording).steps;
   check('15: ordinary Page Object reuse is unaffected',
       reuse.some(step => step.kind === 'page-object' && /notificationsBell/.test(step.code.join(' '))));
 }

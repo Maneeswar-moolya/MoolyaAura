@@ -58,7 +58,7 @@ export function writeKnowledge(file: string, route: string, elements: SyntheticE
 }
 export function recordingSource(lines: string[]): string {
   return ["import { test, expect } from '@playwright/test';", "test('synthetic contract', async ({ page }) => {",
-    ...lines.map(line => `  ${line}`), '});', ''].join('\n');
+    ...lines.map(line => `  ${line}${line.includes('await page.goto(') && !line.includes('@aura-navigation') ? ' // @aura-navigation intentional' : ''}`), '});', ''].join('\n');
 }
 export function writeRecording(id: string, lines: string[], targets: TargetEvidence[] = [], options: { archived?: boolean; assertions?: unknown[] } = {}): void {
   const base = `ai/dashboard/recordings/${FIXTURE_APPLICATION}/${options.archived ? 'accepted/' : ''}${id}`;
@@ -68,4 +68,19 @@ export function writeRecording(id: string, lines: string[], targets: TargetEvide
     origin: { applicationId: FIXTURE_APPLICATION, environmentId: 'qa', baseUrl: FIXTURE_URL, testCaseId: id }, targets,
   }));
   if (options.assertions) writeFixtureFile(`${base}.assertions.json`, JSON.stringify(options.assertions));
+}
+
+/** Explicit measurements for the fictional portal's auth contract, never customer evidence. */
+export function syntheticLoginEvidence(extra: TargetEvidence[] = []): any {
+  const fields = [
+    ["page.getByRole('textbox', { name: 'Email' })", 'input', 'email', 'Email'],
+    ["page.getByRole('textbox', { name: 'Password' })", 'input', 'password', 'Password'],
+    ["page.getByRole('button', { name: 'Sign In', exact: true })", 'button', 'submit', 'Sign In'],
+  ];
+  return { available: true, capturedAt: new Date(0).toISOString(), limits: {},
+    origin: { applicationId: FIXTURE_APPLICATION, environmentId: 'qa', baseUrl: FIXTURE_URL },
+    targets: [...fields.map(([locator, tag, type, accessibleName], i) => targetEvidence(locator, {
+      documentId: 'synthetic-login', elementRef: `synthetic-login:${i}`, route: '/',
+      target: { tag, type, accessibleName, accessibleNameVerified: true },
+    })), ...extra] };
 }

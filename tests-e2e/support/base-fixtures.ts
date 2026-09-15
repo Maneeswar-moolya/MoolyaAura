@@ -30,7 +30,9 @@
  * from the active application's own registry declaration.
  */
 
-import { test as base, expect } from '@playwright/test';
+import { test as base } from '@playwright/test';
+import { expect, installLocatorPolicy, LOCATOR_TIMEOUT_MS } from './locator-policy';
+import { executionUrl } from './execution-environment';
 
 import {
   credentials, missingCredentialsReason, missingEmailReason,
@@ -38,6 +40,11 @@ import {
 } from './env';
 import { flushHealing, HealingRecorder } from './resilient-locator';
 import { flushSteps, runStep, StepRecorder } from './steps';
+import { diagnosticText } from '../../ai/diagnostics/artifacts';
+import { activeScope } from '../../ai/projects/scope';
+import { runtimeSelection, resolveExecutionData, type ExecutionProfile } from '../../ai/test-data/execution';
+import type { DataFields } from '../../ai/test-data/store';
+import { requiredData } from '../../ai/test-data/values';
 
 export type StepFn = <T>(title: string, body: () => Promise<T>) => Promise<T>;
 
@@ -48,6 +55,8 @@ export interface BaseFixtures {
   appCredentials: Credentials | null;
   /** Its registered address alone, for cases that need an account but not its password. */
   appEmail: string | null;
+  executionProfile: ExecutionProfile | null;
+  testData: DataFields;
 }
 
 /**
@@ -58,6 +67,12 @@ export interface BaseFixtures {
  * from the test TITLE, which is why every generated test is titled `TC_ID - Scenario`.
  */
 export const baseTest = base.extend<BaseFixtures>({
+  page: async ({ page, executionProfile }, use) => {
+    installLocatorPolicy(page);
+    const goto = page.goto.bind(page);
+    page.goto = (url, options) => goto(executionUrl(url), options);
+    await use(page);
+  },
   healing: async ({}, use, testInfo) => {
     const recorder = new HealingRecorder();
     await use(recorder);
@@ -76,8 +91,17 @@ export const baseTest = base.extend<BaseFixtures>({
 
   step: async ({ page }, use, testInfo) => {
     const recorder = new StepRecorder();
-    await use(<T>(title: string, body: () => Promise<T>) =>
-      runStep(recorder, page, testInfo, title, body));
+    if(process.env.AURA_DIAGNOSTICS==='1'){
+      const record=(type:string,message:string)=>{if(recorder.console.length<100)recorder.console.push({type,message:diagnosticText(message).slice(0,2000),at:new Date().toISOString(),recordingStepKey:recorder.currentStepKey});};
+      page.on('console',message=>{if(message.type()==='error')record('console',message.text());});
+      page.on('pageerror',error=>record('pageerror',error.message));
+    }
+    await use(<T>(title: string, body: () => Promise<T>) => {
+      // A later UI step must not inherit a nearly exhausted whole-test timeout.
+      // Each finite recorded step contributes at most one locator budget.
+      if (testInfo.timeout) testInfo.setTimeout(testInfo.timeout + LOCATOR_TIMEOUT_MS);
+      return runStep(recorder, page, testInfo, title, body);
+    });
 
     const testCaseId = /^((?:TC|TS)[_-][A-Za-z0-9_-]+)/.exec(testInfo.title)?.[1];
     if (testCaseId)
@@ -90,6 +114,18 @@ export const baseTest = base.extend<BaseFixtures>({
 
   appEmail: async ({}, use) => {
     await use(registeredEmail());
+  },
+  executionProfile: [async ({}, use, info) => {
+    const selection=runtimeSelection();
+    if(!selection){await use(null);return;}
+    const caseId=/^((?:TC|TS)[_-][A-Za-z0-9_-]+)/.exec(info.title)?.[1];
+    if(caseId!==selection.testCaseId)throw Error('DATA_CONFIGURATION_FAILURE: Execution row targets another test case.');
+    const resolved=resolveExecutionData(activeScope(),selection);
+    info.annotations.push({type:'execution-profile',description:JSON.stringify(resolved.executionProfile)});
+    await use(resolved.executionProfile);
+  }, {auto:true}],
+  testData: async ({executionProfile},use)=>{
+    const selection=runtimeSelection();await use(requiredData(selection?resolveExecutionData(activeScope(),selection).testData:{}));
   },
 });
 

@@ -21,6 +21,7 @@ interface RawResult {
 }
 
 interface RawTest {
+  annotations?: Array<{ type?: string; description?: string }>;
   status?: string;
   projectName?: string;
   results?: RawResult[];
@@ -41,6 +42,16 @@ interface RawSuite {
 }
 
 export interface ExecutionRecord {
+  executionContext?: import('../projects/execution-context').ExecutionContext;
+  sourceEnvironmentId?: string;
+  executionProfile?: import('../test-data/execution').ExecutionProfile;
+  quarantinePackageId?: string;
+  diagnostics?: string;
+  skipReason?: string;
+  applicationId?: string;
+  environmentId?: string;
+  runId?: string;
+  attempts?: Array<{ attemptNumber: number; status: string; durationMs: number; error?: string }>;
   testCaseId: string | null;
   testName: string;
   testFile: string;
@@ -58,6 +69,14 @@ export interface ExecutionRecord {
 const TEST_CASE_ID = /\b((?:TC|TS)[_-][A-Za-z0-9_-]+)\b/;
 
 const ROOT_CAUSES: Array<[RegExp, string]> = [
+  [/SOURCE_ENVIRONMENT_CONFIGURATION_FAILURE/i, 'SOURCE_ENVIRONMENT_CONFIGURATION_FAILURE'],
+  [/BROWSER_ENVIRONMENT_ACCESS_FAILURE/i, 'BROWSER_ENVIRONMENT_ACCESS_FAILURE'],
+  [/BROWSER_CONFIGURATION_FAILURE/i, 'BROWSER_CONFIGURATION_FAILURE'],
+  [/PAGE_READINESS_TIMEOUT/i, 'PAGE_READINESS_TIMEOUT'],
+  [/LOCATOR_NOT_FOUND_AFTER_READY/i, 'LOCATOR_NOT_FOUND_AFTER_READY'],
+  [/CREDENTIAL_CONFIGURATION_FAILURE/i, 'CREDENTIAL_CONFIGURATION_FAILURE'],
+  [/DATA_CONFIGURATION_FAILURE/i, 'DATA_CONFIGURATION_FAILURE'],
+  [/cloudflare.*(?:403|blocked)|(?:403|blocked).*cloudflare/i, 'ENVIRONMENT_FAILURE'],
   [/strict mode violation/i, 'Locator matched multiple elements (ambiguous selector)'],
   [/waiting for (?:locator|selector)|locator\.\w+: Timeout|element is not visible|not attached to the DOM/i,
     'Locator did not resolve - element missing, renamed or not yet rendered'],
@@ -137,6 +156,10 @@ export function parseResults(reportPath: string): ExecutionRecord[] {
       const executionStatus = toExecutionStatus(test.status);
 
       records.push({
+        skipReason: executionStatus === 'Skipped' ? (test.annotations ?? []).filter(item => item.type === 'skip').map(item => item.description || '').filter(Boolean).join(' | ') : undefined,
+        attempts: attempts.map(attempt => ({ attemptNumber: (attempt.retry ?? 0) + 1,
+          status: attempt.status || 'unknown', durationMs: attempt.duration || 0,
+          error: attempt.error?.message ? cleanMessage(attempt.error.message) : undefined })),
         testCaseId: TEST_CASE_ID.exec(spec.title ?? '')?.[1] ?? null,
         testName: spec.title ?? '(untitled)',
         testFile: (file || '').replace(/\\/g, '/'),

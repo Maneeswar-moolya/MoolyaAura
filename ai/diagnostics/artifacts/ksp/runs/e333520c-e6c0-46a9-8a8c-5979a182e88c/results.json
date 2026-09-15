@@ -1,0 +1,87 @@
+{
+  "config": {
+    "rootDir": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e"
+  },
+  "suites": [
+    {
+      "title": "chromium",
+      "suites": [
+        {
+          "title": "generated\\ksp\\TC_SMOKE_026.spec.ts",
+          "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts",
+          "line": 0,
+          "column": 0,
+          "suites": [
+            {
+              "title": "Test Cases",
+              "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts",
+              "line": 10,
+              "column": 6,
+              "suites": [],
+              "specs": [
+                {
+                  "title": "TC_SMOKE_026 - Log In â€” form contains \"Email:\"",
+                  "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts",
+                  "line": 11,
+                  "column": 7,
+                  "ok": true,
+                  "id": "a2c97442559000715194-f24bfb87b8db2bd528e8",
+                  "tests": [
+                    {
+                      "projectName": "chromium",
+                      "expectedStatus": "passed",
+                      "status": "expected",
+                      "annotations": [
+                        {
+                          "type": "execution-profile",
+                          "description": "{\"applicationId\":\"ksp\",\"environmentId\":\"stg\",\"testCaseId\":\"TC_SMOKE_026\",\"executionRowId\":\"override-1-1\",\"credentialProfileId\":\"cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed\",\"credentialProfileName\":\"kspuserCommon\",\"role\":\"custom\",\"dataProfileId\":null,\"tags\":[\"ksp\"]}"
+                        },
+                        {
+                          "type": "test-case-id",
+                          "description": "TC_SMOKE_026"
+                        },
+                        {
+                          "type": "module",
+                          "description": ""
+                        },
+                        {
+                          "type": "scenario",
+                          "description": "Log In â€” form contains \"Email:\""
+                        },
+                        {
+                          "type": "source",
+                          "description": "ksp-test-cases.xlsx :: Test Cases"
+                        }
+                      ],
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 40332,
+                          "startTime": "2026-09-14T04:58:30.321Z",
+                          "retry": 0,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "attachments": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "specs": []
+        }
+      ],
+      "specs": []
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-14T04:58:27.119Z",
+    "duration": 44246.437
+  }
+}

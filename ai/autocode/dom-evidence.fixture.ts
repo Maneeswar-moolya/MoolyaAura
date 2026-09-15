@@ -132,8 +132,9 @@ function main(): void {
     const counts = locatorMetrics(mapped);
     // P0.1 raised the review count for recordings that both CLICK and ASSERT on a
     // dynamic scope: neither can be resolved without measured uniqueness.
-    check(`${id}: still resolves offline exactly as before the sidecar existed`,
-        counts.needsReviewCount >= 1 && counts.existingPageObjectReuseCount >= 2,
+    check(`${id}: unavailable evidence preserves safe actions but cannot grant automatic reuse`,
+        counts.needsReviewCount >= 1 && counts.existingPageObjectReuseCount === 0
+        && mapped.steps.filter(step => step.kind === 'codegen-locator').length === 2,
         `review=${counts.needsReviewCount} reuse=${counts.existingPageObjectReuseCount}`);
   }
 

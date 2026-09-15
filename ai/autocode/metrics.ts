@@ -790,12 +790,15 @@ export function classifyOutcome(
  * the person's recording.
  */
 export type RecordedFailureClass =
+  | 'RECORDED_CONFIGURATION_FAILURE'
   /** Nothing was asserted. Not a generation failure: the row needs its author. */
   | 'RECORDED_NO_ASSERTION'
   /** A recorded locator cannot be replayed as written - a generated id, say. */
   | 'RECORDED_LOCATOR_NEEDS_REVIEW'
   /** An action carried no locator, so nothing could be mapped from it. */
   | 'RECORDED_UNMAPPED_ACTION'
+  | 'RECORDED_NAVIGATION_CAUSALITY_REQUIRED'
+  | 'RECORDED_AUTHENTICATION_CAPABILITY_REQUIRED'
   /** The spec could not be built, or was built from a recording we could not order. */
   | 'RECORDED_ASSEMBLY_ERROR'
   /** Built faithfully, ran, and did not pass. */
@@ -841,7 +844,7 @@ export type RecordedFailureClass =
  * about the page or the Page Object and never about the recording.
  */
 export function classifyRecordedFailure(input: {
-  block?: 'noArtifact' | 'noAssertion' | 'unmappedAction' | 'needsReview';
+  block?: 'noArtifact' | 'noAssertion' | 'unmappedAction' | 'needsReview' | 'navigationCausality' | 'authenticationCapability' | 'userBindingIncomplete';
   orderReconstructed: boolean;
   cleanStatus?: string;
   mutatedStatus?: string;
@@ -857,6 +860,8 @@ export function classifyRecordedFailure(input: {
   cleanCode?: string;
   reason: string;
 }): RecordedFailureClass | '' {
+  if (input.block === 'navigationCausality') return 'RECORDED_NAVIGATION_CAUSALITY_REQUIRED';
+  if (input.block === 'authenticationCapability') return 'RECORDED_AUTHENTICATION_CAPABILITY_REQUIRED';
   if (input.block === 'noAssertion')
     return 'RECORDED_NO_ASSERTION';
   if (input.block === 'needsReview')
@@ -868,6 +873,7 @@ export function classifyRecordedFailure(input: {
 
   if (input.mutatedStatus === 'Passed')
     return 'RECORDED_MUTATION_FAILURE';
+  if (input.cleanCode?.endsWith('_CONFIGURATION_FAILURE')) return 'RECORDED_CONFIGURATION_FAILURE';
 
   if (input.cleanStatus && input.cleanStatus !== 'Passed') {
     // DID IT RUN AT ALL. Asked first, because every classification below is a statement

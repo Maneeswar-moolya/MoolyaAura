@@ -31,6 +31,7 @@
  * which the spike measured at 10-49 ms and which are unaffected by the recorder.
  */
 
+import { NavigationJournal } from './navigation';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -57,6 +58,7 @@ import type { RecordedAssertion } from './recorder';
 import { parseChain } from '../autocode/locator-quality';
 import { readAllPageKnowledge } from '../knowledge/page-knowledge';
 import { activeScopePath } from '../projects/scope';
+import { RecordingPictures } from '../diagnostics/recording';
 
 const ROOT = process.cwd();
 
@@ -160,6 +162,7 @@ const captureFunction = new Function(`return ${ELEMENT_CAPTURE}`)() as (element:
  * to the returned session's evidence, never thrown.
  */
 export async function startLiveRecording(options: {
+  scope?: import('../projects/scope').ApplicationScope;
   url: string;
   browser: string;
   onLog?: (text: string) => void;
@@ -198,6 +201,9 @@ export async function startLiveRecording(options: {
   try {
     browser = await engine.launch({ headless: false });
     const context = await browser.newContext();
+    // The picture layer is handed the recorder-own-action rule rather than repeating it,
+    // so an observation is dropped for exactly the interactions the parser drops.
+    const pictures = options.scope ? new RecordingPictures(options.scope, isRecorderOwnAction) : undefined;
 
     // The capability check the whole design hangs on. Not a version test: the method
     // either exists on this object or it does not, and asking is cheaper and more
@@ -224,6 +230,7 @@ export async function startLiveRecording(options: {
       outputFile,
       handleSIGINT: false,
     });
+    if(pictures) await pictures.install(context);
 
     // Installed before the first page exists, so it is present on every page and
     // every navigation - including the one the recording starts with. Passive
@@ -255,9 +262,13 @@ export async function startLiveRecording(options: {
           return null;
         }
       });
-      await context.exposeBinding('__auraAssert', async (source: any, payload: any) =>
-        recordAssertionFromPicker(
-            source?.frame ?? source?.page, payload, picked, outputFile, metrics, pickCaptures));
+      await context.exposeBinding('__auraAssert', async (source: any, payload: any) => {
+        const index=picked.length;
+        if(pictures) await pictures.assertion(source.page,index);
+        const result=await recordAssertionFromPicker(source?.frame ?? source?.page, payload, picked, outputFile, metrics, pickCaptures);
+        if(!result.recorded&&pictures) pictures.assertionPictures.splice(index);
+        return result;
+      });
       await context.addInitScript({ content: ASSERTION_PICKER });
       metrics.pickerInstalled = true;
       // Said out loud, and only on success. P1.2 established that a recording had
@@ -273,7 +284,9 @@ export async function startLiveRecording(options: {
     }
 
     const page = await context.newPage();
-    await page.goto(options.url);
+    const navigation = new NavigationJournal();
+    await navigation.attach(page);
+    await navigation.navigateEntry(page, options.url);
     metrics.startupMs = Date.now() - startedAt;
     log(`live recorder ready in ${metrics.startupMs}ms (evidence capture is on)\n`);
 
@@ -333,6 +346,10 @@ export async function startLiveRecording(options: {
           metrics.failures++;
         }
       }
+      // Observation work the page reported is finished HERE, while the browser is still
+      // open, because a picture is taken from a page. Awaiting the work itself rather
+      // than a delay: there is nothing to guess about how long a screenshot takes.
+      if (pictures) await pictures.settle(page);
       await browser?.close().catch(() => {});
       fs.rmSync(outputFile, { force: true });
 
@@ -365,7 +382,20 @@ export async function startLiveRecording(options: {
         evidence = evidenceUnavailable(`evidence could not be serialised: ${String(error).slice(0, 120)}`);
       }
       metrics.targetCount = allTargets.length;
-      return { source, evidence, stateAssertions: picked };
+      await navigation.settle();
+      const retained = navigation.finish(source, options.url);
+      if(pictures) {
+        const {parseRecording}=require('./recorder') as typeof import('./recorder');
+        const parsed=parseRecording(retained.source,{startUrl:options.url,browser:options.browser,durationMs:Date.now()-startedAt,stateAssertions:picked});
+        evidence.captures=pictures.finish(parsed.actions,parsed.assertions);
+        // Said whether it worked or not. "No screenshot for this step" and "screenshots
+        // that could not be placed" are different facts and used to read identically.
+        if(pictures.attribution)evidence.captureAttribution=pictures.attribution;
+      }
+      return { source: retained.source, evidence, stateAssertions: picked.map(assertion => ({
+        ...assertion, afterActions: assertion.afterActions === undefined ? undefined
+          : assertion.afterActions + retained.insertedActions,
+      })) };
     };
 
     return {
@@ -1406,7 +1436,7 @@ function satisfiedBy(node: any, literal: string): boolean {
  * The parked entry this recorded locator describes - or null.
  *
  * A CHAIN DESCRIBES RELATIONSHIPS, NOT ONE ELEMENT. `#tc_summary_638717 >>
- * getByText('Line Chart…')` names a scope and then a thing inside it; the element the
+ * getByText('Line ChartÃ¢â‚¬Â¦')` names a scope and then a thing inside it; the element the
  * person clicked is the inner one, and the id belongs four levels above it. Requiring
  * every literal on the clicked element's own fingerprint is what discarded every entry
  * this mechanism ever parked.
@@ -1576,7 +1606,7 @@ export function claimParkedEntry(entries: any[], expression: string): any | null
         return false;
       // The final segment names the element itself. Earlier ones name what encloses it,
       // and the element is allowed to satisfy them too - a chain may re-state the thing
-      // it already reached (`locator('#id').getByText('…')` on the element carrying both).
+      // it already reached (`locator('#id').getByText('Ã¢â‚¬Â¦')` on the element carrying both).
       return wanted.every(literal => satisfiedBy(target, literal)
         || (!last && containers.some(node => satisfiedBy(node, literal))));
     });
@@ -1794,7 +1824,7 @@ export function literalsIn(expression: string): string[] {
  * WHY IT EXISTS. `buildLocator`'s segment regex only ever LOOKED FOR the calls it knows.
  * Anything else was not refused, it was stepped over: for
  *
- *   page.locator(".tabulator-row").filter({ hasText: "…" }).locator(".bugChecked")
+ *   page.locator(".tabulator-row").filter({ hasText: "Ã¢â‚¬Â¦" }).locator(".bugChecked")
  *
  * the two `locator(...)` calls matched and `.filter(...)` was skipped, so what the page
  * was asked to count was `page.locator(".tabulator-row").locator(".bugChecked")` - a
@@ -1956,7 +1986,7 @@ export function stringLiteral(token: string): string | null {
 }
 
 /**
- * An options object, read as key → raw token - or null when anything about it cannot be
+ * An options object, read as key Ã¢â€ â€™ raw token - or null when anything about it cannot be
  * reproduced: a key this call does not support, a nested object, a duplicate key.
  */
 export function readOptions(token: string, allowed: ReadonlySet<string>): Map<string, string> | null {

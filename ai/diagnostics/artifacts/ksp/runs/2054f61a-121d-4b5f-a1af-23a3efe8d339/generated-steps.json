@@ -1,0 +1,60 @@
+{
+  "steps": [
+    {
+      "recordingStepKey": "generated:25",
+      "label": "Open recorded destination",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 25,
+      "generatedLineEnd": 27,
+      "statement": "{\n      await page.goto('https://stgsupport.keysight.com/us/en/home');\n    }"
+    },
+    {
+      "recordingStepKey": "generated:29",
+      "label": "Use Log In",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 29,
+      "generatedLineEnd": 31,
+      "statement": "{\n      await (await initialLandingPage.logIn()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "generated:33",
+      "label": "Use Enter email",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 33,
+      "generatedLineEnd": 35,
+      "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "generated:37",
+      "label": "Enter account from configured credentials",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 37,
+      "generatedLineEnd": 39,
+      "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).fill(appCredentials.email);\n    }"
+    },
+    {
+      "recordingStepKey": "generated:41",
+      "label": "Enter password from configured credentials",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 41,
+      "generatedLineEnd": 43,
+      "statement": "{\n      await (await ssoauthLoginPage.passwordField()).fill(appCredentials.password);\n    }"
+    },
+    {
+      "recordingStepKey": "generated:45",
+      "label": "Use Log In",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 45,
+      "generatedLineEnd": 47,
+      "statement": "{\n      await (await ssoauthLoginPage.logInButton()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "generated:49",
+      "label": "dashboard-heading contains \"My Dashboard\"",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 49,
+      "generatedLineEnd": 51,
+      "statement": "{\n      await expect(await usEnHomePage.myDashboardState()).toContainText('My Dashboard');\n    }"
+    }
+  ]
+}

@@ -800,11 +800,53 @@ export interface DomEvidenceUnavailable {
   reason: string;
 }
 
-export type RecordingEvidence = DomEvidence | DomEvidenceUnavailable;
+export type RecordingEvidence = (DomEvidence | DomEvidenceUnavailable) & {
+  /** Observational pictures, never automatic target identity evidence. */
+  captures?: import('../diagnostics/artifacts').DiagnosticCapture[];
+  /**
+   * Whether those pictures could be attributed to the steps they describe.
+   *
+   * Additive and optional: a recording made before this was written says nothing here,
+   * which reads as unknown - never as "they were attributed".
+   */
+  captureAttribution?: import('../diagnostics/artifacts').CaptureAttribution;
+};
 
 /** The state every recording is in until something captures evidence for it. */
 export function evidenceUnavailable(reason: string): DomEvidenceUnavailable {
   return { available: false, reason: reason.trim() || 'no reason recorded' };
+}
+
+/**
+ * WHY THERE IS NO EVIDENCE, said accurately.
+ *
+ * "recorded before press-time capture existed" was reported for every evidence-less
+ * recording, which is only true of one of them. A recording made yesterday on the CODEGEN
+ * transport has no evidence either - codegen is a script generator, not an instrumented
+ * browser, and it can never supply interaction-time identity or a navigation journal. Telling
+ * someone to treat a recording they just made as a legacy artifact sends them to re-record it
+ * the same way, with the same result. The transport is the thing to change, so the transport
+ * is what the message has to name.
+ *
+ * Read from the evidence's OWN recorded reason. Nothing is inferred from dates.
+ */
+export type EvidenceAbsence =
+  | 'CODEGEN_NO_BROWSER_EVIDENCE'
+  | 'CURRENT_RECORDING_EVIDENCE_CAPTURE_FAILED'
+  | 'LEGACY_NO_EVIDENCE';
+export function evidenceAbsence(evidence: unknown): { code: EvidenceAbsence; reason: string } {
+  const recorded = String((evidence as { reason?: unknown } | null)?.reason ?? '').trim();
+  if (/codegen/i.test(recorded))
+    return { code: 'CODEGEN_NO_BROWSER_EVIDENCE',
+      reason: 'this recording was made on the CODEGEN transport, which generates a script and '
+        + 'never observes the browser, so it supplies no interaction-time identity and no '
+        + 'navigation journal. Re-record it with the live recorder' };
+  if (recorded)
+    return { code: 'CURRENT_RECORDING_EVIDENCE_CAPTURE_FAILED',
+      reason: `live capture ran but produced nothing admissible: ${recorded}` };
+  return { code: 'LEGACY_NO_EVIDENCE',
+    reason: 'the recording carries no DOM evidence sidecar at all (recorded before press-time '
+      + 'capture existed)' };
 }
 
 /* ------------------------------------------------------------------ safety */

@@ -1,0 +1,20 @@
+[
+  {
+    "file": "ai/testing/user-confirmed-auth-mutations.ts",
+    "exitCode": 0,
+    "seconds": 53.231,
+    "log": "docs/validation/auth-binding-user-confirmed-auth-mutations.log"
+  },
+  {
+    "file": "ai/testing/explicit-authoring-mutations.ts",
+    "exitCode": 0,
+    "seconds": 125.894,
+    "log": "docs/validation/auth-binding-explicit-authoring-mutations.log"
+  },
+  {
+    "file": "ai/testing/recorded-flow-mutations.ts",
+    "exitCode": 0,
+    "seconds": 95.588,
+    "log": "docs/validation/auth-binding-recorded-flow-mutations.log"
+  }
+]

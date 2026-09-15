@@ -1,0 +1,9 @@
+KILLED foreign artifact ownership: Foreign project artifact refused
+KILLED source-to-target URL binding: Target environment execution must pass
+KILLED retry artifact collision: Both attempts retain their own step evidence
+KILLED explicit dashboard runner scope: Scoped workbook API must load
+KILLED explicit dashboard survey scope: Scoped authoring must activate without ambient project
+PASS all 5 dashboard/environment source mutants were killed by their intended behavioral gates
+
+Subsequent recorder-visibility mutation:
+KILLED recording note visibility: Detected authentication is visible in the actual review

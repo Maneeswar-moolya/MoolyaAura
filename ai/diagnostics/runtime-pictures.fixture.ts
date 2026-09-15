@@ -1,0 +1,45 @@
+import '../testing/isolated-checkout';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { workspaceData } from '../testing/workspace-data';
+import { diagnosticRoot, containedFile } from './artifacts';
+import { gate } from '../autocode/verify';
+const {scope}=workspaceData();
+fs.copyFileSync('excel/fixture-cases.xlsx','excel/north.xlsx');
+fs.writeFileSync(scope.paths.fixturesFile,fs.readFileSync(scope.paths.fixturesFile,'utf8').replace('interface Fixtures {','interface Fixtures {\n  step: import("./support/base-fixtures").StepFn;'));
+const file=path.join(scope.paths.generatedDir,'TC_DIAGNOSTIC.spec.ts'),source=`import {test,expect,trace} from '../../north.fixtures';
+test('TC_DIAGNOSTIC - The saved state is visible',async({page,step})=>{
+ await trace({testCaseId:'TC_DIAGNOSTIC',module:'Diagnostics',scenario:'The saved state is visible',sourceWorkbook:'north.xlsx',sourceWorksheet:'Cases'});
+ await page.setContent('<button data-testid="continue">Continue</button>');
+ // @aura-step {"recordingStepKey":"action:0","label":"Continue","pageObject":"ManualControls","method":"continueButton","provenance":"USER_CONFIRMED","validationStatus":"USER AUTHORED — NOT VALIDATED"}
+ await step('Continue',async()=>{await page.getByTestId('continue').click();});
+ // @aura-step {"recordingStepKey":"assertion:0","label":"Saved state"}
+ await step('Saved state',async()=>{await expect(page.getByRole('heading',{name:'Saved'})).toBeVisible({timeout:100});});
+});
+`;
+fs.writeFileSync(file,source);
+const result=gate(path.relative(process.cwd(),file).replace(/\\/g,'/'),'TC_DIAGNOSTIC','The saved state is visible','excel/north.xlsx');
+assert.equal(result.detail.cleanStatus,'Failed','actual synthetic runtime failure');
+const folder=containedFile(diagnosticRoot(scope),result.detail.diagnostics!);
+assert.equal(fs.readFileSync(path.join(folder,'executed.spec.ts.txt'),'utf8'),source,'exact executed source retained');
+const manifest=JSON.parse(fs.readFileSync(path.join(folder,'manifest.json'),'utf8'));
+const dependencies=JSON.parse(fs.readFileSync(path.join(folder,'executed-dependencies.json'),'utf8'));
+assert.equal(dependencies.files['tests-e2e/north.fixtures.ts'],fs.readFileSync(scope.paths.fixturesFile,'utf8'),'executed application fixture snapshot retained exactly');
+const logs=manifest.artifacts.filter((file:string)=>file.startsWith('steps/')&&file.endsWith('.json')).flatMap((file:string)=>JSON.parse(fs.readFileSync(path.join(folder,file),'utf8')).steps);
+assert.equal(logs.length,2,'actual runtime step records retained');
+const failed=logs.find((step:any)=>step.status==='failed');
+assert.equal(manifest.locatorTimeoutMs,40000,'normal verifier retains the universal runtime timeout');
+assert.equal(failed.locatorTimeoutMs,40000,'runtime step retains configured maximum');
+assert.equal(failed.locatorWaits[0].finalMatchCount,0,'timeout diagnostics retain the final target count');
+assert.ok(failed.locatorWaits[0].readiness,'timeout diagnostics retain observed readiness');
+assert.equal(failed.diagnostic.recordingStepKey,'assertion:0','failure screenshots keep recording step correlation');
+assert.equal(failed.diagnostic.generatedLineStart,8,'failure maps to exact generated source line');
+assert.deepEqual(failed.captures.map((capture:any)=>capture.captureType),['PRE_STEP','FAILURE'],'pre-step and failure screenshots retained');
+assert.ok(failed.captures.every((capture:any)=>capture.recordingStepKey===failed.diagnostic.recordingStepKey),'failure screenshots keep structural step correlation');
+for(const capture of failed.captures)assert.ok(manifest.artifacts.some((file:string)=>file.endsWith('/'+capture.artifact)),'capture references existing retained image');
+assert.match(failed.error,/expect|visible|locator/i,'runtime error retained');
+assert.ok(manifest.trace&&fs.existsSync(path.join(folder,manifest.trace)),'sanitized Playwright trace retained');
+assert.equal(logs[0].diagnostic.provenance,'USER_CONFIRMED','runtime diagnostics do not replace user mapping');
+assert.equal(fs.readFileSync(file,'utf8'),source,'runtime failure never silently replaces user-authored locator');
+console.log('PASS runtime PRE_STEP/FAILURE pictures, exact source/step correlation, error and sanitized trace');

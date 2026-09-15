@@ -1,0 +1,17 @@
+PASS assertion heading bootstraps deterministically
+PASS missing assertion identity is refused
+PASS semantic review accepts only the proven bootstrap owner
+PASS authentication composes proven non-LoginPage controls
+PASS deliberate navigation retained and redirects never replayed
+PASS intentional navigation cannot emit session-bearing destinations
+PASS navigation is excluded from element lifecycle
+PASS bootstrap creates scoped class and next pass reuses it
+PASS unproven or foreign authentication cannot use credentials
+PASS runtime credentials stay application scoped
+PASS missing assertion evidence blocks its emitted claim
+PASS old navigation fails honestly without leaking transient URLs
+PASS blocked mapping retains evidence and never writes a guessed spec
+PASS composed auth executes asynchronous controls
+PASS arbitrary proven composite and underlying element lifecycle
+PASS orchestration fails closed on an unselected source environment before any child starts
+PASS real orchestration blocks without AI and retains recording evidence

@@ -1,0 +1,20 @@
+# User-authored logical Page. Route is context, not identity.
+page:
+  id: ksp__authored_60c3779ada0c19fab51e
+  application_id: "ksp"
+  logical_name: "ksp_Account-Settings"
+  name: "ksp_Account-Settings"
+  route: ""
+  purpose: ""
+page_objects:
+  - "Notifications"
+elements:
+  Notifications_notificationsHeader:
+    usage: assertion
+    description: "c-notifications-settings-header"
+    page_object: Notifications
+    page_object_method: notificationsHeader
+    locator_strategy: "page.locator('c-notifications-settings-header')"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+

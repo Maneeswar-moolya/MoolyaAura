@@ -16,6 +16,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { workbookOwner } from '../projects/registry';
+import { resolveScope } from '../projects/scope';
+import { executionContextFromTransport, executionSelectionFromTransport, executionEnvironment, executionBrowserArgs, preflightAuthentication, type ExecutionContextInput } from '../projects/execution-context';
 
 import { applyFilter, summarize, toList } from './filter';
 import { writeExecutionReport, type ReportSummary } from './execution-report';
@@ -538,9 +540,21 @@ async function commandRun(args: Args): Promise<void> {
       '  --playwright-arg=--headed --playwright-arg=--project=firefox');
   }
   const extra = extraFlag ?? [];
+  const scope=resolveScope({applicationId:workbookOwner(parsed.workbookPath),environmentId:process.env.AURA_ENVIRONMENT || undefined});
+  const selection=executionSelectionFromTransport();
+  const overrides:ExecutionContextInput={};
+  const source=flagValue(args,'source-environment'); if(source!==undefined)overrides.sourceEnvironmentId=source;
+  // Legacy CLI flags remain explicit choices; dashboard children carry the complete context.
+  if(!process.env.AURA_EXECUTION_CONTEXT){
+    if(extra.includes('--headed'))overrides.headed=true;
+    const project=extra.find(arg=>arg.startsWith('--project='));if(project)overrides.browserEngine=project.slice('--project='.length) as ExecutionContextInput['browserEngine'];
+  }
+  const context=executionContextFromTransport(scope,selection,overrides);
+  preflightAuthentication(scope,selection,runnable.some(testCase=>/\bappCredentials\b/.test(fs.readFileSync(path.resolve(mapping[testCase.testCaseId].testFile!),'utf8'))));
   const run = spawnSync(process.execPath,
       [require.resolve('@playwright/test/cli'), 'test',
-        '--config=playwright.excel.config.ts', '--grep', pattern, ...extra],
+        '--config=playwright.excel.config.ts', '--grep', pattern,
+        ...extra.filter(arg=>arg!=='--headed'&&!arg.startsWith('--project=')),...executionBrowserArgs(context)],
       {
         stdio: 'inherit',
         shell: false,
@@ -556,7 +570,7 @@ async function commandRun(args: Args): Promise<void> {
           // and `results.ts` - which recovers the ID from the test title - files the
           // wrong verdict against this workbook's row. Taken from the workbook's
           // DECLARED owner, never from its file name.
-          AURA_APPLICATION: workbookOwner(parsed.workbookPath),
+          ...executionEnvironment(context,selection),
         },
       });
 

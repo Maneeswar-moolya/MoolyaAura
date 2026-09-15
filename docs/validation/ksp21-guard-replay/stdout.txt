@@ -1,0 +1,5 @@
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › docs\validation\ksp21-guard-replay\case.spec.ts:14:7 › Test Cases › TC_SMOKE_021 - Log In â€” dashboard-heading contains "My Dashboard"
+  1 skipped

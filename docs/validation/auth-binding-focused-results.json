@@ -1,0 +1,32 @@
+[
+  {
+    "file": "ai/autocode/user-confirmed-auth.fixture.ts",
+    "exitCode": 0,
+    "seconds": 4.439,
+    "log": "docs/validation/auth-binding-user-confirmed-auth.fixture.log"
+  },
+  {
+    "file": "ai/dashboard/explicit-authoring.fixture.ts",
+    "exitCode": 0,
+    "seconds": 20.728,
+    "log": "docs/validation/auth-binding-explicit-authoring.fixture.log"
+  },
+  {
+    "file": "ai/autocode/ownership-reuse.fixture.ts",
+    "exitCode": 0,
+    "seconds": 3.864,
+    "log": "docs/validation/auth-binding-ownership-reuse.fixture.log"
+  },
+  {
+    "file": "ai/autocode/recorded-flow.fixture.ts",
+    "exitCode": 0,
+    "seconds": 4.594,
+    "log": "docs/validation/auth-binding-recorded-flow.fixture.log"
+  },
+  {
+    "file": "ai/dashboard/authoring-browser.fixture.ts",
+    "exitCode": 0,
+    "seconds": 47.723,
+    "log": "docs/validation/auth-binding-authoring-browser.fixture.log"
+  }
+]

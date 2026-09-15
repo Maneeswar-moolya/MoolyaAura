@@ -30,6 +30,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { parseExpectReceiver, parseRecording, assertionPhrase, type RecordedAssertion } from './recorder';
+import { targetEvidence } from '../testing/synthetic-data';
 import { mapRecording } from '../autocode/from-recording';
 import { activeRecordingsDir as RECORDINGS } from '../projects/scope';
 
@@ -141,7 +142,8 @@ function generatedFor(assertion: Partial<RecordedAssertion>): string {
       type: 'visible', target: '#a', locator: `page.locator('#a')`, locatorStrategy: 'css',
       value: null, afterActions: 1, ...assertion,
     }],
-    evidence: { available: false, reason: 'fixture' },
+    evidence: { available: true, capturedAt: new Date(0).toISOString(), limits: {},
+      targets: [targetEvidence(assertion.locator ?? `page.locator('#a')`)] },
   };
   const mapping = mapRecording(recording as never);
   return (mapping.steps as Array<{ code?: string[] }>)

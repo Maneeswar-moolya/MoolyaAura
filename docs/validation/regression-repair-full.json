@@ -1,0 +1,1270 @@
+{
+  "started": "2026-09-13T05:03:09.535Z",
+  "finished": "2026-09-13T05:12:28.765Z",
+  "suite": "framework-contracts",
+  "liveApplicationValidation": false,
+  "total": 90,
+  "completed": 90,
+  "results": [
+    {
+      "fixture": "ai/autocode/abstraction.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/abstraction.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 6644
+    },
+    {
+      "fixture": "ai/autocode/abstraction/lifecycle.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/abstraction/lifecycle.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3605
+    },
+    {
+      "fixture": "ai/autocode/abstraction/semantic.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/abstraction/semantic.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3575
+    },
+    {
+      "fixture": "ai/autocode/accessible-name-stability.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/accessible-name-stability.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3015
+    },
+    {
+      "fixture": "ai/autocode/action-locator.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/action-locator.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3501
+    },
+    {
+      "fixture": "ai/autocode/application-neutral.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/application-neutral.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3729
+    },
+    {
+      "fixture": "ai/autocode/apps-readiness.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/apps-readiness.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3167
+    },
+    {
+      "fixture": "ai/autocode/archived-evidence-gate.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/archived-evidence-gate.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3660
+    },
+    {
+      "fixture": "ai/autocode/assertion-context.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/assertion-context.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3213
+    },
+    {
+      "fixture": "ai/autocode/assertion-persistence.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/assertion-persistence.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3485
+    },
+    {
+      "fixture": "ai/autocode/assertion-pick-reuse.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/assertion-pick-reuse.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3958
+    },
+    {
+      "fixture": "ai/autocode/assertion-provenance.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/assertion-provenance.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3708
+    },
+    {
+      "fixture": "ai/autocode/attempt-budget.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/attempt-budget.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3988
+    },
+    {
+      "fixture": "ai/autocode/attribute-order-redaction.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/attribute-order-redaction.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3201
+    },
+    {
+      "fixture": "ai/autocode/candidate-durability.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/candidate-durability.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3231
+    },
+    {
+      "fixture": "ai/autocode/clicked-target.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/clicked-target.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3404
+    },
+    {
+      "fixture": "ai/autocode/content-candidates.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/content-candidates.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3221
+    },
+    {
+      "fixture": "ai/autocode/contextual-locator.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/contextual-locator.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3419
+    },
+    {
+      "fixture": "ai/autocode/dom-evidence.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/dom-evidence.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3544
+    },
+    {
+      "fixture": "ai/autocode/evidence-consumption.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/evidence-consumption.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3655
+    },
+    {
+      "fixture": "ai/autocode/evidence-persistence.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/evidence-persistence.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4098
+    },
+    {
+      "fixture": "ai/autocode/evidence-sidecar.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/evidence-sidecar.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3955
+    },
+    {
+      "fixture": "ai/autocode/evidence-timing.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/evidence-timing.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3618
+    },
+    {
+      "fixture": "ai/autocode/exact-nonexact.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/exact-nonexact.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3340
+    },
+    {
+      "fixture": "ai/autocode/exploration-auth.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/exploration-auth.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4430
+    },
+    {
+      "fixture": "ai/autocode/live-evidence.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/live-evidence.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3455
+    },
+    {
+      "fixture": "ai/autocode/locator-cardinality.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/locator-cardinality.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3788
+    },
+    {
+      "fixture": "ai/autocode/locator-decision-order.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/locator-decision-order.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4716
+    },
+    {
+      "fixture": "ai/autocode/locator-quality-benchmark.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/locator-quality-benchmark.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3546
+    },
+    {
+      "fixture": "ai/autocode/locator-quality.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/locator-quality.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4439
+    },
+    {
+      "fixture": "ai/autocode/locator-safety.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/locator-safety.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3620
+    },
+    {
+      "fixture": "ai/autocode/locator-validation.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/locator-validation.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3704
+    },
+    {
+      "fixture": "ai/autocode/notifications-knowledge.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/notifications-knowledge.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3800
+    },
+    {
+      "fixture": "ai/autocode/ownership-reuse.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/ownership-reuse.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4020
+    },
+    {
+      "fixture": "ai/autocode/parameter.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/parameter.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 5118
+    },
+    {
+      "fixture": "ai/autocode/po-discovery.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/po-discovery.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3664
+    },
+    {
+      "fixture": "ai/autocode/positional-recovery.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/positional-recovery.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3363
+    },
+    {
+      "fixture": "ai/autocode/preaction-claim.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/preaction-claim.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3557
+    },
+    {
+      "fixture": "ai/autocode/proven-locator-reuse.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/proven-locator-reuse.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3610
+    },
+    {
+      "fixture": "ai/autocode/recorded-flow.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/recorded-flow.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4860
+    },
+    {
+      "fixture": "ai/autocode/recorded-lifecycle.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/recorded-lifecycle.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4639
+    },
+    {
+      "fixture": "ai/autocode/recorder-language.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/recorder-language.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3468
+    },
+    {
+      "fixture": "ai/autocode/scoped-dynamic-id.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/scoped-dynamic-id.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3438
+    },
+    {
+      "fixture": "ai/autocode/semantic-candidates.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/semantic-candidates.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3567
+    },
+    {
+      "fixture": "ai/autocode/sibling-evidence.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/sibling-evidence.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3292
+    },
+    {
+      "fixture": "ai/autocode/stable-id-candidate.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/stable-id-candidate.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3308
+    },
+    {
+      "fixture": "ai/autocode/strategy-contract.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/strategy-contract.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3451
+    },
+    {
+      "fixture": "ai/autocode/strict-mode-locator.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/strict-mode-locator.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4454
+    },
+    {
+      "fixture": "ai/autocode/target-snapshot.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/target-snapshot.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3389
+    },
+    {
+      "fixture": "ai/autocode/title-identity.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/title-identity.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3605
+    },
+    {
+      "fixture": "ai/autocode/toggle-normalisation.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/autocode/toggle-normalisation.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3702
+    },
+    {
+      "fixture": "ai/dashboard/assertion-capabilities.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/assertion-capabilities.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4183
+    },
+    {
+      "fixture": "ai/dashboard/assertion-picker.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/assertion-picker.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3668
+    },
+    {
+      "fixture": "ai/dashboard/associated-control.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/associated-control.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3512
+    },
+    {
+      "fixture": "ai/dashboard/authoring-browser.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/authoring-browser.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 47858
+    },
+    {
+      "fixture": "ai/dashboard/authoring-workspace.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/authoring-workspace.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 91150
+    },
+    {
+      "fixture": "ai/dashboard/dashboard-experience.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/dashboard-experience.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 7563
+    },
+    {
+      "fixture": "ai/dashboard/dashboard-startup.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/dashboard-startup.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 6882
+    },
+    {
+      "fixture": "ai/dashboard/draft-normalization.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/draft-normalization.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3878
+    },
+    {
+      "fixture": "ai/dashboard/environment-execution.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/environment-execution.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 30122
+    },
+    {
+      "fixture": "ai/dashboard/evidence-retention.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/evidence-retention.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3803
+    },
+    {
+      "fixture": "ai/dashboard/explicit-authoring.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/explicit-authoring.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 20825
+    },
+    {
+      "fixture": "ai/dashboard/generation-history.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/generation-history.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 2991
+    },
+    {
+      "fixture": "ai/dashboard/locator-reconstruction.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/locator-reconstruction.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3217
+    },
+    {
+      "fixture": "ai/dashboard/navigation-causality.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/navigation-causality.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 6197
+    },
+    {
+      "fixture": "ai/dashboard/negated-assertions.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/negated-assertions.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4225
+    },
+    {
+      "fixture": "ai/dashboard/parked-claim.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/parked-claim.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3376
+    },
+    {
+      "fixture": "ai/dashboard/picker-panel.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/picker-panel.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 15523
+    },
+    {
+      "fixture": "ai/dashboard/picker-transparency.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/picker-transparency.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3081
+    },
+    {
+      "fixture": "ai/dashboard/positional-wiring.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/positional-wiring.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3005
+    },
+    {
+      "fixture": "ai/dashboard/project-api.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/project-api.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 7751
+    },
+    {
+      "fixture": "ai/dashboard/recorder.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/recorder.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3563
+    },
+    {
+      "fixture": "ai/dashboard/secret-redaction.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/secret-redaction.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3570
+    },
+    {
+      "fixture": "ai/dashboard/workspace-accordion.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/dashboard/workspace-accordion.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 5696
+    },
+    {
+      "fixture": "ai/excel/authoring-model.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/excel/authoring-model.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4834
+    },
+    {
+      "fixture": "ai/knowledge/requirements.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/knowledge/requirements.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4134
+    },
+    {
+      "fixture": "ai/knowledge/yaml.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/knowledge/yaml.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3352
+    },
+    {
+      "fixture": "ai/projects/ambient-cache.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/projects/ambient-cache.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3405
+    },
+    {
+      "fixture": "ai/projects/application-pipeline.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/projects/application-pipeline.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3988
+    },
+    {
+      "fixture": "ai/projects/bootstrap-knowledge.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/projects/bootstrap-knowledge.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4945
+    },
+    {
+      "fixture": "ai/projects/dashboard-scope.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/projects/dashboard-scope.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3529
+    },
+    {
+      "fixture": "ai/projects/execution-isolation.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/projects/execution-isolation.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3429
+    },
+    {
+      "fixture": "ai/projects/generation-isolation.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/projects/generation-isolation.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3772
+    },
+    {
+      "fixture": "ai/projects/isolation.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/projects/isolation.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4343
+    },
+    {
+      "fixture": "ai/projects/knowledge-enrichment.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/projects/knowledge-enrichment.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 11422
+    },
+    {
+      "fixture": "ai/projects/lifecycle-isolation.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/projects/lifecycle-isolation.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3395
+    },
+    {
+      "fixture": "ai/projects/onboarding.fixture.ts",
+      "kind": "self-isolated",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": null,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/projects/onboarding.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 17394
+    },
+    {
+      "fixture": "ai/projects/provisioning-isolation.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/projects/provisioning-isolation.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 4744
+    },
+    {
+      "fixture": "ai/projects/repository-secrets.fixture.ts",
+      "kind": "repository-read-only",
+      "timeoutMs": 30000,
+      "workerTimeoutMs": null,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/projects/repository-secrets.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 991
+    },
+    {
+      "fixture": "ai/testing/fixture-routing.fixture.ts",
+      "kind": "synthetic",
+      "timeoutMs": 360000,
+      "workerTimeoutMs": 300000,
+      "args": [
+        "node_modules/tsx/dist/cli.mjs",
+        "ai/testing/regression-worker.ts",
+        "ai/testing/fixture-routing.fixture.ts"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "milliseconds": 3712
+    }
+  ],
+  "changed": [],
+  "passed": true
+}

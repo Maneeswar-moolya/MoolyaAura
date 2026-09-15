@@ -1,0 +1,16 @@
+{
+  "scope": "focused implementation; not a full framework regression",
+  "baselineFocusedSelections": 14,
+  "baselineFocusedPassed": 14,
+  "followups": [
+    {"check": "store and coherent legacy credential precedence", "exitCode": 0, "log": "test-data-final-store.log"},
+    {"check": "three isolated profile executions and another-profile quarantine rerun", "exitCode": 0, "log": "test-data-final-browser.log"},
+    {"check": "unreachable credential buttons before correction", "exitCode": 1, "expectedRed": true, "log": "test-data-modal-before.log"},
+    {"check": "visible credential footer at desktop and narrow widths", "exitCode": 0, "log": "test-data-modal-after.log"},
+    {"check": "final UI saves, structural dirty state and environment restore", "exitCode": 0, "log": "test-data-final-ui.log"},
+    {"check": "quarantine secret mutation follow-up", "exitCode": 0, "log": "test-data-mutant-19-followup.log"}
+  ],
+  "mutations": {"newTestDataKilled": 20, "existingAuthenticationKilled": 9, "inconclusiveAttemptPreserved": "test-data-supplemental-mutations-results.json"},
+  "liveExecution": "not attempted; user-selected JSON profile pending",
+  "fullFrameworkRegression": "not run"
+}

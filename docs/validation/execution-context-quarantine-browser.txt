@@ -1,0 +1,2 @@
+PASS quarantine rerun request carries the approved browser mode, source environment and application
+PASS quarantine browser: failure details, images/zoom/navigation, code definitions, Back/Forward, dirty save/diff, route-less mapping, responsiveness and isolation

@@ -1,0 +1,98 @@
+[
+  {
+    "stage": "A",
+    "file": "ai/dashboard/review-selectors.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "seconds": 0.786,
+    "log": "docs/validation/review-workflow-A-review-selectors.fixture.log"
+  },
+  {
+    "stage": "A",
+    "file": "ai/dashboard/recording-mapping.fixture.ts",
+    "args": [
+      "--phase=catalog"
+    ],
+    "exitCode": 0,
+    "seconds": 15.528,
+    "log": "docs/validation/review-workflow-A-recording-mapping.fixture.log"
+  },
+  {
+    "stage": "B",
+    "file": "ai/dashboard/authoring-browser.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "seconds": 85.817,
+    "log": "docs/validation/review-workflow-B-authoring-browser.fixture.log"
+  },
+  {
+    "stage": "C",
+    "file": "ai/dashboard/recording-mapping.fixture.ts",
+    "args": [
+      "--phase=save"
+    ],
+    "exitCode": 0,
+    "seconds": 24.942,
+    "log": "docs/validation/review-workflow-C-recording-mapping.fixture.log"
+  },
+  {
+    "stage": "D",
+    "file": "ai/dashboard/recording-mapping.fixture.ts",
+    "args": [
+      "--phase=reuse"
+    ],
+    "exitCode": 0,
+    "seconds": 32.61,
+    "log": "docs/validation/review-workflow-D-recording-mapping.fixture.log"
+  },
+  {
+    "stage": "E",
+    "file": "ai/dashboard/recording-mapping.fixture.ts",
+    "args": [
+      "--phase=isolation"
+    ],
+    "exitCode": 0,
+    "seconds": 14.871,
+    "log": "docs/validation/review-workflow-E-recording-mapping.fixture.log"
+  },
+  {
+    "stage": "E",
+    "file": "ai/autocode/user-confirmed-auth.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "seconds": 4.57,
+    "log": "docs/validation/review-workflow-E-user-confirmed-auth.fixture.log"
+  },
+  {
+    "stage": "E",
+    "file": "ai/dashboard/explicit-authoring.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "seconds": 20.317,
+    "log": "docs/validation/review-workflow-E-explicit-authoring.fixture.log"
+  },
+  {
+    "stage": "E",
+    "file": "ai/autocode/ownership-reuse.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "seconds": 4.139,
+    "log": "docs/validation/review-workflow-E-ownership-reuse.fixture.log"
+  },
+  {
+    "stage": "E",
+    "file": "ai/autocode/recorded-flow.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "seconds": 4.995,
+    "log": "docs/validation/review-workflow-E-recorded-flow.fixture.log"
+  },
+  {
+    "stage": "E",
+    "file": "ai/dashboard/dashboard-startup.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "seconds": 7.501,
+    "log": "docs/validation/review-workflow-E-dashboard-startup.fixture.log"
+  }
+]

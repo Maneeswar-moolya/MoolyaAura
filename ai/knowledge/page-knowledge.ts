@@ -130,6 +130,8 @@ export interface PageElement {
   page_object?: string;
   page_object_method?: string;
   locator_strategy?: string;
+  provenance?: string;
+  validation_status?: string;
 }
 
 /**
@@ -233,6 +235,8 @@ function hydrate(file: string, raw: string): PageKnowledge {
         page_object: asString(entry.page_object) || undefined,
         page_object_method: asString(entry.page_object_method) || undefined,
         locator_strategy: asString(entry.locator_strategy) || undefined,
+        provenance: asString(entry.provenance) || undefined,
+        validation_status: asString(entry.validation_status) || undefined,
       };
     }),
     actions: asArray(document.actions).map(value => {
@@ -293,7 +297,7 @@ function hydrate(file: string, raw: string): PageKnowledge {
  * explore a page it already knew - the failure this module exists to prevent, made
  * invisible.
  */
-export function readAllPageKnowledge(dir: string = activeKnowledgePageDir()): PageKnowledge[] {
+export function readAllPageKnowledge(dir: string = activeKnowledgePageDir(), includeUnvalidated = false): PageKnowledge[] {
   if (!fs.existsSync(dir))
     return [];
   const found: PageKnowledge[] = [];
@@ -307,6 +311,16 @@ export function readAllPageKnowledge(dir: string = activeKnowledgePageDir()): Pa
       const shown = path.relative(ROOT, full).replace(/\\/g, '/');
       throw new Error(`${shown} could not be read: ${(error as Error).message}`);
     }
+  }
+  // Manual edits remain available as code, but must not masquerade as the old
+  // deterministic declaration. The declaration itself is retained for review.
+  const manualFile = path.join(dir, '.authoring-validation.json');
+  if (!includeUnvalidated) {
+    const manual: Array<{ owner: string; method: string; status: string }> = fs.existsSync(manualFile) ? JSON.parse(fs.readFileSync(manualFile, 'utf8')).methods : [];
+    for (const page of found) page.elements = page.elements.filter(element => {
+      const status = manual.find(item => item.owner === element.page_object && item.method === element.page_object_method)?.status ?? element.validation_status;
+      return status !== 'USER AUTHORED — NOT VALIDATED';
+    });
   }
   return found;
 }

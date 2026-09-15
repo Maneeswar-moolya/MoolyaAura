@@ -66,7 +66,7 @@ function measuredEvidence(overrides: Partial<TargetEvidence> = {}): TargetEviden
     matchCount: 1,
     identifier: { raw: 'tc_summary_638717', dynamic: true, normalised: 'tc_summary_<dynamic>' },
     derivedCandidates: [
-      { strategy: 'scoped-class', expression: 'page.locator("#bugReport-table .tabulator-cell-draft--summary")', matchCount: 1 },
+      { strategy: 'scoped-class', expression: 'page.locator("#bugReport-table .tabulator-cell-draft--summary")', matchCount: 1, sameDocument: true, identityMatched: true, measuredAt: 'press' },
       { strategy: 'class', expression: 'page.locator(".tabulator-cell")', matchCount: 26 },
     ],
     ...overrides,

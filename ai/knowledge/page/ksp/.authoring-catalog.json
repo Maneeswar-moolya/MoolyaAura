@@ -1,0 +1,16 @@
+{
+  "applicationId": "ksp",
+  "pages": [
+    {
+      "name": "LandingPage",
+      "route": "/ssoauth/login",
+      "description": ""
+    }
+  ],
+  "objects": [
+    {
+      "page": "ksp__us-en-home",
+      "className": "LandingPage"
+    }
+  ]
+}

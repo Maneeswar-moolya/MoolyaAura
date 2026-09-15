@@ -1,0 +1,109 @@
+# ksp us en home page - route /us/en/home.
+#
+# Created by the framework from the first recording made on this screen. The id is
+# the canonical identity for this application and route (ai/knowledge/canonical.ts),
+# so one screen resolves to exactly one file and a later exploration extends this
+# one rather than writing a second.
+#
+# Only what a recording established is written here. Nothing describes what the
+# screen is for, because nothing has explored it yet.
+
+page:
+  id: ksp__us-en-home
+  name: ksp us en home page
+  route: /us/en/home
+
+elements:
+  my_dashboard_state:
+    usage: assertion
+    description: dashboard-heading contains "My Dashboard" - read on the UsEnHomePage screen.
+    accessible_name: My Dashboard
+    page_object: UsEnHomePage
+    page_object_method: myDashboardState
+    locator_strategy: "page.getByRole('heading', { name: 'My Dashboard', exact: true })"
+  enter_email_field:
+    usage: action
+    description: Enter email - operated on the UsEnHomePage screen.
+    accessible_name: Enter email
+    page_object: UsEnHomePage
+    page_object_method: enterEmailField
+    locator_strategy: "page.getByRole('textbox', { name: 'Enter email' })"
+  password_field:
+    usage: action
+    description: Password - operated on the UsEnHomePage screen.
+    accessible_name: Password
+    page_object: UsEnHomePage
+    page_object_method: passwordField
+    locator_strategy: "page.getByRole('textbox', { name: 'Password' })"
+  log_in_button:
+    usage: action
+    description: Log In - operated on the UsEnHomePage screen.
+    role: button
+    page_object: UsEnHomePage
+    page_object_method: logInButton
+    locator_strategy: "page.getByRole('button', { name: 'Log In', exact: true })"
+  hardware_button:
+    usage: action
+    description: Hardware - operated on the UsEnHomePage screen.
+    role: button
+    accessible_name: Hardware
+    page_object: UsEnHomePage
+    page_object_method: hardwareButton
+    locator_strategy: "page.getByRole('button', { name: 'Hardware' })"
+  UsEnHomePage_homeLinkState:
+    usage: assertion
+    description: "Main navigation"
+    page_object: UsEnHomePage
+    page_object_method: homeLinkState
+    locator_strategy: "page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link')"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+  LandingPage_logIn:
+    usage: action
+    description: "Log In"
+    page_object: LandingPage
+    page_object_method: logIn
+    locator_strategy: "page.locator('header').getByRole('link', { name: 'Log In' })"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+  UsEnHomePage_productHelp:
+    usage: action
+    description: "Product Help"
+    page_object: UsEnHomePage
+    page_object_method: productHelp
+    locator_strategy: "page.getByRole('button', { name: 'Product Help' })"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+  UsEnHomePage_mySupportCaseUnderProductHelp:
+    usage: action
+    description: "My Support Cases"
+    page_object: UsEnHomePage
+    page_object_method: mySupportCaseUnderProductHelp
+    locator_strategy: "page.getByRole('menuitem', { name: 'My Support Cases' })"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+  product_help_button:
+    usage: action
+    description: Product Help - operated on the UsEnHomePage screen.
+    role: button
+    accessible_name: Product Help
+    page_object: UsEnHomePage
+    page_object_method: productHelpButton
+    locator_strategy: "page.getByRole('button', { name: 'Product Help' })"
+  UsEnHomePage_settionsIcon:
+    usage: action
+    description: "Settings"
+    page_object: UsEnHomePage
+    page_object_method: settionsIcon
+    locator_strategy: "page.getByRole('button', { name: 'Settings' })"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+  UsEnHomePage_accountSettingsUnderSettingsIconMenu:
+    usage: action
+    description: "Account Settings"
+    page_object: UsEnHomePage
+    page_object_method: accountSettingsUnderSettingsIconMenu
+    locator_strategy: "page.getByRole('menuitem', { name: 'Account Settings' })"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+

@@ -1,3 +1,5 @@
+import { confirmedOwner, loadOwners } from '../../knowledge/authoring-owners';
+import { routeMatches } from '../../knowledge/routes';
 /**
  * The abstraction engine's Phase 1: propose, never write.
  *
@@ -23,7 +25,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import {
-  evidenceFor, evidenceForAssertionSubject, isDomEvidence, looksLikeSecretValue,
+  evidenceAbsence, evidenceFor, evidenceForAssertionSubject, isDomEvidence, looksLikeSecretValue,
   provenMeasurements,
   type AssertionProvenance, type CandidateMeasurement, type TargetEvidence,
 } from '../dom-evidence';
@@ -476,7 +478,12 @@ export function resolveOwner(
   //
   //    Still refused when the route is unknown, or when knowledge has no file for
   //    it: an owner nothing declares is not an owner.
-  const specific = [...new Set(routes.filter(route => route && route !== '/'))];
+  // A route captured in the interaction's document supersedes the navigation
+  // walk, which intentionally omits automatic redirects. It is not a URL guess.
+  const measuredRoute = evidence.captureTiming === 'before-action' || evidence.captureTiming === 'assertion-pick'
+    ? evidence.route : undefined;
+  const effectiveRoutes = measuredRoute ? [measuredRoute] : routes;
+  const specific = [...new Set(effectiveRoutes.filter(route => route && (measuredRoute || route !== '/')))];
   if (specific.length === 1) {
     const declared = declaredForRoute(knowledge, specific[0]);
     if (declared)
@@ -541,13 +548,7 @@ export function resolveOwner(
  * the screen - keying on a concrete id would make a new screen of every project. So
  * the comparison is segment-wise with `:param` matching one segment.
  */
-export function routeMatches(declared: string, actual: string): boolean {
-  const left = declared.split('?')[0].replace(/\/$/, '').split('/');
-  const right = actual.replace(/\/$/, '').split('/');
-  if (left.length !== right.length)
-    return false;
-  return left.every((segment, index) => segment.startsWith(':') || segment === right[index]);
-}
+export { routeMatches } from '../../knowledge/routes';
 
 /** owner + role + accessibleName|id + strategy. Stable across runs by construction. */
 export function fingerprintOf(input: {
@@ -894,6 +895,7 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
       evidence: readEvidence(testCaseId, { archived }),
       stateAssertions: readAssertions(testCaseId, { archived }),
     });
+    recording.authoringOwners = loadOwners(activeScope(), path.join(dir, `${testCaseId}.spec.ts`), fs.readFileSync(path.join(dir, `${testCaseId}.spec.ts`), 'utf8'));
     const mapping = mapRecording(recording);
     // WHAT THE RECORDING SAYS IT IS. Compared with the active scope by `bootstrapOwner`,
     // never used as a substitute for it, and null for every recording made before the
@@ -936,7 +938,8 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
     // WHAT THE MATCHER RESOLVED, keyed by the step's own `from` string. A step whose
     // kind is `page-object` is findMethod FOUND, and its target is never analysed:
     // an existing method always wins.
-    const resolved = new Set(mapping.steps
+    const resolvedSteps = mapping.steps.flatMap(step => step.components?.length ? step.components : [step]);
+    const resolved = new Set(resolvedSteps
         .filter(step => step.kind === 'page-object' || step.kind === 'authenticate')
         .map(step => step.from));
 
@@ -969,14 +972,16 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
        * identity matched.
        */
       provenance?: AssertionProvenance;
+      ownerKey?: string;
     }> = [
       ...recording.actions
-          .filter(action => action.type !== 'navigate')
-          .map(action => ({
+          .map((action, at) => ({ action, at }))
+          .filter(({ action }) => action.type !== 'navigate')
+          .map(({ action, at }) => ({ ownerKey: `action:${at}`,
             from: `${action.type} ${action.target}`, target: action.target,
             locator: action.locator, role: 'action' as TargetRole,
           })),
-      ...(recording.assertions ?? []).map(assertion => ({
+      ...(recording.assertions ?? []).map((assertion, at) => ({ ownerKey: `assertion:${at}`,
         from: `assert ${assertion.type} ${assertion.target}`, target: assertion.target,
         locator: assertion.locator ?? '', role: 'assertion' as TargetRole,
         ...(assertion.subjectProvenance ? { provenance: assertion.subjectProvenance } : {}),
@@ -999,8 +1004,9 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
           role: item.role,
           locator: redact(item.locator) ?? null,
           code: 'NO_ADMISSIBLE_EVIDENCE',
-          reason: 'the recording carries no DOM evidence sidecar (recorded before press-time capture existed)',
-          remedy: 'Re-record required.',
+          // Named by transport, never by date. See evidenceAbsence.
+          reason: evidenceAbsence(mapping.evidence).reason,
+          remedy: `Re-record required (${evidenceAbsence(mapping.evidence).code}).`,
         });
       }
       continue;
@@ -1016,18 +1022,6 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
     route = '/';
 
     for (const item of items) {
-      // FOUND - the matcher already has a method for it. Never analysed.
-      //
-      // AND NEVER OBSERVED FROM HERE EITHER, which cost a wrong record before it was
-      // measured. The matcher resolves by NAME (`findMethod`) or by the expression itself
-      // (`findMethodByProvenLocator`). The second can only match when the declared
-      // locator IS the proven one, so it has nothing to report; the first is explicitly
-      // not element identity, and a control that merely shares an accessible name would
-      // be reported as new evidence about a capability it has nothing to do with. The
-      // duplicate gate below knows both facts - the element is already wrapped, and this
-      // recording proved something else for it - so that is where an observation is made.
-      if (resolved.has(item.from))
-        continue;
       const role = item.role;
       // THE RECORDED LOCATOR FIRST, THEN PROVENANCE - the same order, and for the same
       // reason, as `judged` in from-recording.ts: a row recorded under this very
@@ -1039,6 +1033,20 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
           ? evidenceForAssertionSubject(mapping.evidence,
               { locator: item.locator, subjectProvenance: item.provenance })?.evidence ?? null
           : null);
+
+      // Reuse now requires the capability's own measured identity. Preserve another
+      // proven expression as review evidence even when reuse happens before proposals.
+      if (resolved.has(item.from)) {
+        const resolvedStep = resolvedSteps.find(step => step.from === item.from);
+        const observed = evidence ? effectiveLocator(evidence, role) : null;
+        if (resolvedStep?.pageObject && resolvedStep.method && observed?.proven) {
+          const observation = alternativeEvidenceFor({ applicationId, testCaseId, from: item.from, role,
+            owner: resolvedStep.pageObject, method: resolvedStep.method, observed: observed.expression,
+            knowledge, index, resolvedBy: 'element-already-wrapped' });
+          rememberAlternative(observation);
+        }
+        continue;
+      }
 
       // NOT EVALUATED AND EVALUATED-AND-REFUSED MUST NOT LOOK THE SAME.
       //
@@ -1062,9 +1070,10 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
           locator: redact(item.locator) ?? null,
           code: 'NO_ADMISSIBLE_EVIDENCE',
           reason: !isDomEvidence(mapping.evidence)
-            ? 'the recording carries no DOM evidence sidecar (recorded before press-time capture existed)'
+            ? evidenceAbsence(mapping.evidence).reason
             : 'the evidence sidecar holds no measurement joinable to this element\'s recorded locator',
-          remedy: 'Re-record required.',
+          remedy: !isDomEvidence(mapping.evidence)
+            ? `Re-record required (${evidenceAbsence(mapping.evidence).code}).` : 'Re-record required.',
         });
         continue;
       }
@@ -1123,9 +1132,19 @@ export function analyseCorpus(options: AnalyseOptions = {}): CorpusResult {
       // is the one thing this phase may not do. So a recording with no `route` field is
       // not bootstrapable, exactly like one with no `origin`: re-record it.
       const pressRoute = typeof evidence.route === 'string' && evidence.route ? evidence.route : null;
-      const owner = resolveOwner(evidence, knowledge, [route], applicationId
+      let owner = resolveOwner(evidence, knowledge, [route], applicationId
         ? { applicationId, originApplicationId, route: pressRoute }
         : undefined);
+      const confirmed = item.ownerKey ? confirmedOwner(recording, item.ownerKey) : undefined;
+      if (confirmed && recording.authoringOwners?.applicationId === applicationId) {
+        const declaration = recording.authoringOwners?.pages.find(page => page.name === confirmed && page.route === pressRoute);
+        const known = index.pages[confirmed];
+        const derived = bootstrapOwner({ applicationId: applicationId!, originApplicationId, route: pressRoute });
+        if (known) owner = { owner: confirmed, kind: 'page-object', why: `USER_CONFIRMED application owner; locator validation remains independent` };
+        else if (declaration && derived.owner) owner = { owner: confirmed, kind: 'page-object',
+          why: 'user-named page with independently established application, route and target identity',
+          bootstrap: { canonicalId: derived.canonicalId, route: derived.route, pageName: declaration.description || confirmed } };
+      }
       const wantsSuffix = Boolean((evidence.target.accessibleName ?? '').trim());
       const method = methodNameForTarget(evidence.target, role, { needsRoleSuffix: wantsSuffix });
       const effective = effectiveLocator(evidence, role);

@@ -9,6 +9,25 @@
 import { normalizeAutomationStatus, normalizePriority } from './parser';
 import type { TestCase, TestCaseFilter } from './types';
 
+/** Boolean tag expressions extend the existing case-insensitive tag filter. No eval. */
+export function matchesTagExpression(expression: string, values: string[]): boolean {
+  if (!expression.trim()) return true;
+  const tokens = expression.match(/@[a-z0-9_-]+|\b(?:and|or|not)\b|[()]/gi) ?? [];
+  if (tokens.join('').toLowerCase() !== expression.replace(/\s+/g, '').toLowerCase()) throw Error('Invalid tag expression. Use @tag, and, or, not and parentheses.');
+  let index = 0;
+  const known = new Set(values.map(v => v.replace(/^@/, '').toLowerCase()));
+  const primary = (): boolean => {
+    const token = tokens[index++]?.toLowerCase();
+    if (token === 'not') return !primary();
+    if (token === '(') { const result = or(); if (tokens[index++] !== ')') throw Error('Unclosed tag expression.'); return result; }
+    if (!token?.startsWith('@')) throw Error('Expected a tag.');
+    return known.has(token.slice(1));
+  };
+  const and = (): boolean => { let result=primary(); while(tokens[index]?.toLowerCase()==='and'){index++;const next=primary();result=result&&next;}return result; };
+  const or = (): boolean => { let result=and(); while(tokens[index]?.toLowerCase()==='or'){index++;const next=and();result=result||next;}return result; };
+  const result=or();if(index!==tokens.length)throw Error('Unexpected token in tag expression.');return result;
+}
+
 export function toList(value: string | string[] | undefined): string[] | undefined {
   if (value === undefined)
     return undefined;

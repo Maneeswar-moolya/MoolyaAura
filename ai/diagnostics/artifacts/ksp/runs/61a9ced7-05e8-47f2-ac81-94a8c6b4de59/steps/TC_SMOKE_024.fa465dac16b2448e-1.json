@@ -1,0 +1,56 @@
+{
+  "applicationId": "ksp",
+  "environmentId": "stg",
+  "runId": "2026-09-13T15-31-19-071Z-ar31ur",
+  "attemptId": "fa465dac16b2448e-1",
+  "attemptNumber": 1,
+  "testCaseId": "TC_SMOKE_024",
+  "testTitle": "TC_SMOKE_024 - Log In â€” form contains \"Email:\"",
+  "steps": [
+    {
+      "applicationId": "ksp",
+      "environmentId": "stg",
+      "runId": "2026-09-13T15-31-19-071Z-ar31ur",
+      "attemptId": "fa465dac16b2448e-1",
+      "attemptNumber": 1,
+      "stepId": "b32dc161-ef4f-4f07-ad39-9c56470ef41b",
+      "index": 1,
+      "title": "Open recorded destination",
+      "diagnostic": {
+        "recordingStepKey": "action:0",
+        "label": "Open recorded destination",
+        "locator": "",
+        "provenance": "AUTO",
+        "executionMode": "AUTO",
+        "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_024.spec.ts",
+        "generatedLineStart": 22,
+        "generatedLineEnd": 24,
+        "statement": "{\n      await page.goto('https://stgsupport.keysight.com/us/en/home');\n    }"
+      },
+      "captures": [
+        {
+          "captureRef": "c9d03c5e-1ae9-42fa-bd78-6102ac6d12a7",
+          "captureType": "PRE_STEP",
+          "recordingStepKey": "action:0",
+          "capturedAt": "2026-09-13T15:31:31.847Z",
+          "route": "blank",
+          "artifact": "aura-c9d03c5e-1ae9-42fa-bd78-6102ac6d12a7.png"
+        },
+        {
+          "captureRef": "7401cb3a-d5da-40e8-80d6-2c66b6d2c69b",
+          "captureType": "FAILURE",
+          "recordingStepKey": "action:0",
+          "capturedAt": "2026-09-13T15:31:31.940Z",
+          "route": "blank",
+          "artifact": "aura-7401cb3a-d5da-40e8-80d6-2c66b6d2c69b.png"
+        }
+      ],
+      "status": "failed",
+      "durationMs": 190,
+      "error": "Select a configured source environment for execution",
+      "screenshotPath": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\autocode-DYhVNh\\artifacts\\generated-ksp-TC_SMOKE_024-d8ac0-In-â€”-form-contains-Email--chromium\\step-b32dc161-ef4f-4f07-ad39-9c56470ef41b.png",
+      "captureTiming": "after-failure"
+    }
+  ],
+  "console": []
+}

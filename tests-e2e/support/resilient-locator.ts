@@ -17,9 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import type { Locator, Page } from '@playwright/test';
-
-/** How long a single candidate gets to prove it resolves. */
-const CANDIDATE_TIMEOUT_MS = 4000;
+import { bindLocator, locatorDeadline, recordLocatorWait, timeoutDetail, LocatorPolicyError, type LocatorClock } from './locator-policy';
 
 export interface LocatorCandidate {
   /** Human-readable strategy name, e.g. `getByRole(textbox, Email)`. */
@@ -55,6 +53,8 @@ export class HealingRecorder {
 export type Cardinality = 'one' | 'many';
 
 export interface ResolveOptions {
+  /** Injection changes the clock, never the production maximum. */
+  clock?: LocatorClock;
   page: Page;
   logicalName: string;
   candidates: LocatorCandidate[];
@@ -99,57 +99,38 @@ export async function resolveLocator(options: ResolveOptions): Promise<Locator> 
   if (!candidates.length)
     throw new Error(`No candidates declared for "${logicalName}".`);
 
-  const attempted: string[] = [];
-  for (const [index, candidate] of candidates.entries()) {
-    // BUILT UNNARROWED. Whatever the candidate matches is what gets counted, and
-    // what gets returned.
-    const locator = candidate.build(page);
-
-    // THE WAIT IS A PRESENCE PROBE, and `.first()` belongs here for the same
-    // reason it belongs in a readiness check: the question is "has anything
-    // appeared yet?", not "which element is it?".
-    //
-    // IT ALSO HAS TO BE. `waitFor` is strict-mode checked, so waiting on the
-    // unnarrowed locator throws for any candidate matching several - before the
-    // count below can run. The live probe caught exactly that: an ambiguous
-    // candidate was refused (right outcome) as "not attached" (wrong reason),
-    // and a genuine collection could not resolve at all, because the wait threw
-    // before `cardinality: 'many'` was ever consulted.
-    try {
-      await locator.first().waitFor({ state: 'attached', timeout: CANDIDATE_TIMEOUT_MS });
-    } catch {
-      attempted.push(`${candidate.strategy} - nothing attached`);
-      continue;
-    }
-
-    if (cardinality === 'one') {
-      const count = await locator.count().catch(() => -1);
-      if (count !== 1) {
-        // AMBIGUITY IS A FAILED CANDIDATE, not a candidate to trim. Recorded so
-        // the run says which strategy was too loose and by how much, then the
-        // next one is tried exactly as if this had matched nothing.
-        attempted.push(`${candidate.strategy} - matched ${count === -1 ? 'an uncountable set' : `${count} elements`}`);
-        continue;
+  const deadline = locatorDeadline(options.clock);
+  const counts: Array<number | null> = candidates.map(() => null);
+  // Recheck every declared candidate in order within ONE deadline. No positional narrowing.
+  do {
+    for (const [index, candidate] of candidates.entries()) {
+      if (deadline.remaining() <= 0) break;
+      const locator = candidate.build(page);
+      let count: number;
+      try { count = await deadline.observe(() => locator.count()); }
+      catch (error) {
+        if (/observation deadline exhausted/.test(String(error))) break;
+        if (!/execution context|navigation|frame.*detach/i.test(String(error))) throw error;
+        counts[index] = null; continue;
       }
+      counts[index] = count;
+      if (cardinality === 'one' ? count !== 1 : count < 1) continue;
+      if (index > 0) recorder?.record({ logicalName, from: candidates[0].strategy, to: candidate.strategy, at: new Date().toISOString() });
+      return bindLocator(locator, deadline);
     }
-
-    if (index > 0) {
-      recorder?.record({
-        logicalName,
-        from: candidates[0].strategy,
-        to: candidate.strategy,
-        at: new Date().toISOString(),
-      });
-    }
-    return locator;
-  }
-
-  throw new Error(
-      `Could not resolve "${logicalName}" on ${page.url()} to exactly one element.\n` +
-      `Tried ${candidates.length} strateg(ies):\n${attempted.map(strategy => `  - ${strategy}`).join('\n')}\n` +
-      'This is a genuine locator failure - add a candidate strategy that identifies the element, '
-      + 'or the element is gone. A strategy that matched several elements is NOT narrowed with '
-      + 'first(): that would pick an element nobody chose.');
+    if (counts.every(count => count !== null && count > 1)) break;
+    if (deadline.remaining() <= 0) break;
+    await deadline.recheck();
+  } while (deadline.remaining() > 0);
+  const measured = candidates.map((candidate, index) => ({ strategy: candidate.strategy, count: counts[index] }));
+  const detail = await timeoutDetail(page, deadline, { logicalName, candidates: measured, finalMatchCount: counts[0] });
+  if (counts.every(count => count !== null && count > 1)) detail.classification = 'LOCATOR_AMBIGUOUS';
+  recordLocatorWait(detail);
+  throw new LocatorPolicyError(detail,
+    `Could not resolve "${logicalName}" to ${cardinality === 'one' ? 'exactly one element' : 'a non-empty collection'}. ` +
+    `Waited ${detail.elapsedMs}ms (maximum ${detail.configuredTimeoutMs}ms).\n` +
+    measured.map(item => `  - ${item.strategy} - matched ${item.count ?? 'unknown'} elements`).join('\n') +
+    '\nAmbiguous targets are NOT narrowed with first(): that would pick an element nobody chose.');
 }
 
 export const HEALING_DIR = path.resolve(process.cwd(), 'ai', 'reports', 'healing');

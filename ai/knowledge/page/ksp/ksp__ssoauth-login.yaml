@@ -1,0 +1,47 @@
+# ksp ssoauth login page - route /ssoauth/login.
+#
+# Created by the framework from the first recording made on this screen. The id is
+# the canonical identity for this application and route (ai/knowledge/canonical.ts),
+# so one screen resolves to exactly one file and a later exploration extends this
+# one rather than writing a second.
+#
+# Only what a recording established is written here. Nothing describes what the
+# screen is for, because nothing has explored it yet.
+
+page:
+  id: ksp__ssoauth-login
+  name: ksp ssoauth login page
+  route: /ssoauth/login
+
+elements:
+  enter_email_field:
+    usage: action
+    description: Enter email - operated on the SsoauthLoginPage screen.
+    accessible_name: Enter email
+    page_object: SsoauthLoginPage
+    page_object_method: enterEmailField
+    locator_strategy: "page.getByRole('textbox', { name: 'Enter email' })"
+  password_field:
+    usage: action
+    description: fill Password - operated on the SsoauthLoginPage screen.
+    accessible_name: Password
+    page_object: SsoauthLoginPage
+    page_object_method: passwordField
+    locator_strategy: "page.getByRole('textbox', { name: 'Password' })"
+  log_in_button:
+    usage: action
+    description: Log In - operated on the SsoauthLoginPage screen.
+    role: button
+    accessible_name: Log In
+    page_object: SsoauthLoginPage
+    page_object_method: logInButton
+    locator_strategy: "page.getByRole('button', { name: 'Log In', exact: true })"
+  SsoauthLoginPage_formState:
+    usage: assertion
+    description: "form"
+    page_object: SsoauthLoginPage
+    page_object_method: formState
+    locator_strategy: "page.locator('form')"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+

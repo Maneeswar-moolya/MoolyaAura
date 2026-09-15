@@ -1,4 +1,5 @@
 import '../testing/isolated-checkout';
+import { targetEvidence } from '../testing/synthetic-data';
 /**
  * P1.2d — the assertion picker must be invisible to the recorded action stream.
  *
@@ -201,6 +202,8 @@ function checkAssertions(): void {
       codegenAssertion?.afterActions === 6, String(codegenAssertion?.afterActions));
 
   process.stdout.write('\n== what generation emits ==\n');
+  recording.evidence = { available: true, capturedAt: new Date(0).toISOString(), limits: {} as any,
+    targets: recording.assertions.map(a => targetEvidence(a.locator)) };
   const code = mapRecording(recording).steps.flatMap(step => step.code).join('\n');
   check('9-10: toBeChecked and .not.toBeChecked are both emitted, one each',
       (code.match(/toBeChecked\(\)/g) ?? []).length === 2

@@ -20,6 +20,8 @@ import path from 'node:path';
 
 import { readMapping, scanDataDrivenRunners } from '../excel/mapping';
 import { gate, type GateResult } from './verify';
+import { resolveScope } from '../projects/scope';
+import { executionContextFromTransport, executionSelectionFromTransport } from '../projects/execution-context';
 
 const ROOT = process.cwd();
 
@@ -133,8 +135,14 @@ async function main(): Promise<void> {
 
   for (const target of list) {
     write(`${target.testCaseId}  ${target.testFile}\n`);
+    const scope=resolveScope({workbook:target.workbook,environmentId:flag('environment')??process.env.AURA_ENVIRONMENT});
+    const executionSelection=executionSelectionFromTransport();
+    const executionContext=executionContextFromTransport(scope,executionSelection,{
+      ...(flag('source-environment') ? {sourceEnvironmentId:flag('source-environment')} : {}),
+      ...(argv.includes('--headed') ? {headed:true} : {}),
+    });
     const result = gate(target.testFile, target.testCaseId, target.scenario, target.workbook,
-        text => write(`  |${text}`));
+        text => write(`  |${text}`),{executionContext,executionSelection});
 
     let mark = 'ok     ';
     if (result.verdict !== 'accepted') {

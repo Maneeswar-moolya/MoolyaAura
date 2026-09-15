@@ -1,0 +1,61 @@
+# Recording Review authoring workflow — focused implementation validation
+
+Date: 2026-09-13. Scope: Recording Review authoring, its existing application knowledge/source lifecycle, and focused contract validation. No live application execution or complete framework regression was requested or performed.
+
+## Implementation and contract review
+
+Read AGENTS.md, the four governance contracts, current engineering state, CLAUDE.md, relevant ai/CLAUDE.md sections, and REMAINING status 54 before implementation. Historical automatic ownership observations were checked against the current explicit-authoring implementation. The user's authoring contract governs explicit choices; automatic target identity, locator ranking, scope, credentials and navigation remain independent.
+
+The initial behavioral reproduction showed that the former separate create-Page/create-Object/create-method path wrote source and manual status but did not reconstruct the new capability through the application YAML reader. It failed with exit 1 in [the pre-change reproduction](review-workflow-red.log). This change implements the missing persistence transaction as well as replacing the review interface.
+
+| Requested area | Implemented behavior |
+| --- | --- |
+| 1. Interaction model | Select a recorded step, review its screen context, choose/create Page and Page Object, then Save Mapping. Creation choices remain staged until that single save. |
+| 2. Page combobox | Locally searchable, stable current/recent/route ranking, pinned creation, View all application Pages, matched-text highlighting and bounded virtual rendering. Ranking never selects an item. |
+| 3. Page Object combobox | Filters by the selected logical Page's declared associations. Searches class, method/capability and filename; current/recent ordering. Unrelated objects stay hidden. |
+| 4. Route context | Shows the recorded current pathname without query/session data. Route is optional context, not identity. Same-route logical Pages, route-less Pages and parameterized route relevance are supported. |
+| 5. Add New Page | Compact modal prefills an editable route, accepts name/description, checks exact duplicate names and offers Use Existing Page. New selection is immediate; nothing is written until Save Mapping. |
+| 6. Add New Page Object | Compact modal shows the selected Page read-only and validates the Page Object name. Rejects method-style names and protected classes. Selects the staged object immediately. New Pages show a useful empty state. |
+| 7. Transaction | Prepare Page, source, fixture registration, capability knowledge, manual status and sidecar in memory; validate scope/path, TypeScript and knowledge; check concurrent bytes; commit through atomic file replacements with rollback; read back and verify bytes, binding, index and YAML. |
+| 8. Sidecar | Uses the existing revision-bound owners schema and immutable applicationId. Before a case ID exists, stores `.draft-<source-hash>.owners.json` in that application's recording directory. The existing final test-save path carries the choices to the case's owners sidecar. Recording source and evidence are retained. |
+| 9. YAML knowledge | Logical Page, Page Object association and capability declarations are persisted in the existing application knowledge directory. Existing YAML elements are preserved. The former authoring catalog JSON is read for compatibility; new authoring does not create another catalog store. |
+| 10. Page Object source | Creates scoped classes extending the existing BasePage, registers them with the existing fixture writer, and appends locator-returning methods without replacing established members. Validation rejects invalid source before writes. |
+| 11. Capability reuse | Uses parsed locator relationships within the chosen Page Object, then existing parameter-template extraction when compatible. Reuses before deterministic naming/creation. Ambiguous methods and name collisions require an explicit Advanced choice; neither capability is overwritten. |
+| 12. Immediate/future reuse | Save returns the rebuilt catalog; later steps and recordings in the same application discover it. A fresh process reconstructs the same Page/Object/capability through persisted YAML and source. Repeated mapping does not duplicate methods/classes. |
+| 13. Provenance | Stores recommendation separately from USER_CONFIRMED choice. New manual capabilities are USER AUTHORED — NOT VALIDATED. They remain discoverable for explicit authoring and are excluded from automatic knowledge reuse until the established validation path permits it. No fabricated identity measurements are added. |
+| 14. Advanced | Collapsed by default. Method selection/manual naming, locator override, Auto, Page Object method and recorded-locator execution remain available. Explicit raw execution requires no Page Object and remains recording-specific/unvalidated. Method, locator override, arguments and execution mode do not inherit to another control. |
+| 15. Accessibility and state | ARIA combobox/listbox/option semantics, active descendant, labels, visible focus, Arrow keys/Home/End/Enter/Escape/Tab, modal focus restoration, live status/error messages, responsive/resizable panes and virtual lists. Dirty choices survive step switches; application switches warn; Reset restores persisted state. Explicit Reset to Auto preserves reusable artifacts. A late pre-save refresh cannot replace the saved UI state. |
+
+The unchanged explicit authentication path remains method → explicitly selected recorded locator → proven automatic resolution. Focused checks retain the normal Auto evidence gate, scoped credentials instead of recorded secrets, cross-application refusal and independent navigation-causality blocking. No application-specific branch was added. Code Workspace definition navigation, Back/Forward, editing, rollback and shared-file protection were exercised without redesigning that product area.
+
+## Focused validation
+
+The new fixtures import guarded checkout isolation before artifact-writing modules. Workers use disposable OS temporary roots and the independent deletion guard; synthetic work never targets installed application paths.
+
+Validation followed catalog → browser → rollback → reuse/reload → isolation → mutations → TypeScript. [Ordered focused results](review-workflow-focused-results.json) contain commands, exit codes and log paths.
+
+| Requested report item | Checks and result |
+| --- | --- |
+| 16. Focused/browser | Initial eleven focused runs passed, exit 0 each: selector helpers; mapping catalog; actual-browser authoring; save failures; later-flow reuse; mapping isolation; explicit authentication; explicit authoring; ownership/reuse; recorded flow; empty/multi-application dashboard startup. The final browser rerun including stale-refresh protection passed, exit 0, as did the existing authoring-workspace fixture. The browser corpus includes 120 additional Pages and 500 Page Objects; search performs no per-keystroke backend requests and renders fewer than 16 option nodes. Pure local filtering across 1,000 Pages took 59.1ms for ten searches in this run; this is an observation, not a performance guarantee. |
+| 17. Persistence/reload | Write failures at YAML and sidecar stages, readback mismatch, invalid TypeScript and stale mapping version reject without partial source/YAML/fixture/sidecar changes. Later steps/cases and a separate Node process reuse saved capabilities. Parameterized reuse preserves arguments; nested locators compile; explicit existing methods ignore unused, unusable recorded locators. |
+| 18. Isolation | Another application cannot discover the saved Page, Page Object or YAML capability, submit a foreign binding, reuse foreign authoring metadata or access another application's Code Workspace file. |
+| 19. Mutations | All 29 tested mutants were killed; each runner exited 0. Eleven mapping faults (ten in the initial run plus the supplemental refresh fault), nine explicit-authentication faults, eight explicit-authoring faults and the existing navigation-boundary inheritance fault. They protect route independence, application/catalog isolation, YAML/sidecar completeness, rollback, no overwrite, immediate catalog reuse, no silent selection, manual no-proof authoring, parameter arguments, response ordering, USER_CONFIRMED precedence, secret handling and navigation safety. |
+| 20. TypeScript | Before: **20** diagnostics. After: **20** diagnostics. New: **0**. Removed: **0**. No changed module introduced a new diagnostic; server.ts retains its pre-existing diagnostic. Both checks remain non-green; the after command returned exit 1 through PowerShell. Compared file/code/message multisets, ignoring moved line numbers while retaining duplicate counts. |
+| 21. Artifact integrity | Pre-task SHA256 manifest covers all 309 regular files under ai, tests-e2e and excel, including installed application artifacts. Final: 316 files, 15 intended existing framework/test files changed, seven intended framework/test files added, zero removals, zero unexpected changes/additions. Application artifacts and registry are byte-for-byte unchanged. |
+| 22. Remaining limits | Focused validation does not establish whole-framework or live application acceptance. The review browser uses a route bridge into the real scoped save/review service; Code Workspace uses actual HTTP APIs. It does not launch the recorder against a live application. |
+
+Additional review found a real response-ordering defect: a delayed pre-save review could clear the newly saved selection. [Red browser reproduction](review-workflow-refresh-race-red.log) failed at `late pre-save review must not replace persisted mapping`, exit 1. Save now invalidates earlier review requests. A subsequent run exposed a harness readiness assumption: any case-table row included the loading row. The harness now waits for the actual synthetic case; no Code Workspace production change was made for that issue.
+
+The [final browser run](review-workflow-refresh-race-green.log) passed, exit 0. The [existing authoring-workspace checks](review-workflow-authoring-workspace.log) passed, exit 0. Supplemental [refresh mutation](review-workflow-refresh-race-mutation.log) and [navigation-inheritance mutation](review-workflow-inheritance-mutation.log) each killed the intended fault and exited 0. The old navigation mutation anchor was updated to preserve the newly added route display while corrupting only the ownership-boundary protection under test.
+
+## Evidence and practical limits
+
+- [Desktop draft](review-workflow-images/review-mapping-draft.png), [saved mapping](review-workflow-images/review-mapping-saved.png), [narrow layout](review-workflow-images/review-mapping-mobile.png).
+- [Mapping mutations](review-workflow-F-recording-mapping-mutations.log), [authentication mutations](review-workflow-F-user-confirmed-auth-mutations.log), [explicit-authoring mutations](review-workflow-F-explicit-authoring-mutations.log).
+- [Pre-change TypeScript diagnostics](review-workflow-typescript-before.log), [after diagnostics](review-workflow-typescript-after.log), [diagnostic comparison](review-workflow-typescript-comparison.json), [artifact comparison](review-workflow-integrity.json).
+
+Selector opening and filtering use the already loaded catalog. Save performs scoped index reconstruction for validation/readback; a persistent incremental index cache was not introduced. Unsaved UI choices survive step/application switches in the current browser session; they are not a browser-crash recovery store. Saved reusable knowledge survives process restart. Recorded-locator-only mode does not create reusable capability proof. Cross-route components use existing declared Page Object associations; there is no implicit ownership reassignment. Transactional rollback covers caught write/validation/readback failures; this is not a multi-file process-crash journal.
+
+The user dashboard was already running alongside synthetic checks. It was neither restarted nor driven by this work. No live TC_SMOKE_018 run or remapping was performed.
+
+**Status: focused implementation and validation complete. Whole-framework READY and live application acceptance are not claimed.**

@@ -1,3 +1,4 @@
+import { declaredAuthoringPage } from '../../knowledge/authoring-owners';
 /**
  * The one place a model is allowed to influence an abstraction decision.
  *
@@ -27,13 +28,15 @@
  * spoken. Anything still refusing sends it back to review.
  */
 
+import { bootstrapOwner } from './propose';
+import { activeScope } from '../../projects/scope';
 import { spawn } from 'node:child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
 import { resolveClaude, resolveModel } from '../agent';
 import { buildIndex } from '../../knowledge/index';
-import { looksLikeSecretValue } from '../dom-evidence';
+import { looksLikeSecretValue, provesIdentity } from '../dom-evidence';
 import { analyseIdentifier } from '../locator-quality';
 import { classDerivedName, parameterNameFor, parameterSourceOf, templateFor } from './validate';
 import {
@@ -617,8 +620,15 @@ export function revalidate(
     return review(`the resolver moved the element from ${proposal.owner} to ${owner}`);
   if (!proposal.owner && !proposal.allowedOwners.includes(owner))
     return review(`${owner} is not one of the owners knowledge declares for this screen`);
-  if (!index.pages[owner])
-    return review(`no Page Object class named ${owner} exists`);
+  const bootstrap = proposal.bootstrap;
+  const expectedBootstrap = bootstrap ? bootstrapOwner({
+    applicationId: activeScope().applicationId, originApplicationId: index.applicationId, route: bootstrap.route,
+  }) : null;
+  const validBootstrap = Boolean(bootstrap && proposal.proof && provesIdentity(proposal.proof, proposal.role)
+    && (expectedBootstrap?.owner === owner || declaredAuthoringPage(activeScope(), proposal.testCaseId, owner, bootstrap.route))
+    && expectedBootstrap?.canonicalId === bootstrap.canonicalId && proposal.owner === owner);
+  if (!index.pages[owner] && !validBootstrap)
+    return review(`no Page Object class named ${owner} exists and no valid bootstrap declares it`);
 
   // 4. THE NAME. Deterministic wherever it could be derived. A resolver is asked what
   //    to call something ONLY when the framework could not work it out; where it

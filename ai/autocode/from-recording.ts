@@ -1,3 +1,4 @@
+import { executableBinding, guidedKnowledge, loadOwners } from '../knowledge/authoring-owners';
 /**
  * A recorded test becomes a spec by MAPPING, not by asking a model to write one.
  *
@@ -15,8 +16,8 @@
  * WHAT THIS IS NOT
  *
  * It is not a second generator competing with `agent.ts`. It handles exactly one
- * case (a recorded row with a kept artifact) and falls back to the existing path
- * the moment it cannot map something confidently. An unresolved action is reported,
+ * case (a recorded row with a kept artifact) and reports a typed block
+ * when a deterministic capability or navigation provenance is missing. An unresolved action is reported,
  * never guessed: the whole value of a recording is that nobody had to guess.
  *
  * It is also not a route around the quality gate. The assembled spec runs clean and
@@ -34,25 +35,28 @@
  * AUTHENTICATION
  *
  * A recorded sign-in is recognised as a SHAPE - a redacted fill followed by a submit
- * - and collapsed into this project's existing mechanism:
- * `requireCredentials(bugasuraCredentials)` then `loginPage.signIn(...)`. The
- * recorded email and password are not used; they were never captured. Nobody is
- * asked for credentials, and no second login is generated.
+ * - and bound to the active application's credential fixture through explicit user
+ * bindings or identity-proven automatic controls. A composite is reused only if its declared body matches those
+ * operations. Recorded credential values are never emitted.
  */
 
+import { routeMatches } from '../knowledge/routes';
+import { replayableNavigation } from '../dashboard/navigation';
 import fs from 'node:fs';
 import path from 'node:path';
+import ts from 'typescript';
+import { forbiddenMechanisms } from './abstraction/validate';
 
 import { buildIndex, type FrameworkIndex, type IndexedMethod } from '../knowledge/index';
 import {
   analyseIdentifier, assessLocator, chainHasDynamicIdentifier, isPositionalLocator,
   type LocatorAssessment, type RecordedStep,
 } from './locator-quality';
-import { resolveParameterisedReuse } from './abstraction/parameter';
-import { provenCandidate, rankProvenCandidates } from './abstraction/classify';
+import { resolveParameterisedReuse, rejectValue } from './abstraction/parameter';
+import { effectiveLocator, provenCandidate, rankProvenCandidates } from './abstraction/classify';
 import {
   evidenceFor, evidenceForAssertionSubject, evidenceUnavailable, isDomEvidence,
-  provesIdentity, readAssertionProvenance,
+  provesIdentity, provenMeasurements, isPositionProven, readAssertionProvenance,
   type CandidateMeasurement, type RecordingEvidence, type TargetEvidence,
 } from './dom-evidence';
 import {
@@ -64,8 +68,11 @@ import {
   type RecordedAction, type RecordedAssertion, type Recording,
 } from '../dashboard/recorder';
 import { deriveScenarioTitle, unstableTitleReason } from './scenario-title';
-import { activeScopePath } from '../projects/scope';
+import { activeScope, activeScopePath } from '../projects/scope';
+import { dataFieldToken, generatedInput } from '../test-data/values';
 import { credentialsFixtureName } from './abstraction/writer';
+import { manualMethods } from '../knowledge/manual-authoring';
+import { diagnosticData } from '../diagnostics/artifacts';
 import type { TestCase } from '../excel/types';
 
 const ROOT = process.cwd();
@@ -91,6 +98,7 @@ export type StepKind =
   | 'unresolved';
 
 export interface MappedStep {
+  diagnostic?: import('../diagnostics/artifacts').DiagnosticStep;
   kind: StepKind;
   /** The human-readable step name, used for the `step(...)` wrapper. */
   label: string;
@@ -103,6 +111,11 @@ export interface MappedStep {
   from: string;
   /** What the locator-quality engine made of this step's locator. */
   quality?: LocatorAssessment;
+  /** Non-element provenance never participates in the Page Object element ledger. */
+  subject?: 'navigation' | 'authentication' | 'authoring';
+  failure?: 'navigationCausality' | 'authenticationCapability' | 'userBindingIncomplete';
+  /** Proven element mappings consumed by a declared composite capability. */
+  components?: MappedStep[];
 }
 
 export interface MappingResult {
@@ -143,7 +156,7 @@ export interface PageObjectRequirement {
   target: string;
   /** Codegen's locator expression, verbatim. */
   locator: string;
-  /** `click`, `fill`, `assert contains`… - what the recording did with it. */
+  /** `click`, `fill`, `assert contains`Ã¢â‚¬Â¦ - what the recording did with it. */
   did: string;
 }
 
@@ -313,7 +326,7 @@ export function locatorMetrics(mapping: MappingResult): LocatorMetrics {
 /** Every step that fell back to a recorded locator, as a coverage report. */
 export function pageObjectRequirements(mapping: MappingResult): PageObjectRequirement[] {
   return mapping.steps
-      .filter(step => step.kind === 'codegen-locator')
+      .filter(step => step.kind === 'codegen-locator' && !step.subject)
       .map(step => ({
         target: step.label,
         locator: step.code.join(' ').trim(),
@@ -340,52 +353,6 @@ interface ElementMatch {
    * author wrote down.
    */
   args?: string[];
-}
-
-/**
- * May this method be called, and with what?
- *
- * A method's PARAMETERS are part of whether it can be called at all, which is the
- * fact this whole path used to be missing. `dashboardTab(name)` and
- * `sectionHeader()` are indistinguishable by name and return type, so a matcher
- * that ignores arity emits `dashboardTab()` - code that compiles (there is no
- * typecheck here) and throws `TypeError` the moment it runs, because the method
- * does `name.replace(...)`. That is worse than not matching at all: a raw locator
- * is honestly labelled and was used against the running application.
- *
- * So an argument is supplied ONLY when four things hold, and the match is refused
- * otherwise:
- *
- *   1. exactly ONE required parameter. Optional ones are omitted, which is what
- *      their default is for. `signIn(email, password)` and
- *      `fillNewProject(name, teamName)` need two values and one declared name
- *      cannot be both.
- *   2. that parameter is declared `string`. `rowStatus(row: Locator)` takes a
- *      LOCATOR; handing it a name is the same defect wearing a type.
- *   3. the matched element declares a non-empty `accessible_name`.
- *   4. the value is that declared name, VERBATIM.
- *
- * Condition 4 is the one to hold on to. The argument is read from the YAML a
- * person authored - never from the recorded target, never from the locator chain,
- * never from DOM text. Those would be inference: plausible, unfalsifiable, and
- * wrong exactly when the element's rendered text is not the value the method
- * wants. An element nobody has named yields no argument, and no argument means no
- * match.
- *
- * Returns the argument list, or null when the method cannot be safely called.
- */
-function argumentsFor(method: IndexedMethod | undefined, accessibleName?: string): string[] | null {
-  const required = (method?.params ?? []).filter(param => !param.optional);
-  if (!required.length)
-    return [];
-  if (required.length > 1)
-    return null;
-  if ((required[0].type ?? '').trim() !== 'string')
-    return null;
-  const declared = (accessibleName ?? '').trim();
-  if (!declared)
-    return null;
-  return [literal(declared)];
 }
 
 /** `LoginPage.open()` style entry point a knowledge file declares for its screen. */
@@ -466,58 +433,29 @@ function describes(description: string | undefined, wanted: string): boolean {
   return false;
 }
 
-/**
- * Find the Page Object method that wraps what this action touched.
- *
- * Only ever from recorded knowledge, and in a strict order of confidence:
- *
- *   1. the element's `accessible_name` equals the recorded target - the strongest
- *      signal there is, because both sides are the name the application renders;
- *   2. the element's id or its Page Object method name matches the target;
- *   3. the recorded target appears as a whole phrase in the accessible name.
- *
- * A match is only returned if the framework index confirms the method exists on
- * that class. That check is what stops a knowledge file that has drifted from the
- * code producing a call to a method nobody wrote.
- */
-/**
- * Break a tie between knowledge entries using the expression the recorder PROVED.
- *
- * Two entries in this corpus declare `accessible_name: Search` - the issue list's box
- * (`IssuesPage.searchField`, `#filter-value`) and the project list's
- * (`ProjectsPage.projectSearchField`, role-based). The recorded target is the word
- * "Search" either way, so the name cannot say which screen the person was on, and
- * `findMethod` refused - correctly, on the information it was using.
- *
- * The evidence does say. The press-time proven expression for that click was
- * `page.locator("#filter-value")`, which is exactly what one of the two entries
- * declares and the other does not.
- *
- * IT CAN ONLY EVER NARROW. A candidate is kept only if it was already tied at the
- * best rank AND declares a concrete selector the proven expression contains, so this
- * can remove wrong answers but never invent a match that the name did not already
- * support. Anything short of exactly one survivor is the tie it always was.
- *
- * Unproven evidence resolves nothing: a claim-time measurement, a count without an
- * identity, or one from another document leaves the tie standing.
- */
-function disambiguateByProvenLocator<T extends { element?: PageElement }>(
-  tied: readonly T[],
-  evidence?: TargetEvidence | null,
-  /** An assertion's proof may be its own pick; an action's may not. */
-  role: 'action' | 'assertion' = 'action',
-): T | null {
-  const proven = evidence ? provenCandidate(evidence, role) : null;
-  if (!proven || !provesIdentity(proven, role))
-    return null;
-  const expression = proven.expression ?? '';
-  if (!expression)
-    return null;
-  const matching = tied.filter(entry => {
-    const declared = entry.element ? declaredSelectors(entry.element) : [];
-    return declared.length > 0 && declared.some(token => expression.includes(token));
-  });
-  return matching.length === 1 ? matching[0] : null;
+/** Names rank already-proven capabilities; they never establish target identity. */
+function provenMethodArguments(element: PageElement, method: IndexedMethod,
+  evidence: TargetEvidence | null | undefined, role: 'action' | 'assertion'): string[] | null {
+  if (!evidence || (element.usage && element.usage !== role)) return null;
+  if ((method.params ?? []).some(parameter => !parameter.optional)) {
+    const reuse = resolveParameterisedReuse({ evidence, element, method, role, usage: element.usage ?? null });
+    return reuse.status === 'REUSE_PARAMETERIZED' ? reuse.parameters.map(p => literal(p.value)) : null;
+  }
+  const declared = (element.locator_strategy ?? '').trim();
+  if (!declared.startsWith('page.') || isPositionalLocator(declared) || chainHasDynamicIdentifier(declared)) return null;
+  const normaliseExpression = (value: string) => value.replace(/["']/g, '"').replace(/\s+/g, ' ').trim();
+  return provenMeasurements(evidence, role).some(candidate =>
+    normaliseExpression(candidate.expression ?? '') === normaliseExpression(declared)) ? [] : null;
+}
+
+/** A measured route can distinguish proven page owners. Shared controls with a sole
+ * proven capability still reuse it; route alone never proves any capability. */
+function preferMeasuredRoute<T>(matches: T[], evidence: TargetEvidence | null | undefined,
+  pageOf: (match: T) => PageKnowledge | undefined): T[] {
+  if (!evidence?.route) return matches;
+  if (evidence.captureTiming !== 'before-action' && evidence.captureTiming !== 'assertion-pick') return matches;
+  const onRoute = matches.filter(match => routeMatches(pageOf(match)?.route || '/', evidence.route!));
+  return onRoute.length ? onRoute : matches;
 }
 
 function findMethod(
@@ -543,7 +481,8 @@ function findMethod(
   const indexed = (pageObject: string, method: string) =>
     deliverableMethod(index, pageObject, method);
 
-  const candidates: Array<{ match: ElementMatch; rank: number; accessibleName?: string;
+  const provenArgs = new Map<PageElement, string[]>();
+  let candidates: Array<{ match: ElementMatch; rank: number; accessibleName?: string;
     element?: PageElement; }> = [];
 
   for (const page of knowledge) {
@@ -552,6 +491,9 @@ function findMethod(
       const method = element.page_object_method;
       if (!pageObject || !method || !exists(pageObject, method))
         continue;
+      const args = provenMethodArguments(element, indexed(pageObject, method)!, evidence, role);
+      if (!args) continue;
+      provenArgs.set(element, args);
 
       const name = normalise(element.accessible_name ?? '');
       const id = normalise(element.id);
@@ -565,44 +507,25 @@ function findMethod(
         candidates.push({ rank: 3, match: { pageObject, method, page, why: `"${target}" is part of accessible name "${element.accessible_name}"` } , accessibleName: element.accessible_name, element });
       else if (describes(element.description, wanted))
         candidates.push({ rank: 4, match: { pageObject, method, page, why: `${page.file} describes it as "${(element.description ?? '').trim()}"` } , accessibleName: element.accessible_name, element });
+      else
+        candidates.push({ rank: 5, match: { pageObject, method, page, why: `${page.file} declares the locator whose target identity was measured` }, element });
     }
   }
 
   if (!candidates.length)
     return null;
+  candidates = preferMeasuredRoute(candidates, evidence, entry => entry.match.page);
+  // Names cannot choose between two independently declared capabilities for one target.
+  if (new Set(candidates.map(entry => `${entry.match.pageObject}.${entry.match.method}`)).size > 1) return null;
   candidates.sort((left, right) => left.rank - right.rank);
 
-  // AMBIGUITY IS NOT A MATCH. If two different methods tie at the best rank, the
-  // recording does not say which one the person touched, and picking either would be
-  // a guess dressed up as a mapping. Falling through to Codegen's own locator is
-  // strictly better: that locator was used against the running application.
-  //
-  // Checked at every rank, not just the strongest: "create new project" appears in
-  // both the dialog heading's description and the cancel button's, and preferring
-  // whichever the file happened to list first is exactly the silent wrong answer
-  // this whole toolkit is built to avoid.
-  const best = candidates[0];
-  const tied = candidates.filter(entry => entry.rank === best.rank
-    && (entry.match.pageObject !== best.match.pageObject || entry.match.method !== best.match.method));
-  let winner = best;
-  if (tied.length) {
-    // The name did not settle it. The measurement might - and only by ruling out.
-    const resolved = disambiguateByProvenLocator([best, ...tied], evidence, role);
-    if (!resolved)
-      return null;
-    winner = resolved;
-  }
-
-  // CAN THE WINNER ACTUALLY BE CALLED? Asked last, and deliberately so: ambiguity is
-  // still decided exactly as it was, and a tie is still refused before anything looks
-  // at a signature. A method whose required argument cannot be established from
-  // authored knowledge is refused HERE rather than emitted with `()`, and the step
-  // falls through to the recorded locator - the same answer this function already
-  // gives for ambiguity, for the same reason.
-  const args = argumentsFor(indexed(winner.match.pageObject, winner.match.method), winner.accessibleName);
+  // Multiple owners were refused above. Names choose only a diagnostic label
+  // among declarations of the same proven capability.
+  const winner = candidates[0];
+  const args = winner.element ? provenArgs.get(winner.element) : null;
   if (!args)
     return null;
-  return { ...winner.match, ...(args.length ? { args } : {}) };
+  return { ...winner.match, why: `${winner.match.why}; its declared locator was proven against this target`, ...(args.length ? { args } : {}) };
 }
 
 /**
@@ -660,26 +583,25 @@ export function findMethodByProvenLocator(
   // still may not be positional or built on a generated id, and still has to resolve to
   // exactly ONE declared method - two claimants are refused here as they always were.
   // What changed is only how many proven expressions get to ask the question.
-  for (const proven of rankProvenCandidates(evidence, role)) {
-    const match = declaredMethodFor(proven, knowledge, index, role);
-    if (match)
-      return match;
-  }
-  return null;
+  const candidates = [...rankProvenCandidates(evidence, role), ...provenMeasurements(evidence, role)];
+  const matches = candidates.flatMap(proven => declaredMethodsFor(proven, knowledge, index, role));
+  const scoped = preferMeasuredRoute(matches, evidence, match => match.page);
+  const distinct = new Map(scoped.map(match => [`${match.pageObject}.${match.method}`, match]));
+  return distinct.size === 1 ? [...distinct.values()][0] : null;
 }
 
 /** One proven expression against the declared methods. See `findMethodByProvenLocator`. */
-function declaredMethodFor(
+function declaredMethodsFor(
   proven: CandidateMeasurement,
   knowledge: PageKnowledge[],
   index: FrameworkIndex,
   role: 'action' | 'assertion',
-): ElementMatch | null {
+): ElementMatch[] {
   if (!provesIdentity(proven, role))
-    return null;
+    return [];
   const expression = (proven.expression ?? '').trim();
   if (!expression || isPositionalLocator(expression) || chainHasDynamicIdentifier(expression))
-    return null;
+    return [];
 
   const flatten = (value: string): string =>
     value.replace(/["']/g, '"').replace(/\s+/g, ' ').trim();
@@ -729,8 +651,7 @@ function declaredMethodFor(
     }
   }
 
-  const found = exact.length ? exact : byId;
-  return found.length === 1 ? found[0] : null;
+  return exact.length ? exact : byId;
 }
 
 /**
@@ -788,7 +709,8 @@ function findParameterisedMethod(
       });
     }
   }
-  return matches.length === 1 ? matches[0] : null;
+  const scoped = preferMeasuredRoute(matches, evidence, match => match.page);
+  return scoped.length === 1 ? scoped[0] : null;
 }
 
 /**
@@ -889,7 +811,7 @@ function openerFor(url: string, knowledge: PageKnowledge[], index: FrameworkInde
     const declared = (page.route || '').split(/[?#]/)[0].replace(/\/$/, '') || '/';
     if (declared !== route)
       continue;
-    // `entry_point: LoginPage.open() navigates to …`
+    // `entry_point: LoginPage.open() navigates to Ã¢â‚¬Â¦`
     const match = /([A-Z]\w*Page)\.(\w+)\(\)/.exec(page.entryPoint || '');
     if (match && methodIsDeliverable(index, match[1], match[2]))
       return { pageObject: match[1], method: match[2], why: `${page.file} declares it as this route's entry point` };
@@ -905,9 +827,9 @@ function callFor(action: RecordedAction, receiver: string): string[] {
     case 'hover': return [`await (${receiver}).hover();`];
     case 'check': return [`await (${receiver}).check();`];
     case 'uncheck': return [`await (${receiver}).uncheck();`];
-    case 'fill': return [`await (${receiver}).fill(${literal(action.value ?? '')});`];
+    case 'fill': return [`await (${receiver}).fill(${dataFieldToken(action.value) ? generatedInput(action.value!) : literal(action.value ?? '')});`];
     case 'press': return [`await (${receiver}).press(${literal(action.value ?? 'Enter')});`];
-    case 'select': return [`await (${receiver}).selectOption(${literal(action.value ?? '')});`];
+    case 'select': return [`await (${receiver}).selectOption(${dataFieldToken(action.value) ? generatedInput(action.value!) : literal(action.value ?? '')});`];
     default: return [];
   }
 }
@@ -973,8 +895,24 @@ const MATCHER: Record<RecordedAssertion['type'],
  * So the walk goes BACKWARDS from the password: fills and clicks on the form are part
  * of signing in, and anything else - a navigation, an unrelated click - is not.
  */
+/**
+ * WHICH credential field a recorded fill carries.
+ *
+ * Structured provenance wins where the recorder supplied it. The legacy fallback -
+ * "redacted means password, anything else in the span means account" - is kept EXACTLY for
+ * recordings made before identifiers were protected, because for those it is still true.
+ * Once identifiers are redacted too that inference is wrong in the worst direction: it
+ * would emit the password into the account field.
+ */
+export function credentialFieldOf(action: RecordedAction): 'email' | 'password' | null {
+  const source = action.valueSource;
+  if (source && (source.kind === 'CREDENTIAL_PROFILE' || source.kind === 'APPLICATION_CREDENTIALS'))
+    return source.field === 'password' ? 'password' : 'email';
+  return null;
+}
 function authenticationSpan(actions: RecordedAction[]): { start: number; end: number } | null {
-  const secretAt = actions.findIndex(action => action.type === 'fill' && action.redacted === true);
+  const secretAt = actions.findIndex(action => action.type === 'fill'
+    && (credentialFieldOf(action) === 'password' || (!action.valueSource && action.redacted === true)));
   if (secretAt === -1)
     return null;
 
@@ -999,11 +937,120 @@ function authenticationSpan(actions: RecordedAction[]): { start: number; end: nu
   return { start, end };
 }
 
+/** Reuse a composite only when its complete declared body is the same three proven
+ * operations. A familiar method name is not evidence about what it does. */
+function authComposite(index: FrameworkIndex, controls: MappedStep[]): string | null {
+  if (controls.length !== 3 || controls.some(c => c.pageObject !== controls[0].pageObject)) return null;
+  const owner = controls[0].pageObject!;
+  const page = index.pages[owner];
+  if (!page) return null;
+  const source = fs.readFileSync(path.resolve(ROOT, page.file), 'utf8');
+  const candidates = page.methods.filter(method => {
+    if (method.params?.length !== 2 || method.params.some(p => p.type !== 'string') || (method.returns && method.returns !== 'void')) return false;
+    const [email, password] = method.params.map(p => p.name);
+    const body = new RegExp(`\\b${method.name}\\s*\\([^)]*\\)\\s*:\\s*Promise<void>\\s*\\{([^{}]*)\\}`).exec(source)?.[1];
+    if (!body) return false;
+    const expected = `await (await this.${controls[0].method}()).fill(${email});`
+      + `await (await this.${controls[1].method}()).fill(${password});`
+      + `await (await this.${controls[2].method}()).click();`;
+    return body.replace(/\s/g, '') === expected.replace(/\s/g, '') && methodIsDeliverable(index, owner, method.name);
+  });
+  return candidates.length === 1 ? candidates[0].name : null;
+}
+
+/** Syntax and execution safety for an explicitly selected recorded locator; never identity proof. */
+function checkedRecordedLocator(locator: string): string {
+  const problem = () => { throw Error('Invalid recorded locator: select a supported, single Playwright locator expression.'); };
+  if (!locator || locator.length > 4000 || forbiddenMechanisms(locator).length) return problem();
+  const source = ts.createSourceFile('recorded-locator.ts', `const target = ${locator};`, ts.ScriptTarget.Latest, true);
+  const statement = source.statements[0];
+  if ((source as any).parseDiagnostics.length || source.statements.length !== 1 || !ts.isVariableStatement(statement)
+      || statement.declarationList.declarations.length !== 1) return problem();
+  const methods = new Set(['getByRole', 'getByText', 'getByLabel', 'getByPlaceholder', 'getByTestId', 'getByAltText', 'getByTitle', 'locator', 'filter', 'and', 'or']);
+  const value = (node: ts.Expression): boolean => ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)
+    || ts.isNumericLiteral(node) || ts.isRegularExpressionLiteral(node)
+    || [ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword, ts.SyntaxKind.NullKeyword].includes(node.kind)
+    || (ts.isArrayLiteralExpression(node) && node.elements.every(value))
+    || (ts.isObjectLiteralExpression(node) && node.properties.every(property => ts.isPropertyAssignment(property)
+      && (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) && value(property.initializer)))
+    || chain(node);
+  const chain = (node: ts.Expression): boolean => ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)
+    && methods.has(node.expression.name.text) && node.arguments.every(value)
+    && ((ts.isIdentifier(node.expression.expression) && node.expression.expression.text === 'page') || chain(node.expression.expression));
+  const expression = statement.declarationList.declarations[0].initializer;
+  if (!expression || !chain(expression)) return problem();
+  return expression.getText(source);
+}
+
 export function mapRecording(recording: Recording): MappingResult {
   const knowledge = readAllPageKnowledge();
   const index = buildIndex();
+  if (recording.authoringOwners && recording.authoringOwners.applicationId !== index.applicationId) throw Error('Foreign recording ownership metadata.');
+  if (recording.authoringOwners && isDomEvidence(recording.evidence) && recording.evidence.origin?.applicationId
+      && recording.evidence.origin.applicationId !== index.applicationId) throw Error('Foreign recording evidence cannot be used with this application binding.');
+  const userSelection = (key: string) => {
+    const choice = recording.authoringOwners?.choices.find(choice => choice.key === key);
+    const binding = choice?.userSelection;
+    if (!binding) return null;
+    // USER_BINDING_INCOMPLETE carries a selection too - a Page Object associated with the step
+    // and nothing chosen to run. It is admitted here only so it can be REPORTED as that; the
+    // executable check below is what decides whether anything runs, and it never will.
+    if (choice.provenance !== 'USER_CONFIRMED' && choice.provenance !== 'USER_BINDING_INCOMPLETE')
+      throw Error('Invalid authoring provenance: user selection must be USER_CONFIRMED.');
+    if (choice.provenance === 'USER_BINDING_INCOMPLETE' && executableBinding(binding))
+      throw Error(`USER BINDING BROKEN: ${key} is marked incomplete but carries an executable binding.`);
+    if (binding.applicationId !== index.applicationId) throw Error('Cross-application binding is not allowed.');
+    if (binding.executionMode && !['AUTO', 'PAGE_OBJECT_METHOD', 'RECORDED_LOCATOR'].includes(binding.executionMode)) throw Error('Unknown authoring execution mode.');
+    if (binding.executionMode === 'PAGE_OBJECT_METHOD' && !binding.method) throw Error('USER BINDING BROKEN: select a method for Page Object execution.');
+    if (binding.method && !binding.pageObject) throw Error('USER BINDING BROKEN: selected method has no Page Object.');
+    if (binding.pageObject && !index.pages[binding.pageObject]) throw Error(`USER BINDING BROKEN: ${binding.pageObject} disappeared.`);
+    return binding;
+  };
+  const userMethod = (key: string): ElementMatch | null => {
+    const binding = userSelection(key);
+    if (!binding) return null;
+    if (!binding.pageObject) return null;
+    if (!index.pages[binding.pageObject]) throw Error(`USER BINDING BROKEN: ${binding.pageObject} disappeared.`);
+    if (!binding.method) return null;
+    const method = index.pages[binding.pageObject].methods.find(method => method.name === binding.method);
+    if (!method || !methodIsDeliverable(index, binding.pageObject, binding.method))
+      throw Error(`USER BINDING BROKEN: ${binding.pageObject}.${binding.method} or its fixture disappeared.`);
+    const args = binding.arguments ?? [];
+    if (!Array.isArray(args) || args.some(value => typeof value !== 'string' || rejectValue(value))) throw Error('USER BINDING BROKEN: invalid or sensitive method arguments.');
+    if (args.length > (method.params?.length ?? 0) || method.params?.some((parameter, at) => !parameter.optional && at >= args.length)) throw Error(`USER BINDING BROKEN: ${binding.pageObject}.${binding.method} requires arguments; review its binding.`);
+    return { pageObject: binding.pageObject, method: binding.method, ...(args.length ? { args: args.map(literal) } : {}), why: 'USER_CONFIRMED authoring binding; automatic ownership inference is not used' };
+  };
+  const userLocator = (key: string, action: RecordedAction): string | null => {
+    const binding = userSelection(key);
+    return binding?.executionMode === 'RECORDED_LOCATOR' && !binding.method ? checkedRecordedLocator(binding.locatorOverride ?? action.locator) : null;
+  };
+  /**
+   * A step carrying authoring that cannot run.
+   *
+   * A Page Object associated with a step is CONTEXT, not an execution choice, and context
+   * inherits down a screen while the method deliberately does not. Such a step used to reach
+   * here indistinguishable from one nobody had touched, fall through to automatic inference,
+   * and be refused for missing interaction-time evidence - an accurate statement about the
+   * evidence and a misleading one about the cause, because no amount of evidence would have
+   * helped: nothing had ever said how to run it.
+   *
+   * Reported as its own state instead. Never silently demoted to AUTO, and never invented
+   * into a recorded-locator choice the user did not make.
+   */
+  const incompleteBinding = (key: string): { pageObject: string; why: string } | null => {
+    const binding = userSelection(key);
+    if (!binding || executableBinding(binding)) return null;
+    if (!binding.pageObject) return null;
+    const known = index.pages[binding.pageObject];
+    const methods = (known?.methods ?? []).map(method => method.name);
+    return { pageObject: binding.pageObject,
+      why: `USER_BINDING_INCOMPLETE: ${binding.pageObject} is associated with this step but no executable `
+        + 'binding was saved. Choose one of its methods, create the method this step needs, or choose '
+        + `recorded-locator execution in Recording Review${methods.length ? ` (existing methods: ${methods.join(', ')})` : ''}.` };
+  };
   const steps: MappedStep[] = [];
   const fixtures = new Set<string>(['step']);
+  if(recording.actions.some(action=>['fill','select'].includes(action.type)&&!action.redacted&&dataFieldToken(action.value)))fixtures.add('testData');
   const reused: Array<{ pageObject: string; method: string }> = [];
   let codegenLocators = 0;
   const assessments: Array<{ from: string; assessment: LocatorAssessment }> = [];
@@ -1023,75 +1070,155 @@ export function mapRecording(recording: Recording): MappingResult {
 
   const span = authenticationSpan(recording.actions);
   const authenticated = span !== null;
-  /**
-   * After signing in, the application takes itself somewhere. The recording does not
-   * contain a navigation for that - the redirect is the app's, not the person's - so
-   * the first post-login action on a DIFFERENT screen needs that screen's own
-   * `open()`, which is what every hand-written spec here does and what waits for the
-   * redirect to land. Set when the sign-in is emitted, cleared when it is honoured.
-   */
-  let openAfterAuth = false;
+  // Plan the whole credential span before emitting any part of it. Explicit execution
+  // choices lead; automatic destinations require identity. Never emit partial credentials.
+  const authSteps = new Map<number, MappedStep>();
+  let authProblem = '';
+  const credentialFixture = credentialsFixtureName();
+  if (span) {
+    const origin = isDomEvidence(recording.evidence) ? recording.evidence.origin : undefined;
+    if ((origin?.applicationId ?? recording.authoringOwners?.applicationId) !== activeScope().applicationId)
+      authProblem = 'authentication needs recording ownership in the active application';
+    else if (!credentialFixture)
+      authProblem = 'the active application has no credentials fixture';
+    const bindings: Array<{ at: number; action: RecordedAction; evidence: TargetEvidence | null; match: ElementMatch | null; locator: string | null; explicit: boolean }> = [];
+    for (let at = span.start; at <= span.end && !authProblem; at++) {
+      const action = recording.actions[at];
+      const evidence = evidenceFor(recording.evidence, action.locator);
+      const authKnowledge = guidedKnowledge(recording, `action:${at}`, knowledge);
+      const explicitMatch = userMethod(`action:${at}`);
+      const locator = explicitMatch ? null : userLocator(`action:${at}`, action);
+      const explicit = !!(explicitMatch || locator);
+      const match = explicitMatch ?? (!locator && evidence && provenMeasurements(evidence, 'action').length > 0 ? (
+        findMethod(action.target, authKnowledge, index, evidence, 'action')
+        ?? findMethodByProvenLocator(evidence, authKnowledge, index, 'action')
+        ?? findParameterisedMethod(evidence, authKnowledge, index, 'action')) : null);
+      if (!explicit && (!evidence || !match)) {
+        const proven = provenMeasurements(evidence, 'action').length > 0;
+        authProblem = `authentication action ${at} (${action.type} ${action.target}): ` + (proven
+          ? 'identity is proven, but no unique deliverable Page Object capability matches its measured page and locator'
+          : 'missing admissible interaction-time identity evidence for this control');
+        break;
+      }
+      bindings.push({ at, action, evidence, match, locator, explicit });
+    }
+    const fields = bindings.filter(b => b.action.type === 'fill');
+    const secret = fields.filter(b => credentialFieldOf(b.action) === 'password'
+      || (!b.action.valueSource && b.action.redacted && (b.explicit || b.evidence?.target.type === 'password')));
+    const account = fields.filter(b => credentialFieldOf(b.action) === 'email'
+      || (!b.action.valueSource && !b.action.redacted && (b.explicit ||
+      b.evidence?.target.type === 'email' || b.evidence?.target.name === 'username'
+      || b.evidence?.target.id === 'username')));
+    const submit = bindings.find(b => b.at === span.end);
+    if (!authProblem && (secret.length !== 1 || account.length !== 1 || fields.length !== 2
+        || !submit || (!submit.explicit && submit.evidence?.target.type !== 'submit')
+        || !['click', 'press'].includes(submit.action.type)
+        || (submit.action.type === 'press' && submit.action.value !== 'Enter')))
+      authProblem = 'authentication needs an unambiguous measured account field, password field and submit control';
+    if (!authProblem && bindings.some(b => !b.explicit && b.at !== span.end && b.action.type !== 'fill'
+        && !(b.action.type === 'click' && [secret[0], account[0]].some(field =>
+          field.evidence?.documentId && field.evidence.documentId === b.evidence?.documentId
+          && field.evidence.elementRef && field.evidence.elementRef === b.evidence?.elementRef))))
+      authProblem = 'authentication contains an operation outside its proven credential controls';
+    if (!authProblem) {
+      for (const binding of bindings) {
+        const { action, match, at, locator } = binding;
+        const receiver = match ? receiverFor(match) : locator!;
+        const code = action.type === 'fill'
+          ? [`await (${receiver}).fill(${credentialFixture}.${credentialFieldOf(action) ?? (action.redacted ? 'password' : 'email')});`]
+          : callFor(action, receiver);
+        authSteps.set(at, { kind: match ? 'page-object' : 'codegen-locator', label: action.type === 'fill'
+          ? `Enter ${(credentialFieldOf(action) ?? (action.redacted ? 'password' : 'email')) === 'password' ? 'password' : 'account'} from configured credentials` : `Use ${action.target}`,
+          code, pageObject: match?.pageObject, method: match?.method, ...(!match ? { subject: 'authentication' as const } : {}),
+          why: `authentication composed from scoped controls: ${match?.why ?? 'USER_CONFIRMED recorded locator — USER AUTHORED — NOT VALIDATED'}`,
+          from: `${action.type} ${action.target}` });
+      }
+      const controls = [...authSteps.values()];
+      const hasExplicitControls = bindings.some(binding => binding.explicit);
+      const composite = !hasExplicitControls && !recording.assertions.some(a => a.afterActions !== undefined
+          && a.afterActions > span.start && a.afterActions <= span.end)
+        && fields[0] === account[0] && fields[1] === secret[0] ? authComposite(index, controls) : null;
+      if (composite) {
+        authSteps.clear();
+        authSteps.set(span.end, { kind: 'authenticate', subject: 'authentication', components: controls,
+          label: 'Sign in using configured credentials', from: 'recorded sign-in',
+          pageObject: controls[0].pageObject, method: composite,
+          why: 'declared composite body matches the measured credential controls',
+          code: [`await ${fixtureFor(controls[0].pageObject!)}.${composite}(${credentialFixture}.email, ${credentialFixture}.password);`] });
+      }
+    }
+  }
 
   const emitAction = (action: RecordedAction, position: number): void => {
-    // The recorded login: emitted once, from the framework's own mechanism.
-    if (authenticated && position === span.end) {
-      const opener = openerFor(recording.startUrl, knowledge, index);
-      const loginObject = opener?.pageObject === 'LoginPage' ? 'LoginPage' : 'LoginPage';
-      const signIn = methodIsDeliverable(index, loginObject, 'signIn');
-      // THE CREDENTIALS FIXTURE IS THIS APPLICATION'S OWN. Hardcoding
-      // `bugasuraCredentials` emitted one application's capability name into every
-      // application's specs, so an authenticated case for a new project destructured a
-      // fixture its module does not declare and Playwright refused the whole file.
-      // `credentialsFixtureName()` reads the name from the fixtures module itself.
-      const credentialsFixture = credentialsFixtureName();
-      if (signIn && credentialsFixture) {
-        fixtures.add(fixtureFor(loginObject));
-        fixtures.add(credentialsFixture);
-        steps.push({
-          kind: 'authenticate',
-          label: 'Sign in',
-          code: [`await ${fixtureFor(loginObject)}.signIn(${credentialsFixture}.email, ${credentialsFixture}.password);`],
-          pageObject: loginObject,
-          method: 'signIn',
-          why: 'the recording contains a sign-in; the credentials come from the existing fixture, never from the recording',
-          from: 'recorded sign-in',
-        });
-        reused.push({ pageObject: loginObject, method: 'signIn' });
-        openAfterAuth = true;
+    if (span && position >= span.start && position <= span.end) {
+      if (authProblem) {
+        if (position === span.end)
+          steps.push({ kind: 'unresolved', subject: 'authentication', failure: 'authenticationCapability',
+            label: 'Authentication capability required', code: [], why: authProblem, from: 'recorded sign-in' });
       } else {
-        steps.push({
-          kind: 'unresolved', label: 'Sign in', code: [],
-          why: `no signIn() method exists on ${loginObject} to reuse`, from: 'recorded sign-in',
-        });
+        const planned = authSteps.get(position);
+        if (!planned) return;
+        fixtures.add(credentialFixture!);
+        if (planned.pageObject && planned.method) {
+          fixtures.add(fixtureFor(planned.pageObject));
+          reused.push({ pageObject: planned.pageObject, method: planned.method });
+        } else { fixtures.add('page'); codegenLocators++; }
+        steps.push(planned);
       }
       return;
     }
-    if (authenticated && position >= span.start && position < span.end)
-      return;                                  // absorbed into the sign-in above
+
+    if (action.redacted) {
+      steps.push({ kind: 'unresolved', subject: 'authentication', failure: 'authenticationCapability',
+        label: 'Unsupported credential operation', code: [], from: 'recorded credential operation',
+        why: 'a redacted operation outside the proven authentication span requires review' });
+      return;
+    }
 
     if (action.type === 'navigate') {
-      const opener = openerFor(action.value ?? '', knowledge, index);
-      if (opener) {
-        fixtures.add(fixtureFor(opener.pageObject));
-        reused.push({ pageObject: opener.pageObject, method: opener.method });
-        steps.push({
-          kind: 'navigate',
-          label: `Open ${action.value}`,
-          code: [`await ${fixtureFor(opener.pageObject)}.${opener.method}();`],
-          pageObject: opener.pageObject, method: opener.method,
-          why: opener.why, from: `navigate ${action.value}`,
-        });
-      } else {
-        fixtures.add('page');
-        codegenLocators += 1;
-        steps.push({
-          kind: 'codegen-locator',
-          label: `Open ${action.value}`,
-          code: [`await page.goto(${literal(action.value ?? '')});`],
-          why: 'no page knowledge declares this route, so the recorded URL is used directly',
-          from: `navigate ${action.value}`,
-        });
+      if (action.navigationCause === 'observed') {
+        steps.push({ kind: 'navigate', subject: 'navigation', label: 'Observed browser navigation', code: [],
+          why: 'the browser navigated as a consequence; no navigation command is replayed', from: `navigate event ${position}` });
+        return;
       }
+      // A NAVIGATION THAT FOLLOWS A STEP THE USER EXPLICITLY BOUND is a consequence of it.
+      //
+      // A browser-managed redirect has no DOM target to prove, so demanding target evidence
+      // for it demands something that cannot exist - and the codegen transport supplies no
+      // protocol journal at all, so every such navigation reads as `unknown`. What CAN be
+      // established without inventing anything is the cause: the last real action before it
+      // is one the user confirmed and bound. That is recorded as provenance and nothing else.
+      // The destination is still not claimed, nothing is replayed, and no identity is asserted.
+      //
+      // A navigation with no confirmed action behind it is genuinely unproven and still
+      // blocks, which is the protection this must not spend.
+      const causedBy = (() => {
+        for (let at = position - 1; at >= 0; at--) {
+          const previous = recording.actions[at];
+          if (previous.type === 'navigate') continue;  // a redirect chain shares one cause
+          return executableBinding(userSelection(`action:${at}`)) ? { at, action: previous } : null;
+        }
+        return null;
+      })();
+      if (causedBy && action.navigationCause !== 'intentional') {
+        steps.push({ kind: 'navigate', subject: 'navigation', label: 'Navigation after a confirmed action', code: [],
+          from: `navigate event ${position}`,
+          why: 'no navigation command is replayed; this navigation follows the USER_CONFIRMED step '
+            + `"${causedBy.action.type} ${causedBy.action.target}" (action:${causedBy.at}) and is retained as its `
+            + 'consequence. A browser-managed navigation has no DOM target, so none is claimed' });
+        return;
+      }
+      if (action.navigationCause !== 'intentional' || !replayableNavigation(action.value ?? '')) {
+        steps.push({ kind: 'needs-review', subject: 'navigation', failure: 'navigationCausality',
+          label: 'Navigation needs review', code: [], from: `navigate event ${position}`,
+          why: `navigation requires review (${action.navigationReason ?? 'capture reason unavailable'}); intent is unproven or the destination may carry authentication/session state`
+            + (action.navigationCounts ? `; evidence: ${action.navigationCounts.documents} document, ${action.navigationCounts.history} history, ${action.navigationCounts.other} same-document, ${action.navigationCounts.unresolved} unattributed` : '') });
+        return;
+      }
+      fixtures.add('page');
+      steps.push({ kind: 'navigate', subject: 'navigation', label: 'Open recorded destination',
+        code: [`await page.goto(${literal(action.value!)});`],
+        why: 'explicit recorded navigation intent', from: `navigate event ${position}` });
       return;
     }
 
@@ -1110,29 +1237,18 @@ export function mapRecording(recording: Recording): MappingResult {
     // list's box and the project list's - and it can only ever narrow, never match
     // something the name did not already support.
     const actionEvidence = evidenceFor(recording.evidence, action.locator);
-    const match = findMethod(action.target, knowledge, index, actionEvidence, 'action')
-      ?? findMethodByProvenLocator(actionEvidence, knowledge, index, 'action')
-      ?? findParameterisedMethod(actionEvidence, knowledge, index, 'action');
+    const actionKnowledge = guidedKnowledge(recording, `action:${position}`, knowledge);
+    const recordedLocator = userLocator(`action:${position}`, action);
+    if (recordedLocator) {
+      fixtures.add('page'); codegenLocators++;
+      steps.push({ kind: 'codegen-locator', label: `${action.type} ${action.target}`, code: callFor(action, recordedLocator),
+        why: 'USER_CONFIRMED recorded locator — USER AUTHORED — NOT VALIDATED', from: `${action.type} ${action.target}` });
+      return;
+    }
+    const match = userMethod(`action:${position}`) ?? findMethod(action.target, actionKnowledge, index, actionEvidence, 'action')
+      ?? findMethodByProvenLocator(actionEvidence, actionKnowledge, index, 'action')
+      ?? findParameterisedMethod(actionEvidence, actionKnowledge, index, 'action');
     if (match) {
-      // The redirect the application performs after signing in. Emitted from the
-      // matched screen's OWN declared entry point, once, and only when that screen is
-      // not the one the sign-in happened on.
-      if (openAfterAuth && match.page && (match.page.route || '/') !== '/') {
-        const opener = entryPointOf(match.page, index);
-        if (opener) {
-          fixtures.add(fixtureFor(opener.pageObject));
-          reused.push({ pageObject: opener.pageObject, method: opener.method });
-          steps.push({
-            kind: 'navigate',
-            label: `Open the ${match.page.name || match.page.id}`,
-            code: [`await ${fixtureFor(opener.pageObject)}.${opener.method}();`],
-            pageObject: opener.pageObject, method: opener.method,
-            why: `${opener.why} - the application redirects here after signing in, which a recording cannot capture`,
-            from: 'post-sign-in redirect',
-          });
-        }
-        openAfterAuth = false;
-      }
       fixtures.add(fixtureFor(match.pageObject));
       reused.push({ pageObject: match.pageObject, method: match.method });
       const receiver = receiverFor(match);
@@ -1163,37 +1279,6 @@ export function mapRecording(recording: Recording): MappingResult {
         });
         return;
       }
-      // THE POST-SIGN-IN REDIRECT, FOR AN ACTION NO PAGE OBJECT DESCRIBES.
-      //
-      // The matched branch above already opens the landing screen before reusing a
-      // method on it. This branch did not, and that asymmetry is what quarantined
-      // eight recordings: `signIn()` was followed immediately by the recorded click
-      // on a project card, with nothing in between waiting for /apps to become
-      // interactive. Bugasura streams those cards in before binding their click
-      // handler, so the click was swallowed, the browser stayed on /apps, and every
-      // later step looked for elements on a page that never opened.
-      //
-      // The step emitted is the screen's own declared entry point - the same
-      // `ProjectsPage.open()` a hand-written spec calls - and it is emitted once,
-      // before the first post-sign-in action, whether or not that action resolves to
-      // a Page Object. It never replaces the recorded action or its locator.
-      if (openAfterAuth) {
-        const opener = landingAfterSignIn(knowledge, index);
-        if (opener) {
-          fixtures.add(fixtureFor(opener.pageObject));
-          reused.push({ pageObject: opener.pageObject, method: opener.method });
-          steps.push({
-            kind: 'navigate',
-            label: `Open the ${opener.page?.name || opener.page?.id || opener.pageObject}`,
-            code: [`await ${fixtureFor(opener.pageObject)}.${opener.method}();`],
-            pageObject: opener.pageObject, method: opener.method,
-            why: `${opener.why} - the application redirects here after signing in, which a recording cannot capture`,
-            from: 'post-sign-in redirect',
-          });
-        }
-        openAfterAuth = false;
-      }
-
       fixtures.add('page');
       codegenLocators += 1;
       // The resolver's answer, not the recorded chain.
@@ -1241,8 +1326,28 @@ export function mapRecording(recording: Recording): MappingResult {
    * to be n.
    */
   const boundary: number[] = [0];
+  const authoredMethods=manualMethods();
   recording.actions.forEach((action, position) => {
-    emitAction(action, position);
+    const first = steps.length;
+    const key = `action:${position}`, binding = userSelection(key);
+    // BEFORE automatic inference, not after it. Reaching the evidence gate at all is what
+    // produced a refusal that named the wrong cause.
+    const incomplete = action.type === 'navigate' ? null : incompleteBinding(key);
+    if (incomplete)
+      steps.push({ kind: 'needs-review', subject: 'authoring', failure: 'userBindingIncomplete',
+        label: `${action.type} ${action.target}`, code: [], from: `${action.type} ${action.target}`,
+        why: incomplete.why });
+    else
+      emitAction(action, position);
+    const runnable = executableBinding(binding);
+    for (const step of steps.slice(first)) step.diagnostic = {
+      recordingStepKey:key,label:step.label,page:binding?.page ?? undefined,
+      pageObject:step.pageObject ?? binding?.pageObject ?? undefined,method:step.method,locator:binding?.locatorOverride ?? action.locator ?? undefined,
+      provenance:runnable ? 'USER_CONFIRMED' : binding?.pageObject ? 'USER_BINDING_INCOMPLETE' : 'AUTO',
+      executionMode:runnable || binding?.executionMode || 'AUTO',
+      validationStatus:binding?.executionMode==='RECORDED_LOCATOR'?'USER AUTHORED — NOT VALIDATED'
+        : authoredMethods.find(item=>item.owner===step.pageObject&&item.method===step.method)?.status,
+    };
     boundary.push(steps.length);
   });
 
@@ -1258,6 +1363,13 @@ export function mapRecording(recording: Recording): MappingResult {
   const placements: Array<{ at: number; steps: MappedStep[] }> = [];
   const pending: MappedStep[] = [];
   const emitAssertion = (assertion: RecordedAssertion, out: MappedStep[]): void => {
+    if (assertion.type === 'url' && !replayableNavigation(assertion.value ?? '')) {
+      out.push({ kind: 'needs-review', subject: 'navigation', failure: 'navigationCausality',
+        label: 'URL assertion needs review', code: [], from: 'assert URL',
+        why: 'the URL assertion may carry authentication/session state and cannot be emitted safely' });
+      return;
+    }
+
     /**
      * The evidence row this assertion's SUBJECT was captured as, when the recording
      * proved which one that is.
@@ -1279,6 +1391,10 @@ export function mapRecording(recording: Recording): MappingResult {
       ?? evidenceForResolved(recording.evidence, assertion.locator ?? '')
       ?? subject?.evidence
       ?? null;
+    const hasAssertionProof = Boolean(assertionEvidence && (
+      effectiveLocator(assertionEvidence, 'assertion').proven
+      || (assertionEvidence.positionProvenCandidates ?? []).some(isPositionProven)));
+
     /**
      * For JUDGEMENT. Narrower on purpose: the locator engine reads `matchCount` and
      * `identifier` as statements about the string it was handed, so it may only be
@@ -1288,9 +1404,10 @@ export function mapRecording(recording: Recording): MappingResult {
      * as it was, because its row's counts belong to Codegen's chain.
      */
     const judged = ownRow ?? subject?.evidence ?? undefined;
-    const match = findMethod(assertion.target, knowledge, index, assertionEvidence, 'assertion')
-      ?? findMethodByProvenLocator(assertionEvidence, knowledge, index, 'assertion')
-      ?? findParameterisedMethod(assertionEvidence, knowledge, index, 'assertion');
+    const assertionKnowledge = guidedKnowledge(recording, `assertion:${recording.assertions.indexOf(assertion)}`, knowledge);
+    const match = userMethod(`assertion:${recording.assertions.indexOf(assertion)}`) ?? (hasAssertionProof ? findMethod(assertion.target, assertionKnowledge, index, assertionEvidence, 'assertion')
+      ?? findMethodByProvenLocator(assertionEvidence, assertionKnowledge, index, 'assertion')
+      ?? findParameterisedMethod(assertionEvidence, assertionKnowledge, index, 'assertion') : null);
     const needsPage = assertion.type === 'url' || assertion.type === 'title';
     if (needsPage)
       fixtures.add('page');
@@ -1326,6 +1443,11 @@ export function mapRecording(recording: Recording): MappingResult {
         // needed it could not see it.
         evidence: judged,
       });
+      if (quality && !hasAssertionProof && quality.outcome !== 'NEEDS_REVIEW') {
+        quality.outcome = 'NEEDS_REVIEW';
+        quality.expression = null;
+        quality.reason = 'assertion target has no admissible interaction-time identity evidence';
+      }
       if (quality)
         assessments.push({ from: `assert ${assertion.type} ${assertion.target}`, assessment: quality });
       // WHERE THE EVIDENCE CAME FROM, said out loud wherever a reason is written.
@@ -1373,15 +1495,18 @@ export function mapRecording(recording: Recording): MappingResult {
     });
   };
 
-  for (const assertion of recording.assertions) {
+  for (const [assertionIndex, assertion] of recording.assertions.entries()) {
     if (assertion.afterActions === undefined) {
       orderReconstructed = false;
+      const first = pending.length;
       emitAssertion(assertion, pending);
+      for (const step of pending.slice(first)) step.diagnostic = {recordingStepKey:`assertion:${assertionIndex}`,label:step.label,pageObject:step.pageObject,method:step.method,locator:assertion.locator ?? undefined};
       continue;
     }
     const at = boundary[Math.min(assertion.afterActions, recording.actions.length)] ?? steps.length;
     const built: MappedStep[] = [];
     emitAssertion(assertion, built);
+    for (const step of built) step.diagnostic = {recordingStepKey:`assertion:${assertionIndex}`,label:step.label,pageObject:step.pageObject,method:step.method,locator:assertion.locator ?? undefined};
     placements.push({ at, steps: built });
   }
 
@@ -1403,7 +1528,7 @@ export function mapRecording(recording: Recording): MappingResult {
     steps: ordered,
     fixtures,
     reused,
-    unresolved: steps.filter(step => step.kind === 'unresolved'),
+    unresolved: ordered.filter(step => step.kind === 'unresolved'),
     needsReview: ordered.filter(step => step.kind === 'needs-review'),
     evidence: recording.evidence,
     assessments,
@@ -1491,17 +1616,17 @@ export function assembleSpec(testCase: TestCase, mapping: MappingResult, workboo
   lines.push('/**');
   lines.push(` * Assembled from a Playwright Codegen recording of ${testCase.testCaseId}.`);
   lines.push(' *');
-  lines.push(' * Deterministic: every step below is a recorded action mapped onto an existing');
-  lines.push(' * Page Object method. No browser was opened and no model was asked to write this.');
+  lines.push(' * Recorded actions use explicit user bindings or automatically resolved controls.');
+  lines.push(' * Assembly opened no browser and used no model; it does not prove runtime validity.');
   if (mapping.authenticated) {
     lines.push(' *');
-    lines.push(' * The recording included a sign-in. It is performed here through the existing');
-    lines.push(' * fixture and Page Object - the recorded credentials were never captured.');
+    lines.push(' * Authentication uses the application credential fixture; recorded credential');
+    lines.push(' * values are not emitted into this spec.');
   }
   if (mapping.codegenLocators) {
     lines.push(' *');
-    lines.push(` * ${mapping.codegenLocators} step(s) use the recorded locator directly, because no Page`);
-    lines.push(' * Object method describes that element yet.');
+    lines.push(` * ${mapping.codegenLocators} step(s) use recorded locators directly. Explicitly authored`);
+    lines.push(' * locator choices are not automatic target-identity validation.');
   }
   lines.push(' */');
   lines.push('');
@@ -1520,7 +1645,7 @@ export function assembleSpec(testCase: TestCase, mapping: MappingResult, workboo
   // `testCase.scenario` is the workbook's Scenario cell, and for a recorded case that
   // cell was written by `scenarioFrom`, which builds it from the last click's `target`
   // - which for an element with no accessible name IS Codegen's CSS selector. So
-  // TC_LOGIN_112 was titled `#tr_1749558 > .tabulator-cell… - 1749558 is ticked`: a
+  // TC_LOGIN_112 was titled `#tr_1749558 > .tabulator-cellÃ¢â‚¬Â¦ - 1749558 is ticked`: a
   // class chain, a child combinator and a generated issue id, every part of which
   // changes when the application is redeployed or the data is recreated.
   //
@@ -1572,6 +1697,7 @@ export function assembleSpec(testCase: TestCase, mapping: MappingResult, workboo
     if (!step.code.length)
       continue;
     lines.push('');
+    if (step.diagnostic) lines.push(`    // @aura-step ${JSON.stringify(diagnosticData(step.diagnostic)).replace(/[\u2028\u2029]/g,' ')}`);
     if (step.code.length === 1) {
       lines.push(`    await step(${literal(step.label)}, async () => {`);
       lines.push(`      ${step.code[0]}`);
@@ -1733,14 +1859,17 @@ export function readAssertions(
  * to invent the acceptance criteria, which is the one thing this toolkit exists to
  * prevent - and the model declined twice when it was asked (TC_LOGIN_028).
  */
-export type RecordedBlock = 'noArtifact' | 'noAssertion' | 'unmappedAction' | 'needsReview';
+export type RecordedBlock = 'noArtifact' | 'noAssertion' | 'unmappedAction' | 'needsReview'
+  | 'navigationCausality' | 'authenticationCapability'
+  /** Authoring was started for a step and never resolved to something that can run. */
+  | 'userBindingIncomplete';
 
 /**
  * Try to build this recorded case's spec without a model or a browser.
  *
  * Returns `assembled: false` with a reason and a `block` whenever it cannot. The
- * caller decides what that means: `unmappedAction` and `noArtifact` fall back to the
- * existing generator, `noAssertion` stops.
+ * caller reports the typed block and retains the recording and evidence. A framework
+ * mapping failure is never automatically delegated to a general AI generator.
  *
  * The artifact is NOT discarded here. It is the primary evidence and the verdict is
  * not known yet: it used to be deleted the moment a spec was written, so a spec the
@@ -1768,6 +1897,7 @@ export function generateFromRecording(
   });
   // The artifact has no URL context of its own; the first navigate carries it.
   recording.startUrl = recording.actions.find(action => action.type === 'navigate')?.value ?? '';
+  recording.authoringOwners = loadOwners(activeScope(), path.join(activeScope().paths.recordingsDir, `${testCase.testCaseId}.spec.ts`), source);
   const mapping = mapRecording(recording);
   const mappingTimeMs = Date.now() - mapStarted;
 
@@ -1788,6 +1918,11 @@ export function generateFromRecording(
   // a generated id resolves to nothing on the next run, and an absolute XPath
   // resolves to whatever moved into that position. Assembling it would spend a full
   // gate run - two Playwright executions - to discover what is already known here.
+  const frameworkBlock = mapping.steps.find(step => step.failure)?.failure;
+  if (frameworkBlock) {
+    return { assembled: false, block: frameworkBlock, mapping, metrics,
+      reason: mapping.steps.filter(step => step.failure).map(step => step.why).join('; ') };
+  }
   if (mapping.needsReview.length) {
     return {
       assembled: false, block: 'needsReview', mapping, metrics,
@@ -1858,7 +1993,7 @@ export function describeMapping(result: RecordedGeneration): string {
     return `  recorded pipeline: ${result.reason}\n`;
   const lines = [`  recorded pipeline: ${result.reason}`];
   for (const step of result.mapping.steps) {
-    const mark = step.kind === 'unresolved' ? 'MISS' : step.kind === 'codegen-locator' ? 'raw ' : 'ok  ';
+    const mark = step.kind === 'needs-review' ? 'NEEDS REVIEW' : step.kind === 'unresolved' ? 'MISS' : step.kind === 'codegen-locator' ? 'raw ' : 'ok  ';
     lines.push(`      ${mark} ${step.from.padEnd(34)} ${step.why}`);
   }
   // Named, not just counted: "4 raw locators" is a number, and these are the four

@@ -78,7 +78,10 @@ export function recordingStatus(testCase: TestCase, dir = recordingsDir()): Reco
   const exists = fs.existsSync(recordingArtifactPath(testCase.testCaseId, dir));
   const status: RecordingStatus = {
     exists,
-    hasEvidence: exists && fs.existsSync(evidenceArtifactPath(testCase.testCaseId, dir)),
+    // ADMISSIBLE evidence, not merely a file. The sidecar is now written even when the
+    // capture layer produced nothing, so that the REASON is on disk instead of the file
+    // simply being absent - which means presence alone no longer answers this question.
+    hasEvidence: exists && admissibleEvidence(testCase.testCaseId, dir).available,
     currentFingerprint: current,
   };
   if (!exists)
@@ -121,10 +124,50 @@ export function rememberRecordingFingerprint(testCase: TestCase, dir = recording
   }
 }
 
+/**
+ * Does this recording carry evidence generation may actually use?
+ *
+ * `available:false` is a recorded fact about the recording, never a soft yes. The reason
+ * travels with it so the workspace can say what is missing rather than leaving somebody to
+ * discover it when generation refuses.
+ */
+function admissibleEvidence(testCaseId: string, dir: string): { available: boolean; reason?: string } {
+  const file = evidenceArtifactPath(testCaseId, dir);
+  if (!fs.existsSync(file))
+    return { available: false, reason: 'no evidence sidecar was written for this recording' };
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as { available?: boolean; reason?: string };
+    return parsed.available === true
+      ? { available: true }
+      : { available: false, reason: parsed.reason ?? 'the recording carries no admissible interaction-time evidence' };
+  } catch {
+    return { available: false, reason: 'the evidence sidecar could not be read' };
+  }
+}
+/**
+ * The reason a recording has no usable evidence, or undefined when it has some.
+ *
+ * A case NOBODY RECORDED has no evidence gap - it has no recording. Answering "no evidence
+ * sidecar was written" there would report a defect about an artefact that was never meant to
+ * exist, which is the same class of mistake as reporting an unusable recording as ready.
+ */
+export function recordingEvidenceGap(testCaseId: string, dir = recordingsDir()): string | undefined {
+  if (!fs.existsSync(recordingArtifactPath(testCaseId, dir)))
+    return undefined;
+  const verdict = admissibleEvidence(testCaseId, dir);
+  return verdict.available ? undefined : verdict.reason;
+}
 /** Human-readable, for the System Information panel. */
 export function describeRecording(status: RecordingStatus): string {
   if (!status.exists)
     return 'No recording - this case is authored in plain English.';
+  // Said BEFORE the fingerprint verdict: a recording can match its row perfectly and still
+  // be unusable. Reporting "Recording matches the authored row." on its own is what let a
+  // recording look ready when generation could never have accepted it.
+  if (!status.hasEvidence) {
+    return 'RECORDING_EVIDENCE_INCOMPLETE - the recording was saved but carries no admissible '
+      + 'interaction-time evidence, so generation cannot identify its targets. Re-record this case.';
+  }
   if (status.stale === true) {
     return 'The recording no longer matches this row. Re-record it, or undo the edit to the steps; '
       + 'the old recording is never reused after an incompatible change.';

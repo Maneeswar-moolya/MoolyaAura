@@ -1,4 +1,6 @@
 import '../testing/isolated-checkout';
+import { reuseInputs } from '../testing/reuse-inputs';
+import { findMethodByProvenLocator } from './from-recording';
 /**
  * Semantic candidates, the family budget, and ranked selection (P5).
  *
@@ -47,7 +49,7 @@ const ROOT = process.cwd();
 
 let failures = 0;
 const check = (label: string, ok: boolean, detail = '') => {
-  process.stdout.write(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? ` — ${detail}` : ''}\n`);
+  process.stdout.write(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? ` â€” ${detail}` : ''}\n`);
   if (!ok)
     failures++;
 };
@@ -159,7 +161,7 @@ function checkSemanticGeneration(): void {
   // itself chose is now generated independently, from the tag and the text.
   const mobiles = build(MOBILES);
   check('B: Mobiles now generates a candidate at all', mobiles.length > 0, String(mobiles.length));
-  check('B: and it is getByRole(link, name) — derived, not read off Codegen',
+  check('B: and it is getByRole(link, name) â€” derived, not read off Codegen',
       expressions(mobiles).includes('page.getByRole("link", { name: "Mobiles", exact: true })'),
       expressions(mobiles).join(' | '));
   // P10 CHANGED THIS CONTRACT, and the change is the point rather than a relaxation.
@@ -192,7 +194,7 @@ function checkSemanticGeneration(): void {
   const email = build(EMAIL);
   check('B: a placeholder yields getByPlaceholder',
       expressions(email).includes('page.getByPlaceholder("Enter your email")'));
-  check('B: an input gets NO named role — its name lives in a <label> nothing captures',
+  check('B: an input gets NO named role â€” its name lives in a <label> nothing captures',
       !expressions(email).some(e => /getByRole\("textbox", \{ name/.test(e)),
       expressions(email).filter(e => e.includes('getByRole')).join(' | '));
   check('B: it gets the unnamed role instead, which scores 30 and proves nothing on its own',
@@ -206,14 +208,14 @@ function checkSemanticGeneration(): void {
 
   section('B - and refuses, loudly, where the evidence is missing');
   const every = [...build(MOBILES), ...build(EMAIL), ...build(SIGN_IN), ...build(SELLER)];
-  check('B: no getByAltText anywhere — alt is read into attributes and dropped',
+  check('B: no getByAltText anywhere â€” alt is read into attributes and dropped',
       !expressions(every).some(e => e.includes('getByAltText')));
-  check('B: no href candidate anywhere — href is never captured',
+  check('B: no href candidate anywhere â€” href is never captured',
       !expressions(every).some(e => /href/i.test(e)));
   check('B: getByLabel only ever comes from an aria-label',
       expressions(every).filter(e => e.includes('getByLabel'))
           .every(e => e.includes('Become a Seller')));
-  check('B: a <div> gets no role candidate — nothing maps it',
+  check('B: a <div> gets no role candidate â€” nothing maps it',
       implicitRole({ tag: 'div' }) === null
       && !expressions(build({ target: { tag: 'div', text: 'x' }, ancestors: [], descendants: [] }))
           .some(e => e.includes('getByRole')));
@@ -223,7 +225,7 @@ function checkSemanticGeneration(): void {
   // would let ranking prefer it over `#create_team_cancel_btn` on the strength of text
   // that happened to be unique when it was recorded. The content family already refuses
   // page-wide text; the semantic family refuses it for the same reason.
-  check('B: no page-wide getByText is ever generated — only the scoped form',
+  check('B: no page-wide getByText is ever generated â€” only the scoped form',
       expressions(every).filter(e => e.includes('getByText'))
           .every(e => e.startsWith('page.locator("#')),
       expressions(every).filter(e => e.includes('getByText')).join(' | ') || 'none generated');
@@ -239,7 +241,7 @@ function checkSemanticGeneration(): void {
       expressions(email).filter(e => e.startsWith('page.locator("#'))
           .every(e => e.includes('#loginForm') || e.includes('#login_area') || e.includes('#email_field')),
       expressions(email).filter(e => e.startsWith('page.locator("#')).join(' | '));
-  check('B: Mobiles gets no scoped candidate — it captured no ancestor to scope to',
+  check('B: Mobiles gets no scoped candidate â€” it captured no ancestor to scope to',
       !expressions(mobiles).some(e => e.startsWith('page.locator("#')));
 
   section('B - every generated expression is one buildLocator can rebuild');
@@ -274,11 +276,11 @@ function checkFamilyBudget(): void {
   for (const [name, graph] of [['Email', EMAIL], ['Sign In', SIGN_IN], ['Become a Seller', SELLER]] as const) {
     const built = build(graph);
     const structural = built.filter(entry => entry.measuredBy !== 'expression');
-    check(`C: ${name} — the structural budget is untouched (<= ${MAX_CANDIDATES})`,
+    check(`C: ${name} â€” the structural budget is untouched (<= ${MAX_CANDIDATES})`,
         structural.length <= MAX_CANDIDATES, String(structural.length));
-    check(`C: ${name} — every structural candidate comes first, in its original order`,
+    check(`C: ${name} â€” every structural candidate comes first, in its original order`,
         built.slice(0, structural.length).every(entry => entry.measuredBy !== 'expression'));
-    check(`C: ${name} — the total respects the ceiling of ${MAX_TOTAL_CANDIDATES}`,
+    check(`C: ${name} â€” the total respects the ceiling of ${MAX_TOTAL_CANDIDATES}`,
         built.length <= MAX_TOTAL_CANDIDATES, String(built.length));
   }
 
@@ -310,9 +312,9 @@ function checkFamilyBudget(): void {
         strategy: 'scoped-class', selector: '.x', expression: 'page.locator(".x")',
         family: 'structural', measuredBy: 'expression',
       }]).length === 0);
-  check('C: the budget is deterministic — the same input twice gives the same output',
+  check('C: the budget is deterministic â€” the same input twice gives the same output',
       JSON.stringify(applyFamilyBudget(mixed)) === JSON.stringify(applyFamilyBudget(mixed)));
-  check('C: and it consults no measurement — the signature takes candidates only',
+  check('C: and it consults no measurement â€” the signature takes candidates only',
       applyFamilyBudget.length === 1);
 }
 
@@ -440,7 +442,8 @@ function checkWiring(): void {
   check('E: expression candidates are measured at the press',
       /measureExpressionCandidates\(frame, entry, expressions\)/.test(recorder));
   check('E: and at an assertion pick, stamped as a pick',
-      /'pick',\n\s*\);/.test(recorder));
+      /'pick',\r?\n\s*\);/.test(recorder)
+      && /'pick',\r?\n\s*\);/.test(recorder.replace(/\r?\n/g, '\r\n')));
   check('E: but refused at claim time, where identity cannot be asked',
       /if \(candidate\.measuredBy === 'expression'\)\s*\n\s*continue;/.test(recorder));
 
@@ -456,12 +459,21 @@ function checkWiring(): void {
   // key off it. The resolver walks the whole ranked list rather than the top of it, so a
   // method declared for any proven expression is still found.
   const generator = fs.readFileSync(path.join(ROOT, 'ai', 'autocode', 'from-recording.ts'), 'utf8');
+  const reuse = reuseInputs();
+  const resolve = (evidence = reuse.evidence, knowledge = reuse.knowledge, role: 'action' | 'assertion' = 'action') =>
+    findMethodByProvenLocator(evidence, knowledge, reuse.index, role);
   check('E: Page Object reuse considers every proven candidate, not just the best',
-      /for \(const proven of rankProvenCandidates\(evidence, role\)\)/.test(generator));
-  check('E: and each one still has to pass provesIdentity for this role',
-      /function declaredMethodFor\([^)]*\n?[^{]*\{\s*\n\s*if \(!provesIdentity\(proven, role\)\)/.test(generator));
-  check('E: two claimants for one expression are still refused',
-      /return found\.length === 1 \? found\[0\] : null;/.test(generator));
+      rankProvenCandidates(reuse.evidence, 'action')[0]?.expression !== reuse.expression && resolve()?.method === 'control');
+  for (const invalid of [{ identityMatched: false }, { identityMatched: undefined }, { sameDocument: false }, { matchCount: 2 }, { measuredAt: 'pick' as const }]) {
+    const evidence = structuredClone(reuse.evidence);
+    Object.assign(evidence.derivedCandidates![1], invalid);
+    check(`E: each candidate needs action identity ${JSON.stringify(invalid)}`, resolve(evidence) === null);
+  }
+  const pick = structuredClone(reuse.evidence); pick.derivedCandidates![1].measuredAt = 'pick';
+  check('E: assertion pick identity remains usable', resolve(pick, reuse.knowledge, 'assertion')?.method === 'control');
+  const ambiguous = structuredClone(reuse.knowledge);
+  ambiguous[0].elements.push({ ...ambiguous[0].elements[0], id: 'other', page_object_method: 'other' });
+  check('E: two claimants for one expression are still refused', resolve(reuse.evidence, ambiguous) === null);
 
   // Snapshot capture moved in P5.1 and the qualification rule itself did not: the same
   // container/role/id test still decides which ancestors are KEPT, and exactly one
@@ -471,7 +483,7 @@ function checkWiring(): void {
   check('E: the ancestor qualification rule is unchanged',
       /CONTAINERS\.indexOf\(current\.tagName\.toLowerCase\(\)\) >= 0\s*\n?\s*\|\| current\.getAttribute\('role'\) \|\| current\.id/
           .test(capture));
-  check('E: and the in-page measurement is unchanged — it never sees a semantic candidate',
+  check('E: and the in-page measurement is unchanged â€” it never sees a semantic candidate',
       /document\.querySelectorAll\(candidate\.selector\)/.test(capture));
 }
 

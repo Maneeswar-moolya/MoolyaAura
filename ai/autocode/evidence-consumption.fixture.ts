@@ -1,4 +1,7 @@
 import '../testing/isolated-checkout';
+import { reuseInputs } from '../testing/reuse-inputs';
+import { findMethodByProvenLocator } from './from-recording';
+import { rankProvenCandidates } from './abstraction/classify';
 /**
  * Which captured evidence becomes a candidate, and which deliberately does not.
  *
@@ -239,8 +242,11 @@ function checkPageObjectInteraction(): void {
   // Reuse reads the RANKED list, not one candidate, so a longer candidate list can only
   // ever give it more chances - adding href and alt cannot remove a match.
   const generator = fs.readFileSync(path.join(ROOT, 'ai', 'autocode', 'from-recording.ts'), 'utf8');
+  const reuse = reuseInputs();
+  check('D: raw candidate ranks above the declared capability',
+      rankProvenCandidates(reuse.evidence, 'action')[0]?.expression !== reuse.expression);
   check('D: reuse walks every proven candidate',
-      /for \(const proven of rankProvenCandidates\(evidence, role\)\)/.test(generator));
+      findMethodByProvenLocator(reuse.evidence, reuse.knowledge, reuse.index, 'action')?.method === 'control');
   check('D: and the three resolvers still run before a recorded locator is emitted',
       /findMethod\(/.test(generator) && /findMethodByProvenLocator\(/.test(generator)
       && /findParameterisedMethod\(/.test(generator));

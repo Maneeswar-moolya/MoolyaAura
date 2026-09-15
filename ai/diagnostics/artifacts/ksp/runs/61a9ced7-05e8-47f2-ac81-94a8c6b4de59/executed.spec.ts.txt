@@ -1,0 +1,36 @@
+/**
+ * Assembled from a Playwright Codegen recording of TC_SMOKE_024.
+ *
+ * Recorded actions use explicit user bindings or automatically resolved controls.
+ * Assembly opened no browser and used no model; it does not prove runtime validity.
+ */
+
+import { expect, test, trace } from '../../ksp.fixtures';
+
+test.describe('Test Cases', () => {
+  test('TC_SMOKE_024 - Log In â€” form contains "Email:"', async ({ page, step, initialLandingPage, ssoauthLoginPage }) => {
+
+    await trace({
+      testCaseId: 'TC_SMOKE_024',
+      module: '',
+      scenario: 'Log In â€” form contains "Email:"',
+      sourceWorkbook: 'ksp-test-cases.xlsx',
+      sourceWorksheet: 'Test Cases',
+    });
+
+    // @aura-step {"recordingStepKey":"action:0","label":"Open recorded destination","locator":"","provenance":"AUTO","executionMode":"AUTO"}
+    await step('Open recorded destination', async () => {
+      await page.goto('https://stgsupport.keysight.com/us/en/home');
+    });
+
+    // @aura-step {"recordingStepKey":"action:1","label":"Click Log In","page":"initialLandingPage","pageObject":"InitialLandingPage","method":"logIn","locator":"page.locator('header').getByRole('link', { name: 'Log In' })","provenance":"USER_CONFIRMED","executionMode":"PAGE_OBJECT_METHOD","validationStatus":"USER AUTHORED — NOT VALIDATED"}
+    await step('Click Log In', async () => {
+      await (await initialLandingPage.logIn()).click();
+    });
+
+    // @aura-step {"recordingStepKey":"assertion:0","label":"form contains \"Email:\"","pageObject":"SsoauthLoginPage","method":"formState","locator":"page.locator('form')"}
+    await step('form contains "Email:"', async () => {
+      await expect(await ssoauthLoginPage.formState()).toContainText('Email:');
+    });
+  });
+});

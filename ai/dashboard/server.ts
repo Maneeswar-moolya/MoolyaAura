@@ -41,7 +41,7 @@ import { readCase, saveCase, suggestTestCaseId, type CaseDraft } from './authori
 // bookkeeper with `testCase === undefined` - a throw on every poll of the Record
 // screen. Verified by bundling this file: only one `recordingStatus` survived, the
 // two-argument one.
-import { hasPendingRecording, keepArtifactFor, recordingStatus as recorderSessionStatus, startRecording, stopRecording, toDraft } from './recorder';
+import { hasPendingRecording, keepArtifactFor, recordingStatus as recorderSessionStatus, startRecording, stopRecording, takeRecordedGenerationContext, toDraft } from './recorder';
 import { readState, surveyWork } from '../autocode/work';
 import { assessReadiness } from '../excel/readiness';
 import { describeRecording, recordingStatus, rememberRecordingFingerprint } from './case-status';
@@ -55,13 +55,34 @@ import {
 import {
   provisionProject, type ProvisionRequest, unownedWorkbooks, workbooksFor,
 } from '../projects/provision';
-import { addApplication } from '../projects/registry';
-import { type ApplicationScope, resetActiveScope, ScopeError } from '../projects/scope';
+import { addApplication, readRegistry, baseUrlFor } from '../projects/registry';
+import { saveEnvironment, validBaseUrl } from '../projects/environments';
+import { randomUUID } from 'node:crypto';
+import { pendingRecordingFor } from './recorder';
+import { ownershipReview, createAuthoringPage } from './page-ownership';
+import { recordingMappingReview, saveRecordingMapping } from './recording-mapping';
+import { createLogicalPage, createPageObject, createAuthoringMethod } from './authoring-catalog';
+import { codeGraph, readCode, codeDefinition, saveCode } from './code-workspace';
+import { listQuarantine, importLegacyQuarantine, quarantineDetails, quarantineFile, quarantineDefinition, saveQuarantineDraft,
+  validateQuarantine, rerunQuarantine, promoteQuarantine, reviewQuarantineMapping, saveQuarantineMapping, rebuildQuarantineDraft, openQuarantineTrace,
+  quarantineDependencyDrift, refreshQuarantineDependencies } from './quarantine-workspace';
+import { diagnosticRoot, containedFile } from '../diagnostics/artifacts';
+import { writeRunReport } from './run-report';
+import { createQuarantinePackage, quarantineExecutionContext } from './quarantine-workspace';
+import { retainAttempt } from '../diagnostics/runtime';
+import { sourceSteps } from '../diagnostics/manifest';
+import { classifyExecutionFailure } from '../autocode/verify';
+import { codeDependencySources } from './code-workspace';
+import { type ApplicationScope, resolveScope, resetActiveScope, ScopeError } from '../projects/scope';
 import { buildCache, writeCache } from '../excel/data-driven';
+import { readTestData, updateTestData, credentialPreflight } from '../test-data/store';
+import { executionPlan, generationSelection, resolveExecutionData, type ExecutionSelection, type ExecutionProfile, type SelectionRequest } from '../test-data/execution';
+import { resolveExecutionContext, executionEnvironment, preflightAuthentication, ExecutionConfigurationError, type ExecutionContext, type ExecutionContextInput } from '../projects/execution-context';
+import { credentialSecrets } from '../test-data/secrets';
 import {  readMapping, runnerFor, scanDataDrivenRunners, upsertEntry, writeMapping } from '../excel/mapping';
 import { parseWorkbook } from '../excel/parser';
 import { parseResults, type ExecutionRecord } from '../excel/results';
-import { readStepLogs, type StepRecord } from '../excel/steps';
+import { readStepLogEntries, type StepRecord } from '../excel/steps';
 import type { TestCase } from '../excel/types';
 
 /**
@@ -79,7 +100,7 @@ const HOSTNAME = process.env.EXCEL_DASHBOARD_HOST ?? 'moolyaautomationreport.com
  * before. The page compares it against its own and says so plainly rather than
  * failing with a bare 404 from a stale process.
  */
-const API_VERSION = 8;
+const API_VERSION = 11;
 
 /** Port 80 so the URL carries no ":1234". Falls back when it is unavailable. */
 const PORT = Number(process.env.EXCEL_DASHBOARD_PORT) || 80;
@@ -109,6 +130,7 @@ const VIDEO_MODES = ['off', 'retain-on-failure', 'on'] as const;
 const TRACE_MODES = ['off', 'retain-on-failure', 'on'] as const;
 
 interface RunRequest {
+  executionContext?: ExecutionContextInput;
   workbook: string;
   testCaseIds: string[];
   browser: Browser;
@@ -129,18 +151,45 @@ interface Evidence {
   url: string;
 }
 
-/** One step of one test case, with its screenshot served from this run's copy. */
-interface StepView {
+/** One capture of one step, served from this run's own copy. */
+interface StepCaptureView {
+  captureRef: string;
+  captureType: string;
+  capturedAt?: string;
+  route?: string;
+  /** URL under /api/runs/<id>/evidence/steps/... */
+  url: string;
+}
+
+/** One step of one test case, with its screenshots served from this run's copy. */
+interface StepView extends Omit<StepRecord, "screenshotPath" | "captures"> {
   index: number;
   title: string;
   status: 'passed' | 'failed';
   durationMs: number;
   error?: string;
+  /**
+   * Every picture this step holds, each addressed by its OWN url.
+   *
+   * The single `screenshotUrl` below is the older model and is kept for runs recorded
+   * under it. It could only ever describe one picture per step, and it was populated
+   * only where the legacy capture mode asked for one - which is why a passing run, whose
+   * steps were photographed all along, arrived at the screen with nothing to show.
+   */
+  captures?: StepCaptureView[];
   /** URL under /api/runs/<id>/evidence/steps/... , when a screenshot was taken. */
   screenshotUrl?: string;
 }
 
 interface RunRecord {
+  executionContext?: ExecutionContext;
+  executionSelection?: ExecutionSelection;
+  executionProfile?: ExecutionProfile;
+  status?: 'queued' | 'running' | 'completed' | 'cancelled';
+  parentExecutionId?: string;
+  environmentDisplayName?: string;
+  environmentRuns?: RunRecord[];
+  sourceEnvironmentId?: string;
   /**
    * EXECUTION IDENTITY = applicationId + testCaseId + runId.
    *
@@ -181,6 +230,10 @@ interface RunRecord {
  * test-results-excel/, which Playwright wipes at the start of every run. */
 let active: { record: RunRecord; child: ChildProcess; log: string[]; clients: Set<http.ServerResponse> } | null = null;
 
+/** One parent owns the existing serialized scratch output until every child finishes. */
+let executionBatch: { record: RunRecord; clients: Set<http.ServerResponse>; log: string[];
+  cancelled: boolean; queue: Array<{ scope: ApplicationScope; registry: string; record: RunRecord }> } | null = null;
+
 /**
  * The code generator, spawned after a save or an upload.
  *
@@ -189,6 +242,7 @@ let active: { record: RunRecord; child: ChildProcess; log: string[]; clients: Se
  * running Playwright, so the two still cannot overlap.
  */
 let autocode: {
+  executionContext:ExecutionContext;
   child: ChildProcess; log: string[]; startedAt: string; workbook: string; ids: string[];
   clients: Set<http.ServerResponse>;
 } | null = null;
@@ -219,11 +273,20 @@ function broadcastAutocode(event: string, data: unknown): void {
  * takes its own lock as well, so a watcher started in a terminal and this
  * cannot collide either.
  */
-function startAutocode(workbookPath: string, ids: string[]): { started: boolean; reason?: string } {
-  if (active)
+function startAutocode(workbookPath: string, ids: string[], scope = scopeForWorkbook(path.relative(ROOT,workbookPath)), input:ExecutionContextInput = {}, executionData?:SelectionRequest): { started: boolean; reason?: string; executionContext?:ExecutionContext; executionProfile?:ExecutionProfile } {
+  if (active || executionBatch)
     return { started: false, reason: 'a test run is in progress' };
   if (autocode)
     return { started: false, reason: 'the generator is already running' };
+  // executionPlan resolves the profile and credentialPreflight proves it can serve THIS
+  // target environment - exists, active, owned by this application, username present,
+  // password decryptable. Both throw CREDENTIAL_CONFIGURATION_FAILURE. Nothing here
+  // substitutes another profile or falls back to the application binding: a person named an
+  // account, and quietly generating under a different one is a worse answer than refusing.
+  const planned=executionData ? executionPlan(scope,ids,executionData) : [];
+  if(planned.length>1)throw Error('Choose one execution profile and test case for generation verification. Use Run for multiple execution instances.');
+  const selection=planned[0]?.selection;
+  const context=resolveExecutionContext(scope,input,selection);
 
   const args = [
     'ai/autocode/cli.ts',
@@ -237,11 +300,12 @@ function startAutocode(workbookPath: string, ids: string[]): { started: boolean;
   const child = spawn(process.execPath, [require.resolve('tsx/cli'), ...args], {
     cwd: ROOT,
     shell: false,
-    env: { ...process.env, FORCE_COLOR: '0' },
+    env: { ...process.env, ...executionEnvironment(context,selection), FORCE_COLOR: '0' },
   });
 
-  const log: string[] = [];
+  const log: string[] = [`execution context: ${JSON.stringify(context)}\n`];
   autocode = {
+    executionContext:context,
     child, log,
     startedAt: new Date().toISOString(),
     workbook: path.relative(ROOT, workbookPath).replace(/\\/g, '/'),
@@ -268,7 +332,9 @@ function startAutocode(workbookPath: string, ids: string[]): { started: boolean;
     autocode = null;
   });
 
-  return { started: true };
+  // The profile, so the page can SHOW what this generation is running as. Names and IDs
+  // only - ExecutionProfile has no field for an account or a password.
+  return { started: true, executionContext:context, ...(planned[0] ? { executionProfile: planned[0].profile } : {}) };
 }
 
 /**
@@ -295,6 +361,7 @@ function recordGeneration(run: typeof autocode, exitCode: number | null): void {
     const log = run.log.join('');
     const parsed = parseGenerationLog(log);
     const record: GenerationRecord = {
+      executionContext:run.executionContext,
       id: newGenerationId(),
       runId: parsed.runId,
       workbook: run.workbook,
@@ -343,7 +410,8 @@ async function readJsonBody(req: http.IncomingMessage): Promise<unknown> {
       throw new Error('Request body too large');
     chunks.push(chunk as Buffer);
   }
-  return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+  try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); }
+  catch { throw Error('Invalid JSON request body. Submitted values were not retained.'); }
 }
 
 /** Resolve a client-supplied workbook path, refusing anything outside the repo. */
@@ -399,7 +467,7 @@ async function describeWorkbook(workbookPath: string, scope: ApplicationScope) {
   const parsed = await parseWorkbook(workbookPath);
   const mapping = readMapping(scope.paths.mappingFile);
   const cache = buildCache(parsed, new Date().toISOString());
-  const runners = scanDataDrivenRunners(SPEC_DIR);
+  const runners = scanDataDrivenRunners(SPEC_DIR, scope);
 
   // 'no-runner' survives only for the case where even the wildcard runner is
   // missing, which means someone deleted tests-e2e/generic/generic.spec.ts.
@@ -516,7 +584,7 @@ async function activate(workbookPath: string, testCaseId: string, scope: Applica
   const cache = buildCache(parsed, new Date().toISOString());
   writeCache(cache);
 
-  const runners = scanDataDrivenRunners(SPEC_DIR);
+  const runners = scanDataDrivenRunners(SPEC_DIR, scope);
   const wanted = testCaseId.toUpperCase();
   const rejected = cache.rejected.find(row => row.testCaseId.toUpperCase() === wanted);
   const saved = cache.cases.find(row => row.testCaseId.toUpperCase() === wanted) ?? rejected;
@@ -554,7 +622,7 @@ async function activate(workbookPath: string, testCaseId: string, scope: Applica
   // old property that a save which needs no code starts no process.
   const mapping = readMapping(scope.paths.mappingFile);
   const wantedId = saved?.testCaseId ?? testCaseId;
-  const survey = surveyWork(parsed, mapping, readState(), new Set([wantedId.toUpperCase()]));
+  const survey = surveyWork(parsed, mapping, readState(), new Set([wantedId.toUpperCase()]), scope);
   const needsCode = survey.work.length > 0;
   // Exactly one row was surveyed, so there is at most one reason to report.
   const noCodeReason = needsCode ? undefined : survey.skipped[0]?.reason;
@@ -572,6 +640,29 @@ async function activate(workbookPath: string, testCaseId: string, scope: Applica
   };
 }
 
+/**
+ * The typed code behind a refused configuration, whoever raised it.
+ *
+ * `ExecutionConfigurationError` carries its code as a field; the Test Data layer raises the
+ * same vocabulary as a plain Error whose message BEGINS with the code, because it is read by
+ * the CLI and the gates as text. Reading only the first shape reported a refused credential
+ * profile as the generic GENERATION_NOT_STARTED, which tells a person nothing about what to
+ * fix - and is exactly the case section 8 asks to be named.
+ */
+function configurationFailureCode(error: unknown): string | undefined {
+  if (error instanceof ExecutionConfigurationError)
+    return error.code;
+  const message = error instanceof Error ? error.message : String(error);
+  const named = /^(CREDENTIAL|DATA|SOURCE_ENVIRONMENT|BROWSER|EXECUTION)_CONFIGURATION_FAILURE\b/.exec(message);
+  return named?.[0];
+}
+function executionInput(body:any):ExecutionContextInput {
+  const input:ExecutionContextInput={...(body.executionContext??{})};
+  for(const key of ['applicationId','environmentId','sourceEnvironmentId','browserEngine','browserChannel','headed','locatorTimeoutMs'] as const)
+    if(body[key]!==undefined)(input as any)[key]=body[key];
+  if(input.browserEngine===undefined&&body.browser!==undefined)input.browserEngine=body.browser;
+  return input;
+}
 function parseRunRequest(body: unknown, known: Set<string>): RunRequest {
   const input = (body ?? {}) as Record<string, unknown>;
 
@@ -585,7 +676,7 @@ function parseRunRequest(body: unknown, known: Set<string>): RunRequest {
   if (unknown.length)
     throw new Error(`Not in this workbook: ${unknown.slice(0, 5).join(', ')}`);
 
-  const browser = String(input.browser ?? 'chromium') as Browser;
+  const browser = String(executionInput(input).browserEngine ?? 'chromium') as Browser;
   if (!BROWSERS.includes(browser))
     throw new Error(`Unknown browser "${browser}"`);
 
@@ -602,10 +693,11 @@ function parseRunRequest(body: unknown, known: Set<string>): RunRequest {
 
   return {
     workbook: '',
+    executionContext:executionInput(input),
     testCaseIds: ids,
     browser,
     workers,
-    headed: input.headed === true,
+    headed: executionInput(input).headed === true,
     inPlace: input.inPlace === true,
     screenshot: pick(input.screenshot, SCREENSHOT_MODES, 'only-on-failure', 'Screenshot'),
     video: pick(input.video, VIDEO_MODES, 'retain-on-failure', 'Video'),
@@ -699,30 +791,48 @@ function collectEvidence(runId: string): Evidence[] {
  * exactly nothing if it is gone by the time somebody comes back to look at why
  * a test went red last Tuesday.
  */
-function collectSteps(runId: string): Record<string, StepView[]> {
-  const logs = readStepLogs();
+function collectSteps(runId: string, scope: ApplicationScope): Record<string, StepView[]> {
   const views: Record<string, StepView[]> = {};
-
-  for (const [testCaseId, log] of Object.entries(logs)) {
-    views[testCaseId] = log.steps.map((step: StepRecord) => {
-      const view: StepView = {
-        index: step.index, title: step.title, status: step.status,
-        durationMs: step.durationMs, error: step.error,
-      };
-      if (!step.screenshotPath || !fs.existsSync(step.screenshotPath))
-        return view;
-      try {
-        const name = `${String(step.index).padStart(2, '0')}.png`;
-        const destination = path.join(RUNS_DIR, runId, 'evidence', 'steps', testCaseId, name);
-        fs.mkdirSync(path.dirname(destination), { recursive: true });
-        fs.copyFileSync(step.screenshotPath, destination);
-        view.screenshotUrl =
-          `/api/runs/${runId}/evidence/steps/${encodeURIComponent(testCaseId)}/${name}`;
-      } catch {
-        // A missing screenshot must not cost the step list it belongs to.
+  for (const log of readStepLogEntries()) {
+    if (log.applicationId !== scope.applicationId || log.environmentId !== scope.environmentId || log.runId !== runId) continue;
+    for (const step of log.steps) {
+      if (!step.stepId || !step.attemptId || step.runId !== runId || step.environmentId !== scope.environmentId || step.applicationId !== scope.applicationId) continue;
+      const { screenshotPath, captures, ...rest } = step;
+      const view: StepView = rest as StepView;
+      (views[log.testCaseId] ||= []).push(view);
+      const safeIdentity = /^[A-Za-z0-9_-]+$/.test(log.testCaseId) && /^[a-z0-9-]+$/i.test(step.attemptId) && /^[a-z0-9-]+$/i.test(step.stepId);
+      // EVERY capture this step took, each copied under ITS OWN reference.
+      //
+      // Playwright rewrites its output directory on the next run, so a step's pictures
+      // only survive because they are copied here; and they are keyed by captureRef, so
+      // a step's second picture can never overwrite its first, and no step can ever be
+      // served another step's. A capture whose file has gone is dropped rather than
+      // linked to nothing.
+      if (safeIdentity) for (const capture of captures ?? []) {
+        if (!capture?.artifact || !/^[a-zA-Z0-9][\w./-]*\.png$/.test(capture.artifact) || capture.artifact.includes('..')) continue;
+        if (!/^[a-z0-9-]+$/i.test(capture.captureRef)) continue;
+        const source = path.join(ROOT,'test-results-excel',capture.artifact);
+        if (!fs.existsSync(source)) continue;
+        try {
+          const relativeFile = `steps/${log.testCaseId}/${step.attemptId}/${step.stepId}/${capture.captureRef}.png`;
+          const destination = path.join(RUNS_DIR,runId,'evidence',relativeFile);
+          fs.mkdirSync(path.dirname(destination),{recursive:true}); fs.copyFileSync(source,destination);
+          (view.captures ||= []).push({ captureRef: capture.captureRef, captureType: capture.captureType,
+            capturedAt: capture.capturedAt, route: capture.route,
+            url: `/api/runs/${runId}/evidence/${relativeFile}` });
+        } catch { /* The recorded step survives an unavailable picture. */ }
       }
-      return view;
-    });
+      if (!screenshotPath || !fs.existsSync(screenshotPath)) continue;
+      const relative = path.relative(path.join(ROOT,'test-results-excel'),fs.realpathSync(screenshotPath));
+      if (relative.startsWith('..') || path.isAbsolute(relative)) continue;
+      if (!safeIdentity) continue;
+      try {
+        const relativeFile = `steps/${log.testCaseId}/${step.attemptId}/${step.stepId}.png`;
+        const destination = path.join(RUNS_DIR,runId,'evidence',relativeFile);
+        fs.mkdirSync(path.dirname(destination),{recursive:true}); fs.copyFileSync(screenshotPath,destination);
+        view.screenshotUrl = `/api/runs/${runId}/evidence/${relativeFile}`;
+      } catch { /* The recorded step survives an unavailable screenshot. */ }
+    }
   }
   return views;
 }
@@ -737,10 +847,10 @@ function summarise(results: ExecutionRecord[]): RunRecord['summary'] {
 }
 
 function broadcast(event: string, data: unknown): void {
-  if (!active)
+  if (!active && !executionBatch)
     return;
   const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-  for (const client of active.clients)
+  for (const client of executionBatch?.clients || active!.clients)
     client.write(payload);
 }
 
@@ -750,9 +860,10 @@ function saveRun(record: RunRecord, log: string[]): void {
       `${JSON.stringify({ ...record, log }, null, 2)}\n`, 'utf8');
 }
 
-function startRun(workbookPath: string, request: RunRequest, scope: ApplicationScope): RunRecord {
-  const id = new Date().toISOString().replace(/[:.]/g, '-');
-  const record: RunRecord = {
+function startRun(workbookPath: string, request: RunRequest, scope: ApplicationScope,
+    prepared?: RunRecord, registrySnapshot?: string, completed?: (record: RunRecord, log: string[]) => void): RunRecord {
+  const id = prepared?.id || new Date().toISOString().replace(/[:.]/g, '-') + '-' + randomUUID().slice(0,8);
+  const record: RunRecord = prepared || {
     // Stamped from the scope the ROUTE resolved, never looked up again here - the
     // route already refused the request if no project was chosen.
     applicationId: scope.applicationId,
@@ -765,6 +876,30 @@ function startRun(workbookPath: string, request: RunRequest, scope: ApplicationS
     steps: {},
     summary: { passed: 0, failed: 0, skipped: 0, flaky: 0 },
   };
+
+  const context=resolveExecutionContext(scope,record.executionContext ?? request.executionContext ?? {},record.executionSelection);
+  for(const id of request.testCaseIds){const file=readMapping(scope.paths.mappingFile)[id]?.testFile;
+    preflightAuthentication(scope,record.executionSelection,Boolean(file && fs.existsSync(path.resolve(file)) && /\bappCredentials\b/.test(fs.readFileSync(path.resolve(file),'utf8'))));}
+  record.executionContext=context;record.sourceEnvironmentId=context.sourceEnvironmentId;
+  record.status = 'running'; record.startedAt = new Date().toISOString();
+  const registry = registrySnapshot || JSON.stringify(readRegistry());
+  const contextFile = path.join(RUNS_DIR,id,'context.registry.json');
+  fs.mkdirSync(path.dirname(contextFile),{recursive:true}); fs.writeFileSync(contextFile,registry);
+  saveRun(record,[]);
+
+  if(record.executionSelection) resolveExecutionData(scope,record.executionSelection);
+  const secrets = [...credentialSecrets(), ...Object.values(scope.credentials || {}).map(name => process.env[name!]).filter((value): value is string => Boolean(value))];
+  const redact = (text: string) => secrets.reduce((safe, secret) => safe.split(secret).join('[REDACTED]'), text);
+  const selectedCase=record.executionSelection?.testCaseId;
+  const profileEntry=selectedCase?readMapping(scope.paths.mappingFile)[selectedCase]:undefined;
+  const profileSpec=profileEntry?.testFile;
+  const profileSource=profileSpec&&fs.existsSync(path.resolve(ROOT,profileSpec))?fs.readFileSync(path.resolve(ROOT,profileSpec),'utf8'):undefined;
+  let profileDependencies:Record<string,string>={};
+  if(profileSource&&profileSpec){for(const [file,text]of codeDependencySources(scope,selectedCase!,new Map([[path.resolve(ROOT,profileSpec),profileSource]])))profileDependencies[path.relative(ROOT,file).replace(/\\/g,'/')]=text;}
+  const childEnvironment = {...process.env};
+  const allowedReferences = new Set(Object.values(scope.credentials || {}));
+  for (const app of readRegistry().applications) for (const environment of Object.values(app.environments))
+    for (const name of Object.values(environment.credentials || {})) if(name && !allowedReferences.has(name)) delete childEnvironment[name];
 
   // argv array, shell:false. Nothing here is ever concatenated into a command
   // string, so a test case ID containing shell metacharacters is just a string.
@@ -787,15 +922,27 @@ function startRun(workbookPath: string, request: RunRequest, scope: ApplicationS
     cwd: ROOT,
     shell: false,
     env: {
-      ...process.env,
+      ...childEnvironment,
       // Only unlock the extra projects when one is actually requested, so the
       // default single-project behaviour is untouched.
       ...(request.browser === 'chromium' ? {} : { EXCEL_ALL_BROWSERS: '1' }),
+      ...executionEnvironment(context,record.executionSelection),
+      AURA_RUN_ID: id,
+      AURA_REGISTRY_FILE: contextFile,
       EXCEL_WORKERS: String(request.workers),
       EXCEL_SCREENSHOT: request.screenshot,
       EXCEL_VIDEO: request.video,
       EXCEL_TRACE: request.trace,
       FORCE_COLOR: '0',
+      AURA_EXECUTION_SELECTION: record.executionSelection ? JSON.stringify(record.executionSelection) : '',
+      // A SELECTION RUN IS THE DIAGNOSTIC ONE, so its step evidence is turned ON, not off.
+      //
+      // Native Playwright screenshots, video and trace stay off here and that is a
+      // credential decision, not a cost one: they are unmasked and cannot cross the
+      // retention boundary. The framework's own captures are masked at source and can, so
+      // they are the evidence channel for these runs - and forcing them off was why a
+      // step-by-step report of a selection run could never show anything.
+      ...(record.executionSelection ? { AURA_DIAGNOSTICS:'1', EXCEL_SCREENSHOT:'on', EXCEL_VIDEO:'off', EXCEL_TRACE:'off' } : {}),
     },
   });
 
@@ -808,16 +955,20 @@ function startRun(workbookPath: string, request: RunRequest, scope: ApplicationS
   const log: string[] = [];
   active = { record, child, log, clients: new Set() };
 
+  let pendingLog = '';
+  const emitLog = (text: string) => { const safe = redact(text); log.push(safe); broadcast('log',{text:safe}); };
   const onChunk = (chunk: Buffer) => {
-    const text = chunk.toString('utf8');
-    log.push(text);
-    broadcast('log', { text });
+    pendingLog += chunk.toString('utf8');
+    const end = pendingLog.lastIndexOf('\n');
+    if(end >= 0) { emitLog(pendingLog.slice(0,end+1)); pendingLog = pendingLog.slice(end+1); }
   };
   child.stdout?.on('data', onChunk);
   child.stderr?.on('data', onChunk);
 
   child.on('close', exitCode => {
+    if(pendingLog) emitLog(pendingLog);
     record.finishedAt = new Date().toISOString();
+    record.status = 'completed';
     record.exitCode = exitCode;
     // Read the per-case outcome from the run Playwright just wrote. This is the
     // same file the execution report is built from, so the dashboard and the
@@ -825,12 +976,25 @@ function startRun(workbookPath: string, request: RunRequest, scope: ApplicationS
     const resultsAfter = fs.existsSync(RESULTS_JSON) ? fs.statSync(RESULTS_JSON).mtimeMs : 0;
     if (resultsAfter && resultsAfter !== resultsBefore) {
       try {
-        record.results = parseResults(RESULTS_JSON);
+        record.results = parseResults(RESULTS_JSON).map(result => ({...result, applicationId:scope.applicationId, environmentId:scope.environmentId,sourceEnvironmentId:context.sourceEnvironmentId,executionContext:context, runId:id,executionProfile:record.executionProfile}));
         record.evidence = collectEvidence(record.id);
         // globalSetup clears the step directory at the start of every run, so
         // whatever is there now belongs to this run and nothing earlier.
-        record.steps = collectSteps(record.id);
-        record.hasReport = keepPlaywrightReport(record.id);
+        record.steps = collectSteps(record.id,scope);
+        // Playwright's copy is retained exactly as before, for the runs that had it.
+        if (!record.executionSelection) keepPlaywrightReport(record.id);
+        // And the run's OWN report is written for every completed run, including the
+        // selection-driven ones that previously produced no artifact at all - which is
+        // why the download control had nothing to offer and correctly hid itself.
+        record.hasReport = writeRunReport(path.join(RUNS_DIR, record.id), {
+          id: record.id, applicationId: scope.applicationId, environmentId: scope.environmentId,
+          environmentDisplayName: record.environmentDisplayName, startedAt: record.startedAt,
+          finishedAt: record.finishedAt, status: record.status, exitCode: record.exitCode,
+          // A NAME. The profile's values are never read here and never reach the report.
+          executionProfileName: record.executionProfile?.credentialProfileName,
+          sourceEnvironmentId: context.sourceEnvironmentId,
+          results: record.results as any, steps: record.steps as any,
+        });
       } catch {
         record.results = [];
         record.steps = {};
@@ -844,14 +1008,101 @@ function startRun(workbookPath: string, request: RunRequest, scope: ApplicationS
       log.push(`\n${record.note}\n`);
       broadcast('log', { text: `\n${record.note}\n` });
     }
+    for (const result of record.results) {
+      result.testName=redact(result.testName);result.failureReason=redact(result.failureReason);result.rootCause=redact(result.rootCause);
+      for (const attempt of result.attempts || []) if(attempt.error) attempt.error=redact(attempt.error);
+    }
+    for (const step of Object.values(record.steps).flat()) {step.title=redact(step.title);if(step.error)step.error=redact(step.error);}
     record.summary = summarise(record.results);
+    if(record.executionSelection&&profileSource&&profileSpec){
+      try{
+        const scratch=path.dirname(RESULTS_JSON);
+        fs.writeFileSync(path.join(scratch,'generated-steps.json'),JSON.stringify({steps:sourceSteps(path.resolve(ROOT,profileSpec),profileSource)}));
+        fs.writeFileSync(path.join(scratch,'executed-dependencies.json'),JSON.stringify({files:profileDependencies}));
+        const stepDirectory=path.join(scratch,'steps');fs.mkdirSync(stepDirectory,{recursive:true});
+        for(const [i,entry]of readStepLogEntries().filter(log=>log.applicationId===scope.applicationId&&log.runId===id).entries())fs.writeFileSync(path.join(stepDirectory,String(i)+'.json'),JSON.stringify(entry));
+        const diagnostics=retainAttempt(scope,scratch,path.resolve(ROOT,profileSpec),selectedCase!,'clean',log.join(''),' ',id,profileSource,context);
+        const manifestFile=containedFile(diagnosticRoot(scope),diagnostics+'/manifest.json'),manifest=JSON.parse(fs.readFileSync(manifestFile,'utf8'));manifest.executionProfile=record.executionProfile;fs.writeFileSync(manifestFile,JSON.stringify(manifest,null,2));
+        for(const result of record.results){result.diagnostics=diagnostics;if(result.executionStatus==='Failed')result.quarantinePackageId=createQuarantinePackage(scope,path.resolve(ROOT,profileSpec),selectedCase!,{verdict:'quarantined',reason:result.failureReason,detail:{phase:'execution',code:classifyExecutionFailure(result.failureReason),cleanStatus:'Failed',playwrightMessage:result.failureReason,diagnostics,staticProblems:[],mutationsApplied:[]}},{executionContext:context,sourceEnvironmentId:record.sourceEnvironmentId,scenario:profileEntry?.scenario||result.testName.replace(selectedCase!+' - ',''),module:profileEntry?.module,sourceWorksheet:profileEntry?.sourceWorksheet,runId:id,workbook:path.relative(ROOT,workbookPath).replace(/\\/g,'/'),executionProfile:record.executionProfile,executionSelection:record.executionSelection});}
+      }catch(error){record.note='Execution result retained; diagnostic packaging failed: '+redact((error as Error).message);}
+    }
     saveRun(record, log);
-    broadcast('done', record);
-    for (const client of active?.clients ?? [])
-      client.end();
-    active = null;
+    if (completed) { active = null; completed(record,log); }
+    else { broadcast('done', record); for (const client of active?.clients ?? []) client.end(); active = null; }
   });
 
+  return record;
+}
+
+function startEnvironmentExecution(workbookPath: string, request: RunRequest, source: ApplicationScope, ids: unknown, selectionRequest?:SelectionRequest,caseTags:Record<string,string[]>={}): RunRecord {
+  if (!Array.isArray(ids) || !ids.length || ids.some(id => typeof id !== 'string') || new Set(ids).size !== ids.length)
+    throw Error('Select one or more distinct configured execution environments');
+  if (request.workers !== 1) throw Error('Environment execution uses one worker to preserve independent artifact ownership');
+  if (request.inPlace && ids.length > 1) throw Error('Multi-environment results are retained per run. Disable workbook write-back to avoid overwriting one environment with another.');
+  const registry = readRegistry();
+  const application = registry.applications.find(a => a.applicationId === source.applicationId)!;
+  const frozen = structuredClone(application);
+  for (const [id, environment] of Object.entries(frozen.environments)) {
+    environment.baseUrl = validBaseUrl(baseUrlFor(application,id)); delete environment.baseUrlEnv;
+  }
+  const snapshot = {schemaVersion:1 as const, applications:[frozen]};
+  const scopes = ids.map(environmentId => {
+    if (!Object.hasOwn(frozen.environments,environmentId)) throw Error(`Environment "${environmentId}" is not configured for this project`);
+    const scope = resolveScope({applicationId:source.applicationId,environmentId},snapshot);
+    const refs = scope.credentials;
+    if (!selectionRequest && refs && (!refs.email || !refs.password || !process.env[refs.email] || !process.env[refs.password]))
+      throw Error(`Environment "${environmentId}" is missing its declared credential variables. Configure them before execution.`);
+    return scope;
+  });
+  const id = new Date().toISOString().replace(/[:.]/g,'-')+'-'+randomUUID().slice(0,8);
+  const make = (runId: string): RunRecord => ({id:runId,applicationId:source.applicationId,
+    startedAt:new Date().toISOString(),status:'queued',request:{...request,workbook:path.relative(ROOT,workbookPath).replace(/\\/g,'/')},results:[],evidence:[],steps:{},summary:{passed:0,failed:0,skipped:0,flaky:0}});
+  const parent = make(id); parent.environmentRuns = scopes.map(scope => ({...make(id+'-'+scope.environmentId),parentExecutionId:id,
+    environmentId:scope.environmentId,environmentDisplayName:frozen.environments[scope.environmentId].displayName || scope.environmentId}));
+  if(selectionRequest){
+    if(request.inPlace)throw Error('Execution profile results are retained per instance. Disable workbook write-back.');
+    parent.environmentRuns=scopes.flatMap(scope=>executionPlan(scope,request.testCaseIds,selectionRequest,caseTags).map((entry,i)=>({...make(id+'-'+scope.environmentId+'-'+(i+1)),parentExecutionId:id,
+      environmentId:scope.environmentId,environmentDisplayName:frozen.environments[scope.environmentId].displayName||scope.environmentId,executionSelection:entry.selection,executionProfile:entry.profile,
+      request:{...parent.request,testCaseIds:[entry.profile.testCaseId],inPlace:false}})));
+    if(parent.environmentRuns.length>100)throw Error('Select at most 100 execution instances.');
+  }
+  // Validate EVERY instance before launching the first, without coupling credentials to source.
+  for(const record of parent.environmentRuns!){const scope=scopes.find(scope=>scope.environmentId===record.environmentId)!;
+    record.executionContext=resolveExecutionContext(scope,{...request.executionContext,environmentId:scope.environmentId},record.executionSelection,snapshot);
+    record.sourceEnvironmentId=record.executionContext.sourceEnvironmentId;
+    for(const id of record.request.testCaseIds){const file=readMapping(scope.paths.mappingFile)[id]?.testFile;
+      preflightAuthentication(scope,record.executionSelection,Boolean(file&&fs.existsSync(path.resolve(file))&&/\bappCredentials\b/.test(fs.readFileSync(path.resolve(file),'utf8'))));}}
+  executionBatch = {record:parent,clients:new Set(),log:[],cancelled:false,queue:scopes.map((scope,i)=>({scope,registry:JSON.stringify(snapshot),record:parent.environmentRuns![i]}))};
+  if(selectionRequest)executionBatch.queue=parent.environmentRuns!.map(record=>({scope:scopes.find(s=>s.environmentId===record.environmentId)!,registry:JSON.stringify(snapshot),record}));
+  const batch = executionBatch;
+  const advance = () => {
+    if (batch.cancelled) for (const entry of batch.queue) { entry.record.status='cancelled';entry.record.finishedAt=new Date().toISOString();entry.record.note='Cancelled before execution';saveRun(entry.record,[]); }
+    const next = batch.cancelled ? undefined : batch.queue.shift();
+    parent.results = parent.environmentRuns!.flatMap(r=>r.results);
+    parent.summary = summarise(parent.results);
+    if (!next) {
+      parent.finishedAt=new Date().toISOString();parent.status=batch.cancelled?'cancelled':'completed';
+      parent.exitCode=batch.cancelled||parent.environmentRuns!.some(r=>r.exitCode!==0)?1:0;
+      saveRun(parent,batch.log);broadcast('done',parent);for(const client of batch.clients)client.end();executionBatch=null;return;
+    }
+    parent.status='running';
+    startRun(workbookPath,next.record.request,next.scope,next.record,next.registry,(record,log)=>{
+      batch.log.push(`\n[${record.environmentId}]\n`,...log);saveRun(parent,batch.log);broadcast('environment',parent);advance();
+    });
+    saveRun(parent,batch.log);broadcast('environment',parent);
+  };
+  saveRun(parent,[]);advance();return parent;
+}
+
+/** Identity comes from the saved record. A foreign project/environment never acquires it. */
+function requestedRun(id: string, url: URL): RunRecord | null {
+  if (!/^[A-Za-z0-9_-]+$/.test(id)) return null;
+  const file = path.join(RUNS_DIR,id+'.json'); if(!fs.existsSync(file))return null;
+  const record = JSON.parse(fs.readFileSync(file,'utf8')) as RunRecord;
+  const applicationId=url.searchParams.get('applicationId');
+  if (!applicationId || record.applicationId!==applicationId) return null;
+  const environmentId=url.searchParams.get('environmentId');
+  if(environmentId && record.environmentId!==environmentId)return null;
   return record;
 }
 
@@ -880,6 +1131,10 @@ function listRuns(applicationId?: string): Array<Pick<RunRecord,
         const record = JSON.parse(fs.readFileSync(path.join(RUNS_DIR, name), 'utf8')) as RunRecord;
         return {
           applicationId: record.applicationId,
+          environmentId: record.environmentId,
+          environmentRuns: record.environmentRuns?.map(r=>({id:r.id,environmentId:r.environmentId,status:r.status,summary:r.summary})),
+          parentExecutionId: record.parentExecutionId,
+          status: record.status,
           id: record.id,
           startedAt: record.startedAt,
           finishedAt: record.finishedAt,
@@ -894,7 +1149,7 @@ function listRuns(applicationId?: string): Array<Pick<RunRecord,
           note: record.note,
         };
       })
-      .filter(summary => !applicationId || summary.applicationId === applicationId);
+      .filter(summary => !summary.parentExecutionId && (!applicationId || summary.applicationId === applicationId));
 }
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -940,6 +1195,115 @@ const server = http.createServer((req, res) => {
       if (route === '/' || route === '/index.html') {
         serveStatic(res, PUBLIC_DIR, '/index.html');
         return;
+      }
+
+      if (['/test-data.js','/test-data.css','/authoring-workspace.js', '/authoring-workspace.css', '/recording-review.js','/diagnostic-viewer.js','/quarantine-workspace.js','/quarantine-workspace.css'].includes(route) && req.method === 'GET') {
+        serveStatic(res, PUBLIC_DIR, route); return;
+      }
+      if(route.startsWith('/api/test-data')){
+        if(req.method==='POST'&&req.headers.origin&&new URL(req.headers.origin).host!==req.headers.host)throw Error('Test Data changes must originate from this dashboard.');
+        const body:any=req.method==='POST'?await readJsonBody(req):Object.fromEntries(url.searchParams);
+        if(typeof body.applicationId!=='string'||!body.applicationId)throw Error('Select an application first.');
+        const scope=resolveScope({applicationId:body.applicationId,environmentId:body.environmentId});
+        res.setHeader('Cache-Control','no-store');
+        if(route==='/api/test-data'&&req.method==='GET'){send(res,200,readTestData(scope));return;}
+        if(route==='/api/test-data/save'&&req.method==='POST'){
+          if(active||executionBatch||autocode)throw Error('Wait for execution/generation to finish before changing Test Data.');
+          if(body.change?.kind==='examples'){
+            const candidate=workbookPathOf(body.workbook);assertWorkbookInScope(scope,path.relative(ROOT,candidate));
+            const parsed=await parseWorkbook(resolveWorkbook(body.workbook));if(!parsed.testCases.some(c=>c.testCaseId===body.change.testCaseId))throw Error('Test case is not in the selected application workbook.');
+          }
+          send(res,200,updateTestData(scope,body.expectedVersion,body.change));return;
+        }
+        if(route==='/api/test-data/preflight'&&req.method==='POST'){send(res,200,credentialPreflight(scope,String(body.credentialProfileId)));return;}
+        if(route==='/api/test-data/preview'&&req.method==='POST'){
+          const candidate=workbookPathOf(body.workbook);assertWorkbookInScope(scope,path.relative(ROOT,candidate));const parsed=await parseWorkbook(resolveWorkbook(body.workbook));
+          if(!Array.isArray(body.testCaseIds)||!body.testCaseIds.length||body.testCaseIds.some(id=>!parsed.testCases.some(c=>c.testCaseId===id)))throw Error('Select test cases from this application workbook.');
+          const selectedEnvs=body.environmentIds??[scope.environmentId];if(!Array.isArray(selectedEnvs)||!selectedEnvs.length)throw Error('Select an environment.');
+          const instances=selectedEnvs.flatMap(environmentId=>executionPlan(resolveScope({applicationId:scope.applicationId,environmentId}),body.testCaseIds,body.selection,Object.fromEntries(parsed.testCases.map(c=>[c.testCaseId,c.tags]))));
+          if(instances.length>100)throw Error('Select at most 100 execution instances.');send(res,200,{count:instances.length,instances:instances.map(({profile,preflight})=>({profile,preflight}))});return;
+        }
+        throw Error('Unsupported Test Data operation.');
+      }
+      if(route.startsWith('/api/quarantine/')||route==='/api/diagnostics/artifact') {
+        if(req.method==='POST'&&req.headers.origin&&new URL(req.headers.origin).host!==req.headers.host)throw Error('Quarantine changes must originate from this dashboard.');
+        const body:any=req.method==='POST'?await readJsonBody(req):Object.fromEntries(url.searchParams);
+        if(typeof body.applicationId!=='string'||!body.applicationId)throw Error('Select an application first.');
+        const scope=resolveScope({applicationId:body.applicationId,environmentId:body.environmentId}),id=String(body.packageId??'');
+        if(route==='/api/diagnostics/artifact'&&req.method==='GET') {
+          const file=containedFile(diagnosticRoot(scope),String(body.artifact??'')),extension=path.extname(file);
+          const types:Record<string,string>={'.png':'image/png','.json':'application/json','.txt':'text/plain; charset=utf-8','.zip':'application/zip'};
+          if(!types[extension]||!fs.statSync(file).isFile())throw Error('Unsupported diagnostic artifact.');
+          res.writeHead(200,{'Content-Type':types[extension],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...(extension==='.zip'?{'Content-Disposition':'attachment; filename="sanitized-trace.zip"'}:{})});fs.createReadStream(file).pipe(res);return;
+        }
+        if(route==='/api/quarantine/list'&&req.method==='GET'){send(res,200,{cases:listQuarantine(scope)});return;}
+        if(route==='/api/quarantine/details'&&req.method==='GET'){send(res,200,quarantineDetails(scope,id,body.runId));return;}
+        if(route==='/api/quarantine/file'&&req.method==='GET'){send(res,200,quarantineFile(scope,id,String(body.file),body.original==='true',body.revisionId));return;}
+        if(route==='/api/quarantine/definition'&&req.method==='GET'){send(res,200,{target:quarantineDefinition(scope,id,String(body.file),Number(body.position),body.version,body.revisionId)});return;}
+        if(route==='/api/quarantine/mapping'&&req.method==='GET'){send(res,200,reviewQuarantineMapping(scope,id));return;}
+        if(route==='/api/quarantine/dependencies'&&req.method==='GET'){send(res,200,quarantineDependencyDrift(scope,id));return;}
+        if(req.method!=='POST')throw Error('Unsupported quarantine operation.');
+        if(active||autocode||recorderSessionStatus().recording)throw Error('Wait for recording, generation or execution to finish.');
+        if(route==='/api/quarantine/import'){send(res,200,{packageId:importLegacyQuarantine(scope,String(body.testCaseId))});return;}
+        if(route==='/api/quarantine/save'){const result=saveQuarantineDraft(scope,id,String(body.file),String(body.version),body.content,String(body.revisionId));send(res,result.accepted?200:422,result);return;}
+        if(route==='/api/quarantine/validate'){const result=validateQuarantine(scope,id);send(res,result.accepted?200:422,result);return;}
+        if(route==='/api/quarantine/context'){const preview=quarantineExecutionContext(scope,id,body.executionData,executionInput(body));send(res,200,{executionContext:preview.context,executionProfile:preview.selected?.profile,
+          sourceEnvironmentProvenance:preview.sourceEnvironmentProvenance,legacyExecutionContext:preview.legacyExecutionContext,
+          historicalSourceEnvironmentId:preview.historicalSourceEnvironmentId,carriedFromRunId:preview.carriedFromRunId});return;}
+        if(route==='/api/quarantine/rerun'){send(res,200,await rerunQuarantine(scope,id,String(body.workbook),body.executionData,executionInput(body),body.executionBasis));return;}
+        if(route==='/api/quarantine/refresh-dependencies'){send(res,200,refreshQuarantineDependencies(scope,id,String(body.revisionId)));return;}
+        if(route==='/api/quarantine/promote'){send(res,200,promoteQuarantine(scope,id));return;}
+        if(route==='/api/quarantine/trace'){send(res,200,await openQuarantineTrace(scope,id,body.runId));return;}
+        if(route==='/api/quarantine/mapping/save-mapping'){send(res,200,saveQuarantineMapping(scope,id,body));return;}
+        if(route==='/api/quarantine/rebuild'){const result=await rebuildQuarantineDraft(scope,id,String(body.workbook));send(res,result.accepted?200:422,result);return;}
+        throw Error('Unsupported quarantine operation.');
+      }
+      if (route.startsWith('/api/workspace/') || route.startsWith('/api/record/ownership')) {
+        if (req.method === 'POST' && req.headers.origin && new URL(req.headers.origin).host !== req.headers.host)
+          throw Error('Workspace changes must originate from this dashboard.');
+        const body: any = req.method === 'POST' ? await readJsonBody(req) : Object.fromEntries(url.searchParams);
+        if (typeof body.applicationId !== 'string' || !body.applicationId) throw Error('Select an application first.');
+        const scope = resolveScope({ applicationId: body.applicationId, environmentId: body.environmentId });
+        if (route.startsWith('/api/record/ownership')) {
+          const draft = pendingRecordingFor(scope);
+          if (route === '/api/record/ownership' && req.method === 'GET') {
+            send(res, 200, recordingMappingReview(scope, draft)); return;
+          }
+          if (route === '/api/record/ownership/save-mapping' && req.method === 'POST') {
+            if (active || autocode || recorderSessionStatus().recording) throw Error('Wait for recording, generation or execution to finish before saving a mapping.');
+            send(res, 200, saveRecordingMapping(scope, draft, body)); return;
+          }
+          const current = ownershipReview(scope, draft.recording, draft.ownerOverrides, draft.authoringPages);
+          if (req.method === 'POST') {
+            if (body.revision !== current.revision) throw Error('The recording changed. Reload its ownership review.');
+            if (route === '/api/record/ownership/logical-page') {
+              createLogicalPage(scope, body.page ?? {});
+            } else if (route === '/api/record/ownership/page-object') {
+              createPageObject(scope, String(body.pageName ?? ''), String(body.className ?? ''));
+            } else if (route === '/api/record/ownership/method') {
+              createAuthoringMethod(scope, String(body.className ?? ''), String(body.method ?? ''), String(body.locator ?? ''));
+            } else if (route === '/api/record/ownership/page') {
+              const page = createAuthoringPage(scope, draft.recording, body.page ?? {}, draft.authoringPages ?? []);
+              draft.authoringPages = [...(draft.authoringPages ?? []), page];
+            } else {
+              if (!body.overrides || typeof body.overrides !== 'object' || Array.isArray(body.overrides)
+                  || Object.values(body.overrides).some(value => typeof value !== 'string' && (!value || typeof value !== 'object'))) throw Error('Invalid owner selections.');
+              ownershipReview(scope, draft.recording, body.overrides, draft.authoringPages);
+              draft.ownerOverrides = body.overrides;
+            }
+          }
+          send(res, 200, ownershipReview(scope, draft.recording, draft.ownerOverrides, draft.authoringPages)); return;
+        }
+        const id = String(body.testCaseId ?? '');
+        if (route === '/api/workspace/graph' && req.method === 'GET') { send(res, 200, codeGraph(scope, id)); return; }
+        if (route === '/api/workspace/file' && req.method === 'GET') { send(res, 200, readCode(scope, id, String(body.file))); return; }
+        if (route === '/api/workspace/definition' && req.method === 'GET') { send(res, 200, { target: codeDefinition(scope, id, String(body.file), Number(body.position), body.version) }); return; }
+        if (route === '/api/workspace/save' && req.method === 'POST') {
+          if (active || autocode || recorderSessionStatus().recording) throw Error('Wait for recording, generation or execution to finish before saving code.');
+          const result = saveCode(scope, id, String(body.file), String(body.version), body.content);
+          send(res, result.accepted ? 200 : 422, result); return;
+        }
+        throw Error('Unsupported workspace operation.');
       }
 
 
@@ -990,6 +1354,19 @@ const server = http.createServer((req, res) => {
         return;
       }
 
+      const environmentRoute = /^\/api\/projects\/([a-z][a-z0-9-]*)\/environments(?:\/([a-z][a-z0-9-]*))?$/.exec(route);
+      if (environmentRoute && (req.method === 'POST' || req.method === 'PUT')) {
+        if (active || autocode || executionBatch) { send(res,409,{error:'Wait for execution/generation to finish before editing environments'}); return; }
+        const body = await readJsonBody(req) as any;
+        if (active || autocode || executionBatch || recorderSessionStatus().recording) {send(res,409,{error:'Finish the current browser operation before editing environments'});return;}
+        const create = req.method === 'POST';
+        if (create === Boolean(environmentRoute[2])) throw Error('Use POST to add an environment or PUT to edit its permanent ID');
+        const environmentId = create ? body.environmentId : environmentRoute[2];
+        const environment = saveEnvironment(environmentRoute[1], environmentId, body, create);
+        send(res,create ? 201 : 200,{environmentId, environment, projects:describeProjects().projects});
+        return;
+      }
+
       if (route === '/api/workbook' && req.method === 'GET') {
         const workbookPath = resolveWorkbook(url.searchParams.get('workbook'));
         // Reading a workbook is scoped too: the page lists cases from it, and listing
@@ -1001,7 +1378,7 @@ const server = http.createServer((req, res) => {
         // from the ambient scope, so what is listed is this workbook's rows under this
         // workbook's project - never whichever project the server process is in.
         const scope = scopeForWorkbook(path.relative(ROOT, workbookPath),
-            { applicationId: url.searchParams.get('applicationId') ?? undefined });
+            { applicationId: url.searchParams.get('applicationId') ?? undefined, environmentId: url.searchParams.get('environmentId') ?? undefined });
         send(res, 200, await describeWorkbook(workbookPath, scope));
         return;
       }
@@ -1090,7 +1467,7 @@ const server = http.createServer((req, res) => {
             scopeForWorkbook(path.relative(ROOT, destination)));
         // A bulk import is the case this exists for: every row that needs a
         // spec gets one, without anyone naming them.
-        const generating = startAutocode(destination, []);
+        const generating = startAutocode(destination, [], scopeForWorkbook(path.relative(ROOT,destination), {applicationId:url.searchParams.get("applicationId"), environmentId:url.searchParams.get("environmentId")}),executionInput({...Object.fromEntries(url.searchParams),headed:url.searchParams.get("headed")==="true"}));
         send(res, 200, { workbook: `excel/${requested}`, cases: summary.cases.length,
           worksheets: summary.worksheets, malformed: summary.malformed, autocode: generating });
         return;
@@ -1129,6 +1506,16 @@ const server = http.createServer((req, res) => {
         const workbookPath = resolveWorkbook(body.workbook);
         if (!body.draft || typeof body.draft !== 'object')
           throw new Error('No test case was submitted. Fill the form in and press Save again.');
+        const selectedScope = scopeForWorkbook(
+            path.relative(ROOT, workbookPath), body as Record<string, unknown>);
+        if (hasPendingRecording()) {
+          const pendingDraft = pendingRecordingFor(selectedScope);
+          const review = ownershipReview(selectedScope, pendingDraft.recording, pendingDraft.ownerOverrides, pendingDraft.authoringPages);
+          if (body.ownershipRevision && body.ownershipRevision !== review.revision) throw Error('Recording ownership review is stale.');
+          pendingDraft.recording.authoringOwners = { version: 1, applicationId: selectedScope.applicationId,
+            recordingHash: '', choices: review.steps.map(({ key, recommended, confirmed, route, explicit, provenance, userSelection, frameworkRecommendation }) => ({ key, recommended, confirmed, route, explicit, provenance, userSelection, frameworkRecommendation })),
+            pages: pendingDraft.authoringPages ?? [] };
+        }
         const draft = body.draft as CaseDraft;
         // saveCase returns the ID it actually wrote, which for a new case is
         // usually one it generated - echoing the (blank) draft value back would
@@ -1152,8 +1539,7 @@ const server = http.createServer((req, res) => {
         // `recordings/flipkart`. The bookkeeping and the artefact it describes ended up in
         // two different applications' stores - and the sidecar is what decides whether a
         // recording is stale, so it was answering that question for the wrong project.
-        const selectedScope = scopeForWorkbook(
-            path.relative(ROOT, workbookPath), body as Record<string, unknown>);
+
         if (artifact) {
           const savedRow = (await parseWorkbook(workbookPath)).testCases
               .find(row => row.testCaseId.toUpperCase() === saved.testCaseId.toUpperCase());
@@ -1162,15 +1548,68 @@ const server = http.createServer((req, res) => {
         }
         // Rebuild the cache and register the mapping straight away, so the row
         // is a running test before the response reaches the page.
-        const live = await activate(workbookPath, saved.testCaseId, selectedScope);
+        // Same rule as below: the row is committed, so rebuilding derived state may report
+        // a problem but may not un-save the case. A failure here leaves the row present and
+        // simply not yet runnable, which is exactly what the response then says.
+        let live:Awaited<ReturnType<typeof activate>>;
+        try { live = await activate(workbookPath, saved.testCaseId, selectedScope); }
+        catch (error) {
+          live = { runnable:false, needsCode:true,
+            noCodeReason:`derived state could not be rebuilt after saving: ${error instanceof Error?error.message:String(error)}` } as any;
+        }
         // Send the generator after any row that needs code written, including
         // one whose spec this module already wrote and whose row has since been
         // edited. Keying off `runnable` was wrong: a spec-backed case is
         // runnable, so an edit to it silently left the old spec asserting the
         // old wording while the page said there was nothing left to do.
-        const generating = live.needsCode
-          ? startAutocode(workbookPath, [saved.testCaseId])
-          : { started: false, reason: live.noCodeReason ?? 'no runner covers this module' };
+        //
+        // THE WORKBOOK ROW IS ALREADY COMMITTED BY THIS POINT, so nothing below may turn
+        // the save into a failure. Starting the generator is a SEPARATE decision that can
+        // legitimately be refused - most often because no Source Environment is selected -
+        // and that refusal used to escape this handler as a 400. The page then reported the
+        // save as failed and returned before its own `loadWorkbook()`, so the Test Cases
+        // list never refreshed and the row only surfaced on a manual browser refresh.
+        // Worse, a person reasonably pressed Save again: the second save appended a SECOND
+        // row, and the pending recording had already been consumed by the first, leaving a
+        // duplicate case with no recording behind it.
+        //
+        // So a post-commit refusal is reported as DATA on a successful save, never as an
+        // error status. The reason still reaches the page verbatim.
+        let generating:{started:boolean;reason?:string;code?:string;executionContext?:ExecutionContext;executionProfile?:ExecutionProfile};
+        if (!live.needsCode)
+          generating = { started: false, reason: live.noCodeReason ?? 'no runner covers this module' };
+        else {
+          const generationScope = scopeForWorkbook(path.relative(ROOT,workbookPath),body as any);
+          try {
+            // WHICH ACCOUNT THIS GENERATION RUNS AS, in priority order.
+            //
+            // 1. The recording this save just consumed. Server-held, stamped with the ID the
+            //    workbook assigned a few lines above, and collected once - this is what makes
+            //    "record, save, generate" one movement instead of three, and why nobody has to
+            //    go back and select the case they have only just created.
+            // 2. The profile named on the recording panel, for a save whose pending recording
+            //    has already been consumed. An ID, never a value: the account and password are
+            //    resolved in this process from the store.
+            // 3. An explicit Execution Data selection. Unchanged for the workflow it belongs
+            //    to - saving an existing case names no recording profile, so this is still the
+            //    only source there. It ranks BELOW the two above deliberately: that selection
+            //    persists in the page until it is cleared, and it was made for other cases, so
+            //    letting it outrank the selector a person has just used beside Record would
+            //    re-create the confusion in the opposite direction.
+            //
+            // None of these is a saved Example. The selection lives for this generation only;
+            // the logical test stays profile-independent and any later run may choose again.
+            const recorded = takeRecordedGenerationContext(generationScope, saved.testCaseId);
+            const executionData = generationSelection(generationScope,
+                  recorded?.credentialProfileId ?? (typeof (body as any).credentialProfileId === 'string' ? (body as any).credentialProfileId : undefined))
+              ?? (body as any).executionData;
+            generating = startAutocode(workbookPath, [saved.testCaseId], generationScope,executionInput(body),executionData);
+          } catch (error) {
+            generating = { started: false,
+              reason: error instanceof Error ? error.message : String(error),
+              code: configurationFailureCode(error) ?? 'GENERATION_NOT_STARTED' };
+          }
+        }
         send(res, 200, { ...saved, ...live, autocode: generating, ...(artifact ? { recordingArtifact: artifact } : {}) });
         return;
       }
@@ -1212,26 +1651,34 @@ const server = http.createServer((req, res) => {
         // duplicated into a second store keyed by applicationId.
         const known = new Set(parsed.testCases.map(c => c.testCaseId.toUpperCase()));
         const request = parseRunRequest(body, known);
-        send(res, 202, startRun(workbookPath, request, selected.scope));
+        if (active || executionBatch || autocode || recorderSessionStatus().recording) { send(res,409,{error:'The browser/output queue is busy. Wait for the current operation to finish.'}); return; }
+        const environments = (body as any).environmentIds;
+        if((body as any).executionData){send(res,202,startEnvironmentExecution(workbookPath,request,selected.scope,environments??[selected.scope.environmentId],(body as any).executionData,Object.fromEntries(parsed.testCases.map(c=>[c.testCaseId,c.tags]))));return;}
+        send(res, 202, environments !== undefined
+          ? startEnvironmentExecution(workbookPath,request,selected.scope,environments)
+          : startRun(workbookPath,request,selected.scope));
         return;
       }
 
       if (route === '/api/stream' && req.method === 'GET') {
+        const running = executionBatch?.record || active?.record;
+        if (running && running.applicationId !== url.searchParams.get('applicationId')) { send(res,404,{error:'No execution for this project'});return; }
         res.writeHead(200, {
           'content-type': 'text/event-stream',
           'cache-control': 'no-cache',
           connection: 'keep-alive',
         });
-        if (!active) {
+        if (!active && !executionBatch) {
           res.write(`event: idle\ndata: {}\n\n`);
           res.end();
           return;
         }
         // Replay what has already been printed, so a page opened mid-run is not
         // left staring at a blank console.
-        res.write(`event: log\ndata: ${JSON.stringify({ text: active.log.join('') })}\n\n`);
-        active.clients.add(res);
-        req.on('close', () => active?.clients.delete(res));
+        const owner = executionBatch || active!;
+        res.write(`event: log\ndata: ${JSON.stringify({ text: owner.log.join('') })}\n\n`);
+        owner.clients.add(res);
+        req.on('close', () => owner.clients.delete(res));
         return;
       }
 
@@ -1264,6 +1711,7 @@ const server = http.createServer((req, res) => {
       // Ask for generation explicitly. The trigger is automatic, but a run that
       // was refused because something else was in progress needs a way back.
       if (route === '/api/autocode' && req.method === 'POST') {
+        if (active || executionBatch) {send(res,409,{started:false,reason:'A test run is in progress'});return;}
         const body = (await readJsonBody(req)) as Record<string, unknown>;
         const workbookPath = resolveWorkbook(body.workbook);
         // The workbook's own application. The staleness gate below reads recording
@@ -1300,7 +1748,7 @@ const server = http.createServer((req, res) => {
         }
         if (blocked.length)
           throw new Error(blocked.join(' | '));
-        const started = startAutocode(workbookPath, ids);
+        const started = startAutocode(workbookPath, ids, autocodeScope, executionInput(body),body.executionData as SelectionRequest|undefined);
         send(res, started.started ? 202 : 409, started);
         return;
       }
@@ -1342,11 +1790,18 @@ const server = http.createServer((req, res) => {
         // `url` is optional and only ever narrows WHERE in the application to start.
         // Omitted, the recorder opens the selected environment's own baseUrl, which is
         // what makes the selection do the work instead of somebody retyping an address.
+        // The account is named here, before the browser opens, and only its ID travels.
+        // The recorder resolves it in this process so it can recognise what gets typed
+        // into the sign-in form; nothing it resolves is ever sent back to the page.
         const started = await startRecording({
           scope: selected.scope,
           url: typeof body.url === 'string' ? body.url : undefined,
           browser: String(body.browser ?? 'chromium'),
           testCaseId: typeof body.testCaseId === 'string' ? body.testCaseId : undefined,
+          credentialProfileId: typeof body.credentialProfileId === 'string' ? body.credentialProfileId : undefined,
+          // Carried so the generation this recording leads to rebases from the same
+          // environment the browser was pointed at, without anyone restating it at Save.
+          sourceEnvironmentId: typeof body.sourceEnvironmentId === 'string' ? body.sourceEnvironmentId : undefined,
         });
         send(res, started.started ? 202 : 400, started);
         return;
@@ -1380,6 +1835,9 @@ const server = http.createServer((req, res) => {
       }
 
       if (route === '/api/stop' && req.method === 'POST') {
+        const owner = executionBatch?.record || active?.record;
+        if (owner && owner.applicationId !== url.searchParams.get('applicationId')) { send(res,404,{error:'No execution for this project'});return; }
+        if (executionBatch) executionBatch.cancelled = true;
         if (!active) {
           send(res, 409, { error: 'Nothing is running' });
           return;
@@ -1425,7 +1883,7 @@ const server = http.createServer((req, res) => {
         // `?applicationId=` narrows a GLOBAL store by the identity each record carries.
         send(res, 200, {
           runs: listRuns(url.searchParams.get('applicationId') ?? undefined),
-          active: active?.record.id ?? null,
+          active: (() => { const record=executionBatch?.record || active?.record; const wanted=url.searchParams.get('applicationId');return record && (!wanted || record.applicationId===wanted) ? record.id : null; })(),
         });
         return;
       }
@@ -1434,17 +1892,25 @@ const server = http.createServer((req, res) => {
       // HTML report. The trailing slash matters: the report is a single-page
       // app that loads its assets by relative path, and without it the browser
       // resolves them against /api/runs/ and every one 404s.
-      const reportRoute = /^\/api\/runs\/([^/]+)\/report(\/.*)?$/.exec(route);
+      const reportRoute = /^\/api\/(?:projects\/([^/]+)\/)?runs\/([^/]+)\/report(\/.*)?$/.exec(route);
       if (reportRoute && req.method === 'GET') {
-        const id = path.basename(decodeURIComponent(reportRoute[1]));
-        const rest = reportRoute[2];
+        const id = path.basename(decodeURIComponent(reportRoute[2]));
+        if (reportRoute[1]) url.searchParams.set('applicationId',decodeURIComponent(reportRoute[1]));
+        if (!requestedRun(id,url)) {send(res,404,{error:'No report for this project'});return;}
+        const rest = reportRoute[3];
         if (rest === undefined || rest === '') {
-          res.writeHead(302, { location: `/api/runs/${encodeURIComponent(id)}/report/` });
+          res.writeHead(302, { location: `/api/projects/${encodeURIComponent(url.searchParams.get('applicationId')!)}/runs/${encodeURIComponent(id)}/report/` });
           res.end();
           return;
         }
-        const base = path.join(RUNS_DIR, id, 'playwright-report');
-        const requested = rest === '/' ? '/index.html' : decodeURIComponent(rest);
+        // The run's own report is what `/report/` means now. Playwright's kept copy, where
+        // one exists, stays reachable one level down rather than being taken away.
+        const playwright = /^\/playwright(\/.*)?$/.exec(rest);
+        const base = playwright ? path.join(RUNS_DIR, id, 'playwright-report')
+          : fs.existsSync(path.join(RUNS_DIR, id, 'report', 'index.html')) ? path.join(RUNS_DIR, id, 'report')
+          : path.join(RUNS_DIR, id, 'playwright-report');
+        const within = playwright ? (playwright[1] ?? '/') : rest;
+        const requested = within === '/' ? '/index.html' : decodeURIComponent(within);
         if (!serveStatic(res, base, requested))
           send(res, 404, { error: 'No Playwright report kept for this run' });
         return;
@@ -1456,6 +1922,11 @@ const server = http.createServer((req, res) => {
       const evidenceRoute = /^\/api\/runs\/([^/]+)\/evidence(\/.+)$/.exec(route);
       if (evidenceRoute && req.method === 'GET') {
         const id = path.basename(decodeURIComponent(evidenceRoute[1]));
+        const record = requestedRun(id,url);
+        if (!record) { send(res,404,{error:'No evidence for this project/environment'});return; }
+        const manifest = [...(record.evidence || []).map(e=>e.url),
+          ...Object.values(record.steps || {}).flat().flatMap(s=>[s.screenshotUrl,...(s.captures ?? []).map(c=>c.url)]).filter(Boolean)];
+        if (!manifest.some(value=>new URL(value!, 'http://localhost').pathname===route)) {send(res,404,{error:'No artifact associated with this execution'});return;}
         const base = path.join(RUNS_DIR, id, 'evidence');
         const requested = decodeURIComponent(evidenceRoute[2]);
         if (!serveStatic(res, base, requested))
@@ -1466,8 +1937,9 @@ const server = http.createServer((req, res) => {
       if (route.startsWith('/api/runs/') && req.method === 'GET') {
         // basename() so a crafted id cannot walk out of the runs directory.
         const id = path.basename(route.slice('/api/runs/'.length));
+        const record = requestedRun(id,url);
         const file = path.join(RUNS_DIR, `${id}.json`);
-        if (!fs.existsSync(file)) {
+        if (!record) {
           send(res, 404, { error: 'No such run' });
           return;
         }
@@ -1476,15 +1948,11 @@ const server = http.createServer((req, res) => {
         return;
       }
 
-      // Evidence links from the results table: the Playwright report, traces,
-      // screenshots and the generated execution reports.
-      if (route.startsWith('/reports/') && serveStatic(res, path.join(ROOT, 'reports'), route.slice('/reports'.length)))
-        return;
-      if (route.startsWith('/evidence/') && serveStatic(res, path.join(ROOT, 'test-results-excel'), route.slice('/evidence'.length)))
-        return;
-
+      // Scratch directories have no durable request ownership. Only the retained,
+      // manifest-checked run routes above may serve execution artifacts.
       send(res, 404, { error: `No route for ${route}` });
     } catch (error) {
+      if(error instanceof ExecutionConfigurationError){send(res,400,{error:error.message,code:error.code,phase:'configuration'});return;}
       // A ScopeError is a CHOICE the person has not made, not a fault: "more than one
       // application is registered and you did not say which", or "that workbook
       // belongs to another project". Its message already names what to do, and it

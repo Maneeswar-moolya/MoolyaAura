@@ -1,0 +1,191 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config=playwright.excel.config.ts",
+      "tests-e2e/generated/ksp/TC_SMOKE_026.spec.ts",
+      "--grep",
+      "TC_SMOKE_026",
+      "--reporter=json",
+      "--retries=0",
+      "--workers=1",
+      "--output=C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\autocode-QvTTzm\\artifacts"
+    ],
+    "configFile": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\playwright.excel.config.ts",
+    "rootDir": "C:/Users/[REDACTED]/ClientProjects/MoolyaAura/MoolyaAura/tests-e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\global-setup.ts",
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/MANEES~2/AppData/Local/Temp/autocode-QvTTzm/artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/[REDACTED]/ClientProjects/MoolyaAura/MoolyaAura/tests-e2e",
+        "testIgnore": [
+          "tests-e2e/generated/.gitkeep",
+          "tests-e2e/pages/**",
+          "tests-e2e/support/**"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0-alpha-2026-08-05",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "generated\\ksp\\TC_SMOKE_026.spec.ts",
+      "file": "generated/ksp/TC_SMOKE_026.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Test Cases",
+          "file": "generated/ksp/TC_SMOKE_026.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC_SMOKE_026 - Log In â€” form contains \"Email:\"",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 100000,
+                  "annotations": [
+                    {
+                      "type": "test-case-id",
+                      "description": "TC_SMOKE_026"
+                    },
+                    {
+                      "type": "module",
+                      "description": ""
+                    },
+                    {
+                      "type": "scenario",
+                      "description": "Log In â€” form contains \"Email:\""
+                    },
+                    {
+                      "type": "source",
+                      "description": "ksp-test-cases.xlsx :: Test Cases"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 850,
+                      "error": {
+                        "message": "Error: Select a configured source environment for execution",
+                        "stack": "Error: Select a configured source environment for execution\n    at executionUrl (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\execution-environment.ts:10:78)\n    at _Page.goto (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\base-fixtures.ts:73:52)\n    at C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts:23:18\n    at withLocatorOperation (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\locator-policy.ts:57:54)\n    at runStep (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\steps.ts:171:46)\n    at C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts:22:5",
+                        "location": {
+                          "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\execution-environment.ts",
+                          "column": 78,
+                          "line": 10
+                        },
+                        "snippet": "   at support\\execution-environment.ts:10\n\n   8 |   const application = readRegistry().applications.find(a => a.applicationId === scope.applicationId)!;\n   9 |   const sourceId = process.env.AURA_SOURCE_ENVIRONMENT;\n> 10 |   if (!sourceId || !Object.hasOwn(application.environments, sourceId)) throw Error('Select a configured source environment for execution');\n     |                                                                              ^\n  11 |   const target = new URL(scope.baseUrl);\n  12 |   const source = new URL(application.environments[sourceId].baseUrl);\n  13 |   const candidate = new URL(raw, target);"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\execution-environment.ts",
+                            "column": 78,
+                            "line": 10
+                          },
+                          "message": "Error: Select a configured source environment for execution\n\n   at support\\execution-environment.ts:10\n\n   8 |   const application = readRegistry().applications.find(a => a.applicationId === scope.applicationId)!;\n   9 |   const sourceId = process.env.AURA_SOURCE_ENVIRONMENT;\n> 10 |   if (!sourceId || !Object.hasOwn(application.environments, sourceId)) throw Error('Select a configured source environment for execution');\n     |                                                                              ^\n  11 |   const target = new URL(scope.baseUrl);\n  12 |   const source = new URL(application.environments[sourceId].baseUrl);\n  13 |   const candidate = new URL(raw, target);\n    at executionUrl (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\execution-environment.ts:10:78)\n    at _Page.goto (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\base-fixtures.ts:73:52)\n    at C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts:23:18\n    at withLocatorOperation (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\locator-policy.ts:57:54)\n    at runStep (C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\steps.ts:171:46)\n    at C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\generated\\ksp\\TC_SMOKE_026.spec.ts:22:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-13T17:09:47.728Z",
+                      "annotations": [
+                        {
+                          "type": "test-case-id",
+                          "description": "TC_SMOKE_026"
+                        },
+                        {
+                          "type": "module",
+                          "description": ""
+                        },
+                        {
+                          "type": "scenario",
+                          "description": "Log In â€” form contains \"Email:\""
+                        },
+                        {
+                          "type": "source",
+                          "description": "ksp-test-cases.xlsx :: Test Cases"
+                        }
+                      ],
+                      "attachments": [],
+                      "errorLocation": {
+                        "file": "C:\\Users\\[REDACTED]\\ClientProjects\\MoolyaAura\\MoolyaAura\\tests-e2e\\support\\execution-environment.ts",
+                        "column": 78,
+                        "line": 10
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a2c97442559000715194-f24bfb87b8db2bd528e8",
+              "file": "generated/ksp/TC_SMOKE_026.spec.ts",
+              "line": 11,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-13T17:09:44.836Z",
+    "duration": 4195.787,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

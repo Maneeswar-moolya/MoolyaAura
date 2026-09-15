@@ -1,0 +1,60 @@
+# User-authored logical Page. Route is context, not identity.
+page:
+  id: ksp__authored_e6579f95a87bbe80e1b2
+  application_id: "ksp"
+  logical_name: "ksp_my-support-cases"
+  name: "ksp_my-support-cases"
+  route: ""
+  purpose: "MysupportCases Page"
+page_objects:
+  - "MySupportCasesPage"
+elements:
+  MySupportCasesPage_headingState:
+    usage: assertion
+    description: "heading"
+    page_object: MySupportCasesPage
+    page_object_method: headingState
+    locator_strategy: "page.getByTestId('msc-case-list-panel').getByRole('heading')"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+  MySupportCasesPage_enterEmail:
+    usage: action
+    description: "Enter email"
+    page_object: MySupportCasesPage
+    page_object_method: enterEmail
+    locator_strategy: "page.getByRole('textbox', { name: 'Enter email' })"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+  MySupportCasesPage_filterButton:
+    usage: action
+    description: "msc-filters-btn"
+    page_object: MySupportCasesPage
+    page_object_method: filterButton
+    locator_strategy: "page.getByTestId('msc-filters-btn')"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+  MySupportCasesPage_filterStatusNew:
+    usage: action
+    description: "msc-filter-status-new"
+    page_object: MySupportCasesPage
+    page_object_method: filterStatusNew
+    locator_strategy: "page.getByTestId('msc-filter-status-new')"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+  MySupportCasesPage_filterApplyButton:
+    usage: action
+    description: "msc-filter-apply-btn"
+    page_object: MySupportCasesPage
+    page_object_method: filterApplyButton
+    locator_strategy: "page.getByTestId('msc-filter-apply-btn')"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+  MySupportCasesPage_caseDetailsNew:
+    usage: assertion
+    description: "#msc-case-details-section-content"
+    page_object: MySupportCasesPage
+    page_object_method: caseDetailsNew
+    locator_strategy: "page.locator('#msc-case-details-section-content')"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+

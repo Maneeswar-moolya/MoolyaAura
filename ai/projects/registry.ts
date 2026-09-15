@@ -81,6 +81,7 @@ const RESERVED_APPLICATION_IDS = new Set([
 ]);
 
 export interface EnvironmentConfig {
+  displayName?: string;
   /** Where this environment lives. Configuration and evidence - never identity. */
   baseUrl: string;
   /** Optional env var that overrides `baseUrl`, so existing .env files keep working. */
@@ -93,6 +94,8 @@ export interface ApplicationConfig {
   applicationId: string;
   displayName: string;
   defaultEnvironmentId: string;
+  /** Default SOURCE for URL rebasing. Deliberately independent of the target default. */
+  defaultSourceEnvironmentId?: string;
   environments: Record<string, EnvironmentConfig>;
   /** Repo-relative workbook paths this application owns. One workbook, one application. */
   workbooks: string[];
@@ -220,6 +223,8 @@ export function validateRegistry(value: unknown, source = 'registry'): Registry 
       }
     }
 
+    if (application.defaultSourceEnvironmentId !== undefined && !Object.hasOwn(environments, application.defaultSourceEnvironmentId))
+      throw new Error(`${source}: application "${id}" names an unconfigured default source environment.`);
     if (!environments[application.defaultEnvironmentId]) {
       throw new Error(`${source}: application "${id}" names default environment `
         + `"${application.defaultEnvironmentId}", which it does not declare.`);

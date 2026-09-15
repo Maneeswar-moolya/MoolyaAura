@@ -1,0 +1,26 @@
+[
+  {
+    "stage": "F",
+    "file": "ai/testing/recording-mapping-mutations.ts",
+    "args": [],
+    "exitCode": 0,
+    "seconds": 176.198,
+    "log": "docs/validation/review-workflow-F-recording-mapping-mutations.log"
+  },
+  {
+    "stage": "F",
+    "file": "ai/testing/user-confirmed-auth-mutations.ts",
+    "args": [],
+    "exitCode": 0,
+    "seconds": 52.419,
+    "log": "docs/validation/review-workflow-F-user-confirmed-auth-mutations.log"
+  },
+  {
+    "stage": "F",
+    "file": "ai/testing/explicit-authoring-mutations.ts",
+    "args": [],
+    "exitCode": 0,
+    "seconds": 187.804,
+    "log": "docs/validation/review-workflow-F-explicit-authoring-mutations.log"
+  }
+]

@@ -7,6 +7,7 @@
  */
 
 import type { Locator, Page } from '@playwright/test';
+import { installLocatorPolicy } from '../support/locator-policy';
 
 import { resolveLocator, type HealingRecorder, type LocatorCandidate } from '../support/resilient-locator';
 
@@ -14,7 +15,7 @@ export abstract class BasePage {
   constructor(
     protected readonly page: Page,
     protected readonly healing?: HealingRecorder,
-  ) {}
+  ) { installLocatorPolicy(page); }
 
   /**
    * Resolve a logical element to EXACTLY ONE element.

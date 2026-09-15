@@ -1,0 +1,39 @@
+{
+  "started": "2026-09-13T03:47:35.067Z",
+  "total": 6,
+  "results": [
+    {
+      "fixture": "ai/dashboard/explicit-authoring.fixture.ts",
+      "exitCode": 0,
+      "milliseconds": 23290
+    },
+    {
+      "fixture": "ai/dashboard/authoring-workspace.fixture.ts",
+      "exitCode": 0,
+      "milliseconds": 91291
+    },
+    {
+      "fixture": "ai/dashboard/authoring-browser.fixture.ts",
+      "exitCode": 0,
+      "milliseconds": 45741
+    },
+    {
+      "fixture": "ai/autocode/ownership-reuse.fixture.ts",
+      "exitCode": 0,
+      "milliseconds": 3444
+    },
+    {
+      "fixture": "ai/autocode/recorded-flow.fixture.ts",
+      "exitCode": 0,
+      "milliseconds": 4134
+    },
+    {
+      "fixture": "ai/dashboard/navigation-causality.fixture.ts",
+      "exitCode": 0,
+      "milliseconds": 4623
+    }
+  ],
+  "changed": [],
+  "finished": "2026-09-13T03:50:27.727Z",
+  "passed": true
+}

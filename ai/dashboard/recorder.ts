@@ -1,3 +1,5 @@
+import ts from 'typescript';
+import { atomicText, hashContent, ownersPath } from '../knowledge/authoring-owners';
 /**
  * Record Test: a second way to author a test case, not a second framework.
  *
@@ -51,6 +53,7 @@
 // same file themselves.
 import '../../tests-e2e/support/load-env';
 
+import { NavigationJournal, navigationMetadata, type NavigationCause, type NavigationReason, type NavigationCounts } from './navigation';
 import { NEEDS_CONFIRMATION, RECORDED_INTERACTION } from './placeholders';
 import {
   evidenceUnavailable, type AssertionProvenance, type RecordingEvidence, type TargetEvidence,
@@ -82,12 +85,24 @@ export interface RecordedAction {
   target: string;
   /** Codegen's own locator expression, preserved verbatim. */
   locator: string;
-  /** getByRole, getByLabel, getByPlaceholder, getByText, getByTestId, locator… */
+  /** getByRole, getByLabel, getByPlaceholder, getByText, getByTestId, locatorâ€¦ */
   locatorStrategy: string;
   /** Typed text, chosen option, key pressed. Null when there is none or it was redacted. */
   value: string | null;
   /** True when a value was captured and deliberately replaced. */
   redacted?: boolean;
+  /**
+   * WHY it was replaced and WHICH credential field it was, when provenance knows.
+   * Structured rather than substituted: generation reads the field name from here
+   * instead of inferring "redacted means password", which stopped being true the
+   * moment identifiers were protected too. Absent on recordings made before this.
+   */
+  valueSource?: RecordedValueSource;
+  /** Explicit recorder provenance; absence is unknown, never deliberate navigation. */
+  navigationCause?: NavigationCause;
+  navigationReason?: NavigationReason;
+  navigationCounts?: NavigationCounts;
+  navigationId?: string;
 }
 
 export interface RecordedAssertion {
@@ -194,6 +209,8 @@ export interface AuthenticationEvidence {
 }
 
 export interface Recording {
+  /** Human ownership guidance; never evidence or a locator proof. */
+  authoringOwners?: import('../knowledge/authoring-owners').AuthoringOwners;
   startUrl: string;
   browser: string;
   /**
@@ -260,9 +277,35 @@ interface Session {
   scope: ApplicationScope;
   /** The row this recording is being made for, when the person named one. */
   testCaseId?: string;
+  /**
+   * The environment this recording was made AGAINST, carried so generation can rebase.
+   *
+   * Chosen with the application before the browser opened, like `scope`, and for the same
+   * reason: a recording navigates, and re-deriving this at save time from wherever the
+   * browser ended up is the inference this subsystem exists to remove.
+   */
+  sourceEnvironmentId?: string;
+  /** Named when the live transport was requested and refused. Never silently dropped. */
+  transportProblem?: string;
   /** Set when the recorder exits on its own, i.e. the person closed the browser. */
   exited: boolean;
   error?: string;
+}
+
+/**
+ * WHAT A RECORDING WAS MADE UNDER, as one value.
+ *
+ * IDs only. The credential profile is named so generation can resolve it; its account and
+ * password are resolved in this process and never enter this record, the workbook, the
+ * recording, the evidence or any response. Deliberately NOT written into `RecordingOrigin`
+ * and so never persisted beside the recording: a profile chosen for one generation attempt
+ * is not a property of the logical test, and a persisted one would read as if it were.
+ */
+export interface RecordingContext {
+  applicationId: string;
+  environmentId: string;
+  sourceEnvironmentId?: string;
+  credentialProfileId?: string;
 }
 
 let session: Session | null = null;
@@ -314,6 +357,8 @@ export const recordingsDir = activeRecordingsDir;
  */
 let pending: {
   source: string; recording: Recording; stateAssertions?: RecordedAssertion[];
+  ownerOverrides?: Record<string, import('./authoring-catalog').OwnerSelection>;
+  authoringPages?: import('../knowledge/authoring-owners').AuthoringPage[];
   /**
    * The session's LOCKED application context, carried across the Stop/Save gap.
    *
@@ -323,7 +368,55 @@ let pending: {
    * decision travels with the recording instead.
    */
   origin?: RecordingOrigin;
+  /**
+   * The same journey for the GENERATION context. Not persisted - see `RecordingContext`.
+   */
+  context?: RecordingContext;
 } | null = null;
+
+/**
+ * THE CONTEXT THE LAST SAVED RECORDING WAS MADE UNDER, waiting for its generation request.
+ *
+ * The chain section 3 describes - recording, save the workbook row, learn the final Test
+ * Case ID, rebuild the catalog, generate - crosses two moments that cannot see each other.
+ * At Stop there is a profile but no ID; at Save there is an ID and the pending recording has
+ * already been consumed. So `keepArtifactFor` stamps the context with the ID the workbook
+ * actually assigned and leaves it here for the save handler to collect.
+ *
+ * Collected ONCE and by the application that owns it. A generation context is about one
+ * attempt on one case; leaving it readable would let the next unrelated save inherit a
+ * profile nobody chose for it.
+ */
+let generationContext: (RecordingContext & { testCaseId: string }) | null = null;
+
+/** The context for THIS case in THIS application, consumed on read. */
+export function takeRecordedGenerationContext(
+  scope: ApplicationScope, testCaseId: string,
+): (RecordingContext & { testCaseId: string }) | null {
+  const held = generationContext;
+  if (!held) return null;
+  if (held.applicationId !== scope.applicationId
+      || held.testCaseId.toUpperCase() !== testCaseId.toUpperCase())
+    return null;
+  generationContext = null;
+  return held;
+}
+
+/**
+ * Exported for the contract, which must drive the REAL hand-off rather than a copy.
+ *
+ * The link this proves - a session's chosen profile becoming the generation context stamped
+ * with the ID the workbook assigned - spans Stop and Save, and the only other way to reach it
+ * is to open a browser. So the fixture supplies the SESSION and the production `originOf` and
+ * `contextOf` derive from it, exactly as they do for a real recording. A fixture that built
+ * the context itself would be testing its own arithmetic.
+ */
+export function retainRecordingForTest(
+  source: string, recording: Recording,
+  current: Pick<Session, 'scope' | 'browser' | 'startedAt' | 'testCaseId' | 'sourceEnvironmentId'>,
+): void {
+  pending = { source, recording, origin: originOf(current as Session), context: contextOf(current as Session) };
+}
 
 /**
  * `dir` defaults to the ACTIVE scope's store, and the default is not always right.
@@ -382,9 +475,15 @@ export function keepArtifactFor(testCaseId: string): string | null {
   if (!pending)
     return null;
   const held = pending;
-  pending = null;
-  return persistRecording(testCaseId, held.source, held.recording.evidence, held.stateAssertions,
-      held.origin);
+  // The one moment both halves exist: the recording's context, and the ID the workbook just
+  // assigned. Stamped here so the save handler can ask for a generation request bound to
+  // THIS case, instead of a person being sent back to re-select the case they just made.
+  if (held.context)
+    generationContext = { ...held.context, testCaseId };
+  const artifact = persistRecording(testCaseId, held.source, held.recording.evidence, held.stateAssertions, held.origin);
+  if (artifact && held.recording.authoringOwners) atomicText(ownersPath(artifact), JSON.stringify({ ...held.recording.authoringOwners, recordingHash: hashContent(held.source) }, null, 2));
+  if (artifact) pending = null;
+  return artifact;
 }
 
 /**
@@ -436,7 +535,20 @@ export function persistRecording(
     const sidecar = evidencePath(testCaseId, dir);
     // Always, before deciding whether to write a new one.
     fs.rmSync(sidecar, { force: true });
-    if (evidence.available) {
+    // THE SIDECAR IS WRITTEN EVEN WHEN THE EVIDENCE IS UNAVAILABLE.
+    //
+    // It used to be written only when evidence was available, so a recording whose live
+    // capture produced nothing left NO file - and an absent file cannot be told apart from
+    // a recording made before evidence existed at all. On disk the two states looked
+    // identical, while the recording itself looked complete: spec, owners and authoring
+    // sidecar all present. Generation was then the first thing to discover the problem,
+    // long after the browser had closed and the only moment that could have been measured
+    // had passed.
+    //
+    // Writing the unavailability REASON is not fabricating evidence - it is recording the
+    // fact that there is none, which is the thing a reader actually needs. Nothing
+    // downstream may treat it as admissible: `available:false` is what it says.
+    if (evidence.available || evidence.captures?.length) {
       try {
         // Ownership is stamped HERE rather than at capture, because it is a fact about
         // the SESSION and the capture layer has no business knowing about projects.
@@ -451,6 +563,22 @@ export function persistRecording(
       } catch {
         // Evidence is an optimisation. A save must never fail over it, and an
         // unwritten sidecar degrades to exactly the pre-Phase-8 behaviour.
+      }
+    } else {
+      try {
+        // No admissible evidence. Say so, with the reason the capture layer gave, and
+        // stamp the same ownership so the record belongs to one application like any
+        // other. This carries no targets and no captures: there is nothing to credit.
+        const incomplete: RecordingEvidence & { origin?: RecordingOrigin } = {
+          ...evidence,
+          available: false,
+          reason: (evidence as { reason?: string }).reason ?? 'no admissible interaction-time evidence was captured',
+        } as RecordingEvidence;
+        if (origin)
+          incomplete.origin = { ...origin, testCaseId };
+        fs.writeFileSync(sidecar, JSON.stringify(incomplete, null, 2), 'utf8');
+      } catch {
+        // Same rule: a save never fails over a sidecar.
       }
     }
     return path.relative(ROOT, file).replace(/\\/g, '/');
@@ -508,6 +636,7 @@ function liveArtefacts(testCaseId: string): string[] {
   return [
     artifactPath(testCaseId),
     evidencePath(testCaseId),
+    ownersPath(artifactPath(testCaseId)),
     assertionsPath(testCaseId),
     path.join(recordingsDir(), `${testCaseId.toUpperCase()}.authoring.json`),
   ];
@@ -562,6 +691,11 @@ export function readArchivedArtifact(testCaseId: string): string | null {
 export function recordingStatus(): {
   recording: boolean; startedAt?: string; url?: string; browser?: string; browserClosed?: boolean;
   error?: string; applicationId?: string; environmentId?: string; displayName?: string; testCaseId?: string;
+  /** The profile id only. The resolved account and password never leave this process. */
+  credentialProfileId?: string;
+  transport?: 'codegen' | 'live';
+  browserEvidence?: boolean;
+  transportProblem?: string;
 } {
   if (!session)
     return { recording: false };
@@ -577,6 +711,11 @@ export function recordingStatus(): {
     environmentId: session.scope.environmentId,
     displayName: session.scope.displayName,
     ...(session.testCaseId ? { testCaseId: session.testCaseId } : {}),
+    ...(recordingCredentialProfileId() ? { credentialProfileId: recordingCredentialProfileId() } : {}),
+    // What this session can and cannot prove, said while it is still running.
+    transport: session.transport,
+    browserEvidence: session.transport === 'live',
+    ...(session.transportProblem ? { transportProblem: session.transportProblem } : {}),
     // The recorder can end without anyone pressing Stop - the browser has its own
     // close button. Saying so is the difference between "still going" and "waiting
     // for you to press Stop on something that already finished".
@@ -609,8 +748,24 @@ export async function startRecording(options: {
   url?: string;
   browser: string;
   testCaseId?: string;
+  /**
+   * The account this recording signs in with, named BEFORE the browser opens.
+   *
+   * An id, never a value. It exists so the recorder can recognise the identifier and the
+   * password when they are typed, and refuse to persist either. Optional: a recording that
+   * signs in with nothing needs no profile, and one that does but names none falls back to
+   * the label guard exactly as it did before - protected for the password, not for the
+   * account. Naming it is what closes that.
+   */
+  credentialProfileId?: string;
+  /** The environment being recorded against, carried into the generation context. */
+  sourceEnvironmentId?: string;
 }): Promise<{ started: boolean; error?: string; transport?: 'codegen' | 'live';
-  applicationId?: string; environmentId?: string; url?: string }> {
+  applicationId?: string; environmentId?: string; url?: string; credentialProfileId?: string;
+  /** Can this transport observe the browser at all? Codegen never can. */
+  browserEvidence?: boolean;
+  /** Set when the live transport was asked for and could not start. */
+  transportProblem?: string }> {
   if (session)
     return { started: false, error: 'A recording is already in progress. Stop it first.' };
 
@@ -639,13 +794,24 @@ export async function startRecording(options: {
   const outputFile = path.join(os.tmpdir(),
       `recording-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.spec.ts`);
 
+  // BEFORE the browser opens. Resolving after it is already recording would leave a window
+  // in which a typed credential has nothing to be compared against, and a refusal would then
+  // arrive with a session already running.
+  try {
+    openRecordingCredentials(options.scope, options.credentialProfileId);
+  } catch (error) {
+    return { started: false, error: String((error as Error)?.message ?? error) };
+  }
+
   // The live transport, when it is asked for AND available. `startLiveRecording`
   // returns null for every failure - a Playwright build without `_enableRecorder`, a
   // browser that will not launch, a recorder that refuses - and the codegen path
   // below then runs exactly as it always has. Recording never fails because evidence
   // capture is unavailable.
+  let transportProblem = '';
   if (liveTransportRequested()) {
     const live = await startLiveRecording({
+      scope:options.scope,
       url: parsed.toString(),
       browser,
       onLog: text => process.stdout.write(`  [recorder] ${text}`),
@@ -655,12 +821,21 @@ export async function startRecording(options: {
         transport: 'live', live, outputFile, url: parsed.toString(), browser: options.browser,
         startedAt: new Date().toISOString(), startedMs: Date.now(), exited: false,
         scope: options.scope, testCaseId: options.testCaseId,
+        sourceEnvironmentId: options.sourceEnvironmentId,
       };
       return { started: true, transport: 'live', applicationId: options.scope.applicationId,
-        environmentId: options.scope.environmentId, url: parsed.toString() };
+        environmentId: options.scope.environmentId, url: parsed.toString(),
+        credentialProfileId: recordingCredentialProfileId(), browserEvidence: true };
     }
-    process.stdout.write('  [recorder] falling back to the codegen recorder; '
-      + 'this recording will carry no DOM evidence\n');
+    // ASKED FOR, AND NOT AVAILABLE. The fallback still happens - a recorder that refuses to
+    // record is worse than one that records without evidence - but it is never presented as
+    // the transport that was requested. A recording made here cannot support deterministic
+    // automatic generation, and the person has to be told BEFORE they spend a session on it.
+    transportProblem = 'LIVE_RECORDER_UNAVAILABLE: the live recorder was requested but could not '
+      + 'start, so this recording is being made with codegen and will carry NO browser evidence '
+      + '- no interaction-time identity and no navigation journal. Every step will need an '
+      + 'explicit Page Object or recorded-locator binding; automatic inference will refuse.';
+    process.stdout.write('  [recorder] ' + transportProblem + '\n');
   }
 
   // argv array, shell:false - the rule this whole subsystem follows. The URL is one
@@ -677,6 +852,8 @@ export async function startRecording(options: {
     transport: 'codegen', child, outputFile, url: parsed.toString(), browser: options.browser,
     startedAt: new Date().toISOString(), startedMs: Date.now(), exited: false,
     scope: options.scope, testCaseId: options.testCaseId,
+    sourceEnvironmentId: options.sourceEnvironmentId,
+    transportProblem: transportProblem || undefined,
   };
   session = started;
 
@@ -687,7 +864,9 @@ export async function startRecording(options: {
   child.stderr?.resume();
 
   return { started: true, transport: 'codegen', applicationId: options.scope.applicationId,
-    environmentId: options.scope.environmentId, url: parsed.toString() };
+    environmentId: options.scope.environmentId, url: parsed.toString(),
+    credentialProfileId: recordingCredentialProfileId(),
+    browserEvidence: false, ...(transportProblem ? { transportProblem } : {}) };
 }
 
 /**
@@ -725,6 +904,22 @@ function originOf(current: Session): RecordingOrigin {
   };
 }
 
+/**
+ * The session's GENERATION context, on the same terms as `originOf`.
+ *
+ * Separate from the origin deliberately: the origin is persisted beside the recording and
+ * says what the recording IS, while this says what one generation attempt should run under.
+ * The credential profile belongs in the second and must never leak into the first.
+ */
+function contextOf(current: Session): RecordingContext {
+  return {
+    applicationId: current.scope.applicationId,
+    environmentId: current.scope.environmentId,
+    ...(current.sourceEnvironmentId ? { sourceEnvironmentId: current.sourceEnvironmentId } : {}),
+    ...(recordingCredentialProfileId() ? { credentialProfileId: recordingCredentialProfileId() } : {}),
+  };
+}
+
 /** Wait for the recorder to exit, so its output file is complete. */
 async function waitForExit(child: ChildProcess, timeoutMs = 10_000): Promise<void> {
   if (child.exitCode !== null || child.signalCode !== null)
@@ -737,6 +932,15 @@ async function waitForExit(child: ChildProcess, timeoutMs = 10_000): Promise<voi
 }
 
 export async function stopRecording(): Promise<{ recording?: Recording; error?: string }> {
+  // The session's credentials outlive the session by exactly this call. Everything that
+  // redacts - `parseRecording` and `redactSource` below - still has to recognise them, so
+  // clearing at the top would produce a recording that leaks the values the person named
+  // the profile to protect. They go in the `finally`, whichever way this ends.
+  try {
+    return await stopRecordingSession();
+  } finally { closeRecordingCredentials(); }
+}
+async function stopRecordingSession(): Promise<{ recording?: Recording; error?: string }> {
   if (!session)
     return { error: 'No recording is in progress.' };
   const current = session;
@@ -770,6 +974,7 @@ export async function stopRecording(): Promise<{ recording?: Recording; error?: 
       recording: liveRecording,
       stateAssertions: collected.stateAssertions,
       origin: originOf(current),
+      context: contextOf(current),
     };
     return { recording: liveRecording };
   }
@@ -795,6 +1000,9 @@ export async function stopRecording(): Promise<{ recording?: Recording; error?: 
     fs.rmSync(current.outputFile, { force: true });
   }
 
+  // The child transport cannot prove redirect initiators. Retain explicit start intent,
+  // withhold observed URLs, and leave every other navigation unknown for review.
+  source = new NavigationJournal().finish(source, current.url).source;
   const recording = parseRecording(source, {
     startUrl: current.url,
     browser: current.browser,
@@ -807,7 +1015,7 @@ export async function stopRecording(): Promise<{ recording?: Recording; error?: 
   // Hold the REDACTED source for the save that follows. Redacted first and always:
   // the artifact that reaches disk must be safe to open, so the literal Codegen
   // wrote into a `.fill()` never gets that far.
-  pending = { source: redactSource(source, recording), recording, origin: originOf(current) };
+  pending = { source: redactSource(source, recording), recording, origin: originOf(current), context: contextOf(current) };
 
   return { recording };
 }
@@ -822,7 +1030,7 @@ export async function stopRecording(): Promise<{ recording?: Recording; error?: 
  * leaves everything else - the locators, the structure, the assertions - intact for
  * the mapper to read.
  */
-function redactSource(source: string, recording: Recording): string {
+export function redactSource(source: string, recording: Recording): string {
   let out = source;
   for (const action of recording.actions) {
     if (!action.redacted || !action.locator)
@@ -840,12 +1048,25 @@ function redactSource(source: string, recording: Recording): string {
     if (secret && secret.length >= 4)
       out = out.split(secret).join(PLACEHOLDER);
   }
+  // Identifiers as well as secrets. A recorded account address reaching the file through a
+  // URL, a comment or a form the parser did not model is the exact leak this task closes.
+  for (const entry of protectedCredentials() as Array<RecordedValueSource & { value: string }>)
+    out = out.split(entry.value).join(PLACEHOLDER);
   return out;
 }
 
 /** True when a recording is waiting to be claimed by a save. */
 export function hasPendingRecording(): boolean {
   return pending !== null;
+}
+
+/** Server-held draft only: callers cannot substitute browser-supplied evidence. */
+export function pendingRecordingFor(scope: ApplicationScope) {
+  if (!pending) throw Error('No recording is waiting for review.');
+  if (pending.origin?.applicationId !== scope.applicationId) throw Error('The pending recording belongs to another application.');
+  if (pending.recording.evidence.available)
+    (pending.recording.evidence as any).origin = { ...pending.origin };
+  return pending;
 }
 
 /**
@@ -867,11 +1088,119 @@ export function redactSourceForTest(source: string, recording: Recording): strin
  * defeats it. Reading the call at the END and treating the rest as the receiver is
  * unambiguous for the shape codegen emits.
  */
-function splitCall(line: string): { receiver: string; method: string; args: string } | null {
-  const match = /^(.*)\.([A-Za-z]+)\((.*)\)\s*;?\s*$/.exec(line.trim());
-  if (!match)
-    return null;
-  return { receiver: match[1].trim(), method: match[2], args: match[3] };
+/**
+ * ONE STATEMENT, however Codegen chose to wrap it.
+ *
+ * WHY THIS IS NOT A LINE SCAN ANY MORE
+ *
+ * The parser used to read the script a line at a time and require a whole
+ * `await <receiver>.<method>(<args>);` on one of them. Codegen does not promise that.
+ * It wraps a call the moment its arguments grow - a click with modifiers, a long role
+ * name, a `filter` with a `hasText` - and every one of those actions was then DROPPED.
+ * Not mislabelled: absent. A person performed it, the source recorded it, and the
+ * recording did not contain it.
+ *
+ * `page.getByRole('textbox', { name: 'Password' }).click({ modifiers: ['Alt'] })` written
+ * across four lines is the same action as the same call on one line, and formatting is
+ * not allowed to decide whether a step exists.
+ *
+ * So statements are found STRUCTURALLY - the TypeScript parser already in this repository
+ * says where each one begins and ends - and the call is decomposed from the syntax tree
+ * rather than from a regex over a line. What the rest of this parser then receives is the
+ * same three strings it always received, normalised to the single-line spelling, so
+ * redaction, locator description, matcher lookup and the review all behave exactly as
+ * before. A statement that was already on one line comes out byte-identical.
+ */
+interface RecordedStatement {
+  /** The awaited expression, normalised: what the old `line.slice('await '.length)` held. */
+  body: string;
+  /** `await <body>;` plus any trailing comment, so navigation markers still read. */
+  line: string;
+  /** The outermost call, decomposed by the tree. Null when the statement is not one. */
+  call: { receiver: string; method: string; args: string } | null;
+  /**
+   * Raw `await` action lines up to and including this statement's FIRST line.
+   *
+   * Defined as the identical measurement `countRecordedActions` takes over the file the
+   * recorder is still writing - lines that start `await ` and do not start `await expect(`.
+   * The picker counts its positions in that space, so this has to be that count and not a
+   * count of statements. A wrapped call contributes one either way, because only its first
+   * line starts with `await`; deriving it from the source rather than from the statement
+   * keeps the two definitions the same definition rather than two that agree today.
+   */
+  rawActions: number;
+}
+
+/**
+ * Collapse formatting whitespace, leaving every string literal untouched.
+ *
+ * A wrapped chain reads `page\n  .getByRole(...)`, and a naive collapse would leave
+ * `page .getByRole(...)` - valid JavaScript that no longer matches `^page\.` and would be
+ * refused by the authoring locator gate for a reason that has nothing to do with the
+ * element. So spaces are also removed where Codegen never puts them: around `.`, inside
+ * `(` and `[`, and before `,`. `{ name: 'x' }` keeps the spacing Codegen writes.
+ *
+ * Literals are copied verbatim, escapes included, so no recorded value is reformatted.
+ */
+export function flattenExpression(text: string): string {
+  const parts: Array<{ code: boolean; text: string }> = [];
+  let quote = '', buffer = '';
+  for (let index = 0; index < text.length; index++) {
+    const character = text[index];
+    if (quote) {
+      buffer += character;
+      if (character === '\\') { buffer += text[++index] ?? ''; continue; }
+      if (character === quote) { parts.push({ code: false, text: buffer }); buffer = ''; quote = ''; }
+      continue;
+    }
+    if (character === "'" || character === '"' || character === '`') {
+      parts.push({ code: true, text: buffer });
+      buffer = character; quote = character; continue;
+    }
+    buffer += character;
+  }
+  // An unterminated literal means malformed source; it is copied out rather than reflowed.
+  parts.push({ code: quote === '', text: buffer });
+  return parts.map(part => part.code
+    ? part.text.replace(/\s+/g, ' ').replace(/\s+([.,)\]])/g, '$1').replace(/([.(\[])\s+/g, '$1')
+    : part.text).join('').trim();
+}
+
+/** Every awaited statement the script holds, in source order. */
+function recordedStatements(source: string): RecordedStatement[] {
+  const file = ts.createSourceFile('recording.spec.ts', source, ts.ScriptTarget.Latest, true);
+  const lines = source.split('\n');
+  const rawThrough: number[] = [];
+  let running = 0;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (line.startsWith('await ') && !line.startsWith('await expect('))
+      running += 1;
+    rawThrough.push(running);
+  }
+  const statements: ts.ExpressionStatement[] = [];
+  const visit = (node: ts.Node) => {
+    if (ts.isExpressionStatement(node) && ts.isAwaitExpression(node.expression))
+      statements.push(node);
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  // Source order, stated rather than assumed: indices are the recording's step keys.
+  statements.sort((a, b) => a.getStart(file) - b.getStart(file));
+  return statements.map(statement => {
+    const awaited = (statement.expression as ts.AwaitExpression).expression;
+    const body = flattenExpression(awaited.getText(file));
+    const startLine = file.getLineAndCharacterOfPosition(statement.getStart(file)).line;
+    const end = file.getLineAndCharacterOfPosition(statement.getEnd());
+    // Whatever follows the statement on its closing line - the navigation marker lives there.
+    const trailing = (lines[end.line] ?? '').slice(end.character);
+    const call = ts.isCallExpression(awaited) && ts.isPropertyAccessExpression(awaited.expression)
+      ? { receiver: flattenExpression(awaited.expression.expression.getText(file)),
+          method: awaited.expression.name.text,
+          args: flattenExpression(awaited.arguments.map(argument => argument.getText(file)).join(', ')) }
+      : null;
+    return { body, line: `await ${body};${trailing}`, call, rawActions: rawThrough[startLine] ?? running };
+  });
 }
 
 /** Every quoted string in an argument list, in order, unquoted. */
@@ -962,10 +1291,161 @@ function looksLikeAKnownSecret(value: string): boolean {
   return false;
 }
 
-/** The one place a captured value is allowed through, and the two tests it must pass. */
-function safeValue(value: string | null, target: string, locator: string): { value: string | null; redacted: boolean } {
+/**
+ * HOW SENSITIVE A CAPTURED VALUE IS, and why the label is the weakest signal.
+ *
+ * The old model asked one question - "does this field look secret?" - and a field called
+ * "Enter email" does not. So the password was protected and the account it belongs to was
+ * written to disk in full, which is most of a credential. Labels cannot carry this: an
+ * application is free to call its login field "Sign-in ID", and a business form is free to
+ * collect "Customer contact email" that is ordinary data and must stay recordable.
+ *
+ * So provenance decides. A value is protected because it IS the configured account or
+ * password - compared against the credentials this run actually holds - not because of what
+ * the field was called. Labels remain as a secondary guard for the password-shaped cases
+ * provenance cannot see, and never as the primary one.
+ *
+ *   PUBLIC     ordinary typed value. Persisted as recorded.
+ *   SENSITIVE  a credential IDENTIFIER - account, email, username. Never persisted literally.
+ *   SECRET     a password or equivalent. Never persisted literally.
+ */
+export type ValueSensitivity = 'PUBLIC' | 'SENSITIVE' | 'SECRET';
+export interface RecordedValueSource {
+  kind: 'CREDENTIAL_PROFILE' | 'APPLICATION_CREDENTIALS';
+  field: 'email' | 'password';
+  sensitivity: 'SENSITIVE' | 'SECRET';
+}
+
+/**
+ * THE CREDENTIALS THE ACTIVE DASHBOARD RECORDING IS SIGNING IN WITH.
+ *
+ * An EXECUTION has an execution selection, so `protectedCredentials` can resolve the profile
+ * from the transport. A RECORDING has none: nobody has chosen an Example row, and the test
+ * case being recorded may not exist yet. So the recorder held nothing to compare against, and
+ * the account identifier a tester typed into the sign-in form was persisted verbatim while
+ * the password survived only because the field happened to be called "password" - protection
+ * by label, which is exactly what provenance exists to replace.
+ *
+ * Naming the credential profile when the recording STARTS closes that. The profile is
+ * resolved once, the two values are held in this process for the life of the session, they
+ * are compared against and never emitted, and they are dropped when the session ends.
+ *
+ * Never written to disk, never returned to the browser, never logged.
+ */
+let recordingCredentials: { profileId: string; email?: string; password?: string } | null = null;
+
+/**
+ * Resolve the named profile for the session about to start, or refuse to start.
+ *
+ * A profile that cannot be resolved is not a reason to record unprotected: the person
+ * explicitly said which account this recording signs in with, and recording anyway is the
+ * leak. The error is the store's own `CREDENTIAL_CONFIGURATION_FAILURE`, unaltered.
+ */
+export function openRecordingCredentials(scope: ApplicationScope, credentialProfileId?: string): void {
+  recordingCredentials = null;
+  const id = (credentialProfileId ?? '').trim();
+  if (!id)
+    return;
+  const { resolveProfileCredentials } = require('../test-data/store') as typeof import('../test-data/store');
+  const resolved = resolveProfileCredentials(scope, id);
+  recordingCredentials = { profileId: id, email: resolved.email, password: resolved.password };
+}
+
+/** The session is over. The values go with it. */
+export function closeRecordingCredentials(): void {
+  recordingCredentials = null;
+}
+
+/** The profile this recording named, for display and provenance. Never its values. */
+export function recordingCredentialProfileId(): string | undefined {
+  return recordingCredentials?.profileId;
+}
+
+/**
+ * The credentials THIS run holds, as values to compare against - never as values to emit.
+ *
+ * Resolved from the recording session's own profile first, then from the selected execution
+ * profile where the transport names one, so a broad decrypt-everything sweep is not needed to
+ * protect the profile actually in use, and otherwise from the application's declared
+ * environment bindings. Both the identifier and the password are protected; protecting only
+ * the password is the gap this replaces.
+ *
+ * Never thrown from and never logged. A context that cannot be resolved yields no
+ * comparisons, which degrades to the label guard rather than to an exception mid-recording.
+ */
+function protectedCredentials(): RecordedValueSource[] & { values?: never } {
+  const found: Array<RecordedValueSource & { value: string }> = [];
+  const add = (value: unknown, field: 'email' | 'password', kind: RecordedValueSource['kind']) => {
+    if (typeof value === 'string' && value.length >= 4)
+      found.push({ value, field, kind, sensitivity: field === 'password' ? 'SECRET' : 'SENSITIVE' });
+  };
+  // First, and outside the scope lookup: a recording knows its own profile without one.
+  if (recordingCredentials) {
+    add(recordingCredentials.email, 'email', 'CREDENTIAL_PROFILE');
+    add(recordingCredentials.password, 'password', 'CREDENTIAL_PROFILE');
+  }
+  try {
+    const { activeScope } = require('../projects/scope') as typeof import('../projects/scope');
+    const scope = activeScope();
+    // Prefer the profile this recording/execution context already selected.
+    try {
+      const { executionSelectionFromTransport } = require('../projects/execution-context') as typeof import('../projects/execution-context');
+      const selection = executionSelectionFromTransport();
+      if (selection) {
+        const { resolveExecutionData } = require('../test-data/execution') as typeof import('../test-data/execution');
+        const resolved: any = resolveExecutionData(scope, selection);
+        add(resolved?.appCredentials?.email, 'email', 'CREDENTIAL_PROFILE');
+        add(resolved?.appCredentials?.password, 'password', 'CREDENTIAL_PROFILE');
+      }
+    } catch { /* no selected profile; fall through to declared bindings */ }
+    // Legacy application bindings protect BOTH halves, not the password alone.
+    const refs: any = (scope as any).credentials;
+    add(refs?.email && process.env[refs.email], 'email', 'APPLICATION_CREDENTIALS');
+    add(refs?.password && process.env[refs.password], 'password', 'APPLICATION_CREDENTIALS');
+  } catch { /* no active application; label guard still applies */ }
+  return found as any;
+}
+
+/**
+ * Is this a credential value this process has already decrypted, for anything at all?
+ *
+ * The registry is field-blind by design, so it can only answer "protected", never "which".
+ * Kept as a backstop under provenance, never in place of it.
+ */
+function resolvedSecret(value: string): boolean {
+  if (!value || value.length < 4)
+    return false;
+  try {
+    const { credentialSecrets } = require('../test-data/secrets') as typeof import('../test-data/secrets');
+    return credentialSecrets().includes(value);
+  } catch { return false; }
+}
+
+/** Which protected credential a value IS, or null. Compared only; never returned outward. */
+export function credentialProvenance(value: string): RecordedValueSource | null {
+  if (!value)
+    return null;
+  for (const entry of protectedCredentials() as Array<RecordedValueSource & { value: string }>)
+    if (entry.value === value)
+      return { kind: entry.kind, field: entry.field, sensitivity: entry.sensitivity };
+  return null;
+}
+
+/** The one place a captured value is allowed through, and the tests it must pass. */
+function safeValue(value: string | null, target: string, locator: string):
+    { value: string | null; redacted: boolean; valueSource?: RecordedValueSource } {
   if (value === null)
     return { value: null, redacted: false };
+  // Provenance first: it knows WHICH credential field this is, so generation can emit the
+  // right semantic reference instead of guessing from whether anything was redacted at all.
+  const provenance = credentialProvenance(value);
+  if (provenance)
+    return { value: PLACEHOLDER, redacted: true, valueSource: provenance };
+  // A credential this process decrypted for some other purpose. It is protected, but nothing
+  // here can say WHICH field it is, so it is redacted with no valueSource rather than
+  // labelled with a guess - an invented provenance would be worse than none.
+  if (resolvedSecret(value))
+    return { value: PLACEHOLDER, redacted: true };
   if (SENSITIVE.test(target) || SENSITIVE.test(locator) || looksLikeAKnownSecret(value))
     return { value: PLACEHOLDER, redacted: true };
   return { value, redacted: false };
@@ -1105,30 +1585,29 @@ export function parseRecording(
   const assertions: RecordedAssertion[] = [];
   let redactedValues = 0;
 
-  for (const raw of source.split('\n')) {
-    const line = raw.trim();
-    if (!line.startsWith('await '))
-      continue;
-    const body = line.slice('await '.length);
+  for (const statement of recordedStatements(source)) {
+    const { body, line } = statement;
 
     // The picker counted its positions against the RAW script, including the lines
     // this parser is about to drop. `countRecordedActions` counts every `await`
     // that is not an expect, so this counter has to be the same one - incremented
-    // for a dropped picker click exactly as for a kept application action.
-    if (!line.startsWith('await expect('))
-      rawActionLines += 1;
+    // for a dropped picker click exactly as for a kept application action. It is now
+    // MEASURED from the source rather than accumulated here, so a wrapped statement
+    // cannot let the two definitions drift apart.
+    rawActionLines = statement.rawActions;
 
     // Navigation is the one call whose receiver is the page itself.
     const goto = /^page\.goto\((['"`])(.*?)\1/.exec(body);
     if (goto) {
       actions.push({
         type: 'navigate', target: goto[2], locator: '', locatorStrategy: 'url', value: goto[2],
+        ...navigationMetadata(line),
       });
       rawLineOfAction.push(rawActionLines);
       continue;
     }
 
-    const call = splitCall(body);
+    const call = statement.call;
     if (!call)
       continue;
 
@@ -1196,6 +1675,7 @@ export function parseRecording(
         locatorStrategy: described.strategy,
         value: safe.value,
         ...(safe.redacted ? { redacted: true } : {}),
+        ...(safe.valueSource ? { valueSource: safe.valueSource } : {}),
       });
       rawLineOfAction.push(rawActionLines);
     }
@@ -1490,7 +1970,7 @@ export function expectedResultFrom(recording: Recording): string {
  * A scenario title, derived rather than invented.
  *
  * The rule: the last thing clicked is what the recording was *for*, and the
- * assertion says what it was expected to produce. "Sign In — All Projects is
+ * assertion says what it was expected to produce. "Sign In â€” All Projects is
  * visible" is descriptive without claiming anything the recording did not contain.
  * With no assertion it stays purely descriptive of the actions.
  *
@@ -1509,7 +1989,7 @@ export function scenarioFrom(recording: Recording): string {
       : RECORDED_INTERACTION;
 
   if (recording.assertions.length)
-    return sentence(`${doing} — ${assertionPhrase(recording.assertions[0])}`);
+    return sentence(`${doing} â€” ${assertionPhrase(recording.assertions[0])}`);
   return sentence(doing);
 }
 

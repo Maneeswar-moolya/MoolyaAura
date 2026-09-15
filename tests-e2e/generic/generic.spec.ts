@@ -113,7 +113,7 @@ test.describe('Data-driven (any module)', () => {
 
       if (testCase.outcome === 'Error') {
         await step(`The application rejects it with ${describeMatcher(testCase.message)}`, async () => {
-          const observed = await observedMessage(page, 8000);
+          const observed = await observedMessage(page);
           expect(observed, `${expectation}\n  Expected ${describeMatcher(testCase.message)}, got ` +
             `"${observed || 'no message at all'}"`).not.toBe('');
           expect(messageMatches(testCase.message, observed),

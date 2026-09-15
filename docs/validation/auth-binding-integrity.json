@@ -1,0 +1,26 @@
+{
+  "changed": [
+    "ai\\autocode\\from-recording.ts",
+    "ai\\dashboard\\authoring-browser.fixture.ts",
+    "ai\\dashboard\\authoring-catalog.ts",
+    "ai\\dashboard\\page-ownership.ts",
+    "ai\\dashboard\\public\\authoring-workspace.js",
+    "ai\\dashboard\\recordings\\ksp\\TC_SMOKE_018.owners.json",
+    "ai\\testing\\inspect-recorded-case.ts",
+    "ai\\testing\\recorded-flow-mutations.ts"
+  ],
+  "added": [
+    "ai\\autocode\\user-confirmed-auth.fixture.ts",
+    "ai\\testing\\user-confirmed-auth-mutations.ts"
+  ],
+  "removed": [],
+  "application": {
+    "before": 65,
+    "after": 65,
+    "changed": [
+      "ai\\dashboard\\recordings\\ksp\\TC_SMOKE_018.owners.json"
+    ],
+    "added": [],
+    "removed": []
+  }
+}

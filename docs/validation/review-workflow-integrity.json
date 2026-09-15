@@ -1,0 +1,34 @@
+{
+  "baselineCount": 309,
+  "currentCount": 316,
+  "changed": [
+    "ai\\autocode\\abstraction\\writer.ts",
+    "ai\\autocode\\from-recording.ts",
+    "ai\\dashboard\\authoring-browser.fixture.ts",
+    "ai\\dashboard\\authoring-catalog.ts",
+    "ai\\dashboard\\page-ownership.ts",
+    "ai\\dashboard\\public\\authoring-workspace.css",
+    "ai\\dashboard\\public\\authoring-workspace.js",
+    "ai\\dashboard\\public\\index.html",
+    "ai\\dashboard\\server.ts",
+    "ai\\knowledge\\authoring-owners.ts",
+    "ai\\knowledge\\page-knowledge.ts",
+    "ai\\projects\\onboarding.fixture.ts",
+    "ai\\testing\\authoring-workspace-mutations.ts",
+    "ai\\testing\\explicit-authoring-mutations.ts",
+    "ai\\testing\\user-confirmed-auth-mutations.ts"
+  ],
+  "removed": [],
+  "added": [
+    "ai\\dashboard\\recording-mapping.fixture.ts",
+    "ai\\dashboard\\recording-mapping.ts",
+    "ai\\dashboard\\review-selectors.fixture.ts",
+    "ai\\testing\\mapping-reload-probe.ts",
+    "ai\\testing\\recording-mapping-mutations.ts",
+    "ai\\testing\\review-browser-checks.ts",
+    "ai\\dashboard\\public\\recording-review.js"
+  ],
+  "unexpectedChanged": [],
+  "unexpectedAdded": [],
+  "applicationArtifactsUnchanged": true
+}

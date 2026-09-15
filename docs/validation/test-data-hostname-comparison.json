@@ -1,0 +1,17 @@
+{
+  "changed": [
+    "ai/dashboard/public/test-data.js",
+    "ai/dashboard/test-data.browser.fixture.ts",
+    "ai/testing/test-data-mutations.ts",
+    "docs/history/REMAINING.md"
+  ],
+  "added": [],
+  "typeScript": {
+    "before": 20,
+    "after": 20,
+    "new": [],
+    "removed": [],
+    "beforeExit": 2,
+    "afterExit": 2
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "applicationId": "ksp",
+  "environmentId": "stg",
+  "testCaseId": "TC_SMOKE_021",
+  "runId": "2026-09-14T10-34-22-230Z-4aa34467-stg-2",
+  "attemptId": "d374a6de-2969-4fb9-9a27-2c3a334c6fec",
+  "kind": "clean",
+  "createdAt": "2026-09-14T10:36:04.084Z",
+  "locatorTimeoutMs": 40000,
+  "executionContext": {
+    "applicationId": "ksp",
+    "environmentId": "stg",
+    "sourceEnvironmentId": "stg",
+    "credentialProfileId": "cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed",
+    "executionRowId": "override-2-1",
+    "browserEngine": "chromium",
+    "headed": true,
+    "locatorTimeoutMs": 40000
+  },
+  "sourceEnvironmentId": "stg",
+  "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+  "steps": [
+    {
+      "recordingStepKey": "generated:25",
+      "label": "Open recorded destination",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 25,
+      "generatedLineEnd": 27,
+      "statement": "{\n      await page.goto('https://stgsupport.keysight.com/us/en/home');\n    }"
+    },
+    {
+      "recordingStepKey": "generated:29",
+      "label": "Use Log In",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 29,
+      "generatedLineEnd": 31,
+      "statement": "{\n      await (await initialLandingPage.logIn()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "generated:33",
+      "label": "Use Enter email",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 33,
+      "generatedLineEnd": 35,
+      "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "generated:37",
+      "label": "Enter account from configured credentials",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 37,
+      "generatedLineEnd": 39,
+      "statement": "{\n      await (await ssoauthLoginPage.enterEmailField()).fill(appCredentials.email);\n    }"
+    },
+    {
+      "recordingStepKey": "generated:41",
+      "label": "Enter password from configured credentials",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 41,
+      "generatedLineEnd": 43,
+      "statement": "{\n      await (await ssoauthLoginPage.passwordField()).fill(appCredentials.password);\n    }"
+    },
+    {
+      "recordingStepKey": "generated:45",
+      "label": "Use Log In",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 45,
+      "generatedLineEnd": 47,
+      "statement": "{\n      await (await ssoauthLoginPage.logInButton()).click();\n    }"
+    },
+    {
+      "recordingStepKey": "generated:49",
+      "label": "dashboard-heading contains \"My Dashboard\"",
+      "generatedFile": "tests-e2e/generated/ksp/TC_SMOKE_021.spec.ts",
+      "generatedLineStart": 49,
+      "generatedLineEnd": 51,
+      "statement": "{\n      await expect(await usEnHomePage.myDashboardState()).toContainText('My Dashboard');\n    }"
+    }
+  ],
+  "artifacts": [
+    ".last-run.json",
+    "executed-dependencies.json",
+    "generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-1101092c-819f-4169-88b2-fe6cd52e231b.png",
+    "generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-1e382a2a-8a69-4201-b20e-fb46fb2273a7.png",
+    "generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-3701f054-88e7-48b1-ab46-e40bb0b5c0da.png",
+    "generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-4fa6adfa-a91f-4d29-a910-c2094a917b2f.png",
+    "generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-8bf3e144-9d8a-4753-a531-7b7953c30963.png",
+    "generated-ksp-TC_SMOKE_021-f593f-ding-contains-My-Dashboard--chromium/aura-e27da46d-ea25-4ce3-ac40-42bc7e1913ca.png",
+    "generated-steps.json",
+    "results.json",
+    "steps/0.json"
+  ],
+  "trace": null,
+  "tracePolicy": "Sanitized action timeline. Native DOM snapshots, response bodies, video and unmasked screenshots are excluded.",
+  "unavailable": [
+    "A dependency source required redaction and was not retained as an exact source snapshot.",
+    "A dependency source required redaction and was not retained as an exact source snapshot.",
+    "A dependency source required redaction and was not retained as an exact source snapshot.",
+    "A dependency source required redaction and was not retained as an exact source snapshot.",
+    "A dependency source required redaction and was not retained as an exact source snapshot."
+  ],
+  "executionProfile": {
+    "applicationId": "ksp",
+    "environmentId": "stg",
+    "testCaseId": "TC_SMOKE_021",
+    "executionRowId": "override-2-1",
+    "credentialProfileId": "cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed",
+    "credentialProfileName": "kspuserCommon",
+    "role": "custom",
+    "dataProfileId": null,
+    "tags": [
+      "recorded",
+      "signed-in",
+      "ksp"
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "before": 20,
+  "after": 20,
+  "new": [
+    "ai/dashboard/server.ts(748,14): error TS2339: Property 'screenshotUrl' does not exist on type '{ locatorTimeoutMs?: number | undefined; locatorWaits?: LocatorWaitDetail[] | undefined; diagnostic?: Partial<DiagnosticStep> | undefined; ... 12 more ...; error?: string | undefined; }'."
+  ],
+  "removed": [
+    "ai/dashboard/server.ts(748,14): error TS2339: Property 'screenshotUrl' does not exist on type '{ diagnostic?: Partial<DiagnosticStep> | undefined; captures?: DiagnosticCapture[] | undefined; stepId?: string | undefined; applicationId?: string | undefined; ... 9 more ...; error?: string | undefined; }'."
+  ],
+  "changedModules": [],
+  "newDiagnosticIdentities": [],
+  "removedDiagnosticIdentities": [],
+  "note": "One existing server.ts TS2339 screenshotUrl diagnostic changed only its expanded StepRecord type text."
+}

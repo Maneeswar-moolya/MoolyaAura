@@ -1,0 +1,29 @@
+# User-authored logical Page. Route is context, not identity.
+page:
+  id: ksp__authored_6476741217dd2a2707a9
+  application_id: "ksp"
+  logical_name: "initialLandingPage"
+  name: "initialLandingPage"
+  route: "/us/en/home"
+  purpose: ""
+page_objects:
+  - "LoginButton"
+  - "InitialLandingPage"
+elements:
+  LoginButton_logIn:
+    usage: action
+    description: "Log In"
+    page_object: LoginButton
+    page_object_method: logIn
+    locator_strategy: "page.locator('header').getByRole('link', { name: 'Log In' })"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+  InitialLandingPage_logIn:
+    usage: action
+    description: "Log In"
+    page_object: InitialLandingPage
+    page_object_method: logIn
+    locator_strategy: "page.locator('header').getByRole('link', { name: 'Log In' })"
+    provenance: USER_CONFIRMED
+    validation_status: USER AUTHORED — NOT VALIDATED
+

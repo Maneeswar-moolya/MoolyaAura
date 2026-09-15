@@ -1,4 +1,5 @@
 import '../testing/isolated-checkout';
+import { targetEvidence } from '../testing/synthetic-data';
 /**
  * The deterministic Page Object abstraction engine, end to end.
  *
@@ -728,7 +729,9 @@ function checkAmbiguityAndDuplicates(): void {
       "  await page.getByRole('link', { name: 'Notifications' }).click();",
       '});',
     ].join('\n');
-    const steps = mapRecording(parseRecording(script, { startUrl: '', browser: '', durationMs: 0 })).steps;
+    const steps = mapRecording(parseRecording(script, { startUrl: '', browser: '', durationMs: 0,
+      evidence: { available: true, capturedAt: new Date(0).toISOString(), limits: {},
+        targets: [targetEvidence("page.getByRole('link', { name: 'Notifications' })")] } as any })).steps;
     check('existing Page Object reuse still works exactly as before',
         steps.some(step => step.kind === 'page-object' && /notificationsBell/.test(step.code.join(' '))),
         steps.map(step => step.kind).join(', '));

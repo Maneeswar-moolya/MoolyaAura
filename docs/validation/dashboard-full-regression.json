@@ -1,0 +1,19 @@
+{
+  "fixtures": 82,
+  "passed": 81,
+  "failed": [
+    {
+      "fixture": "ai/dashboard/recorder.fixture.ts",
+      "exitCode": 1,
+      "seconds": 20.85
+    }
+  ],
+  "seconds": 870.69,
+  "integrity": {
+    "changed": [],
+    "deleted": [],
+    "created": [],
+    "createdDirectories": [],
+    "deletedDirectories": []
+  }
+}

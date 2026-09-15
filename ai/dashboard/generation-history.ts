@@ -81,8 +81,17 @@ const RUN_ID_LINE = new RegExp(`^${RUN_ID_MARKER}(\\d{4}-\\d{2}-\\d{2}T[\\d-]+Z-
 /** `=== TC_LOGIN_022 (new) Sign in with a valid account` */
 const CASE_HEADING = /^=== (\S+) \((.*?)\)\s?(.*)$/;
 
-/** `  ACCEPTED: passed as written and failed with its assertions broken` */
-const VERDICT_LINE = /^ {2}([A-Z][A-Z_]{2,}): ?(.*)$/;
+/**
+ * `  ACCEPTED: passed as written and failed with its assertions broken`
+ * `  BLOCKED (authenticationCapability): authentication action 3 ...`
+ *
+ * The optional parenthesised qualifier is not decoration - it is the pipeline's
+ * CLASSIFICATION of the verdict, and the pattern used to require the colon immediately
+ * after the word. Every `BLOCKED (reason)` line therefore failed to match and the case
+ * was recorded as UNREPORTED with an empty reason: the run had said exactly what was
+ * wrong and the history showed "the generator never said what became of this row".
+ */
+const VERDICT_LINE = /^ {2}([A-Z][A-Z_]{2,})(?: \(([^)]*)\))?: ?(.*)$/;
 
 /**
  * Framework lines that share the verdict's shape and are not verdicts.
@@ -124,10 +133,13 @@ export interface GenerationCase {
   scenario: string;
   status: GenerationStatus;
   reason: string;
+  /** The pipeline's own classification, e.g. `authenticationCapability`. Absent when the verdict carried none. */
+  code?: string;
 }
 
 /** One generation, with everything needed to inspect it after the tab was closed. */
 export interface GenerationRecord {
+  executionContext?: import('../projects/execution-context').ExecutionContext;
   /** Allocated here, sortable, and the file name. Never the autocode runId. */
   id: string;
   /**
@@ -235,7 +247,10 @@ export function parseGenerationLog(text: string): { runId: string | null; cases:
       continue;
     const current = cases[cases.length - 1];
     current.status = verdict[1];
-    current.reason = verdict[2].trim();
+    // The qualifier is kept as a code of its own AND left in front of the reason, so a
+    // reader sees the classification whether or not they look at the structured field.
+    current.code = verdict[2]?.trim() || undefined;
+    current.reason = (current.code ? `${current.code}: ` : '') + verdict[3].trim();
   }
   return { runId, cases };
 }

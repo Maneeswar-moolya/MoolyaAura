@@ -1,0 +1,40 @@
+{
+  "beforeCount": 20,
+  "afterCount": 20,
+  "introduced": [],
+  "removed": [],
+  "changedDiagnosticDisplay": [
+    {
+      "before": {
+        "file": "ai/dashboard/server.ts",
+        "line": 734,
+        "column": 14,
+        "code": "TS2339",
+        "message": "Property 'screenshotUrl' does not exist on type '{ stepId?: string | undefined; applicationId?: string | undefined; environmentId?: string | undefined; runId?: string | undefined; attemptId?: string | undefined; attemptNumber?: number | undefined; ... 5 more ...; error?: string | undefined; }'."
+      },
+      "after": {
+        "file": "ai/dashboard/server.ts",
+        "line": 737,
+        "column": 14,
+        "code": "TS2339",
+        "message": "Property 'screenshotUrl' does not exist on type '{ diagnostic?: Partial<DiagnosticStep> | undefined; captures?: DiagnosticCapture[] | undefined; stepId?: string | undefined; applicationId?: string | undefined; ... 9 more ...; error?: string | undefined; }'."
+      }
+    }
+  ],
+  "changedModuleExistingDiagnostics": [
+    {
+      "file": "ai/dashboard/live-recorder.ts",
+      "line": 1020,
+      "column": 11,
+      "code": "TS2554",
+      "message": "Expected 2 arguments, but got 1."
+    },
+    {
+      "file": "ai/dashboard/server.ts",
+      "line": 737,
+      "column": 14,
+      "code": "TS2339",
+      "message": "Property 'screenshotUrl' does not exist on type '{ diagnostic?: Partial<DiagnosticStep> | undefined; captures?: DiagnosticCapture[] | undefined; stepId?: string | undefined; applicationId?: string | undefined; ... 9 more ...; error?: string | undefined; }'."
+    }
+  ]
+}

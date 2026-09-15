@@ -1,0 +1,19 @@
+PASS missing source fails preflight without launching a child
+PASS target default is not an implicit source default
+PASS configured source default selected independently
+PASS singleton source supported
+PASS invalid source refused
+PASS another application source refused
+PASS foreign context refused even with same source name
+PASS incompatible browser channel refused
+PASS timeout policy cannot be overridden
+PASS two users produce independent rows without switching source or target
+PASS context resolves credentials from target while source differs
+PASS context rejects mismatched row/profile instead of mixing credentials
+PASS changing source does not switch or persist credential selection
+PASS transport roundtrip retains the entire context
+PASS Playwright config consumes headed mode and installed channel
+PASS real gate runs clean and assertion mutation using the explicit context
+PASS both Playwright children receive source distinct from target, headed and channel
+PASS clean and mutation manifests retain context
+18 execution context behavioral checks passed

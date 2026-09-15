@@ -1,0 +1,27 @@
+{
+  "results": [
+    {
+      "task": [
+        "ai/dashboard/recorder.fixture.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 26.13
+    },
+    {
+      "task": [
+        "ai/dashboard/dashboard-experience.fixture.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 32.7
+    },
+    {
+      "task": [
+        "ai/testing/dashboard-mutations.ts",
+        "--mutant=5"
+      ],
+      "exitCode": 0,
+      "seconds": 42.67
+    }
+  ],
+  "repositoryUnchanged": true
+}

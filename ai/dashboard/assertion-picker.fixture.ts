@@ -1,4 +1,5 @@
 import '../testing/isolated-checkout';
+import { targetEvidence } from '../testing/synthetic-data';
 import { writeFixtureFile } from '../testing/synthetic-data';
 /**
  * P1 Phase 2B — the live assertion picker.
@@ -238,6 +239,8 @@ function checkRecording(): void {
   check('15: the application action survived',
       recording.actions.some(action => action.locator.includes('getByLabel')));
 
+  recording.evidence = { available: true, capturedAt: new Date(0).toISOString(), limits: {} as any,
+    targets: recording.assertions.map(a => targetEvidence(a.locator)) };
   const code = (mapRecording({ ...recording, testCaseId: 'TC_2B' } as never).steps as Array<{ code?: string[] }>)
       .flatMap(step => step.code ?? []);
   check('16: the state assertion generates the deterministic matcher',

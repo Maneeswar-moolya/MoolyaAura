@@ -1,0 +1,3 @@
+PASS HTTP generation preflight refuses missing source with no browser action
+PASS UI → HTTP → autocode CLI → grouping/orchestration → gate → clean/mutation Playwright children, source URL rebasing and headed mode
+PASS manual generated-case execution and two JSON profiles retain source/target/browser context in separate execution instances

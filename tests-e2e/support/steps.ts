@@ -18,9 +18,14 @@
  */
 
 import fs from 'node:fs';
+import { randomUUID, createHash } from 'node:crypto';
+import { activeScope } from '../../ai/projects/scope';
 import path from 'node:path';
 
 import type { Page, TestInfo } from '@playwright/test';
+import { captureDiagnostic, diagnosticText, diagnosticData, type DiagnosticCapture, type DiagnosticStep } from '../../ai/diagnostics/artifacts';
+import { runtimeStep } from '../../ai/diagnostics/manifest';
+import { withLocatorOperation, LOCATOR_TIMEOUT_MS, type LocatorWaitDetail } from './locator-policy';
 
 /**
  * Where a run's step evidence lands.
@@ -39,6 +44,25 @@ export const STEPS_DIR = process.env.EXCEL_STEPS_DIR
 export type StepStatus = 'passed' | 'failed';
 
 export interface StepRecord {
+  locatorTimeoutMs?: number;
+  locatorWaits?: LocatorWaitDetail[];
+  diagnostic?: Partial<DiagnosticStep>;
+  captures?: DiagnosticCapture[];
+  stepId?: string;
+  applicationId?: string;
+  environmentId?: string;
+  runId?: string;
+  attemptId?: string;
+  attemptNumber?: number;
+  captureTiming?: 'after-step' | 'after-failure';
+  /**
+   * Why this step has no picture, when it has none.
+   *
+   * A step nobody tried to photograph and a step that could not be photographed read
+   * identically on screen - "No screenshot captured" - and they are different facts.
+   * The reason is recorded so the screen can say which one happened.
+   */
+  captureUnavailable?: string;
   /** 1-based, in execution order. */
   index: number;
   title: string;
@@ -51,6 +75,12 @@ export interface StepRecord {
 }
 
 export interface StepLog {
+  console?: Array<{type:string;message:string;at:string;recordingStepKey?:string}>;
+  applicationId?: string;
+  environmentId?: string;
+  runId?: string;
+  attemptId?: string;
+  attemptNumber?: number;
   testCaseId: string;
   testTitle: string;
   steps: StepRecord[];
@@ -70,8 +100,11 @@ function captureMode(): 'off' | 'only-on-failure' | 'on' {
 }
 
 export class StepRecorder {
+  readonly console:NonNullable<StepLog['console']>=[];
+  currentStepKey?:string;
   readonly steps: StepRecord[] = [];
   private next = 1;
+  identity: Omit<StepLog, "testCaseId" | "testTitle" | "steps"> = {};
 
   claim(): number {
     return this.next++;
@@ -103,14 +136,60 @@ export async function runStep<T>(
   body: () => Promise<T>,
 ): Promise<T> {
   const index = recorder.claim();
+  const stepId = randomUUID();
+  const scope = activeScope();
+  const attemptNumber = (testInfo.retry || 0) + 1;
+  const testIdentity = createHash('sha256').update(`${testInfo.project.name}/${testInfo.testId}/${testInfo.repeatEachIndex || 0}`).digest('hex').slice(0,16);
+  recorder.identity = { applicationId: scope.applicationId, environmentId: scope.environmentId,
+    runId: process.env.AURA_RUN_ID, attemptId: `${testIdentity}-${attemptNumber}`, attemptNumber };
+  const identity = { ...recorder.identity, stepId };
   const started = Date.now();
+  const diagnostic = runtimeStep(testInfo.file,new Error().stack ?? '');
+  const locatorWaits: LocatorWaitDetail[] = [];
+  recorder.currentStepKey=diagnostic?.recordingStepKey;
+  const captures: DiagnosticCapture[] = [];
+  const unavailable: string[] = [];
+  const take = async (type: 'PRE_STEP'|'POST_STEP'|'FAILURE') => {
+    // ONE CAPTURE POLICY, and it is the control the dashboard already offers.
+    //
+    // `off` means off - this path used to photograph every step regardless, which is how
+    // pictures existed on disk for a run whose settings said not to take any. Both other
+    // modes keep the failure state; only `on` documents a step that passed, because that
+    // is what asking for screenshots ON means.
+    const mode = captureMode();
+    if (mode === 'off') return;
+    // `only-on-failure` still photographs the step BEFORE it runs, because a failing step's
+    // prior state is evidence about that failure. What it does not do is keep the picture
+    // once the step passes; the success path discards it below.
+    if (!page) { unavailable.push(`${type}: this step runs without a page`); return; }
+    if (page.isClosed()) { unavailable.push(`${type}: the page had already closed`); return; }
+    const capture = await captureDiagnostic(page,testInfo.outputDir,diagnostic?.recordingStepKey ?? `runtime:${stepId}`,type);
+    if (!capture) { unavailable.push(`${type}: the page could not be photographed safely`); return; }
+    {
+      // FILED WHERE A READER CAN FIND IT AGAIN.
+      //
+      // `captureDiagnostic` names the file relative to the directory it wrote into, which
+      // is this TEST's output directory. Retention copies that directory into the attempt
+      // keeping its relative path, so a bare `aura-….png` describes a file one level down -
+      // a reference that resolves nowhere, which is how per-step evidence that existed on
+      // disk arrived at the screen as "No screenshot captured". Recorded relative to the
+      // OUTPUT ROOT: the one space retention, the run evidence copy and the manifest all
+      // already speak.
+      capture.artifact = path.relative(testInfo.project.outputDir,
+        path.join(testInfo.outputDir, capture.artifact)).replace(/\\/g, '/');
+      captures.push(capture);
+      await testInfo.attach(`${type}-${index}`,{path:path.join(testInfo.project.outputDir,capture.artifact),contentType:'image/png'}).catch(() => {});
+    }
+  };
+  if (diagnostic) await take('PRE_STEP');
 
   const photograph = async (): Promise<string | undefined> => {
     if (!page || page.isClosed())
       return undefined;
+    if(process.env.AURA_EXECUTION_SELECTION){const capture=await captureDiagnostic(page,testInfo.outputDir,diagnostic?.recordingStepKey??`runtime:${stepId}`,'POST_STEP');return capture?path.join(testInfo.outputDir,capture.artifact):undefined;}
     try {
-      const file = testInfo.outputPath(`step-${fileSlug(index, title)}.png`);
-      await page.screenshot({ path: file, timeout: 5_000 });
+      const file = testInfo.outputPath(`step-${stepId}.png`);
+      await page.screenshot({ path: file, timeout: 5_000, mask:[page.locator('input, textarea, [contenteditable], [data-sensitive]')] });
       // Attaching as well puts it in Playwright's own HTML report, where the
       // trace viewer can sit beside it.
       await testInfo.attach(`step-${index}`, { path: file, contentType: 'image/png' });
@@ -122,19 +201,38 @@ export async function runStep<T>(
   };
 
   try {
-    const result = await body();
-    const record: StepRecord = { index, title, status: 'passed', durationMs: Date.now() - started };
+    const result = await withLocatorOperation(body, undefined, locatorWaits);
+    // AFTER THE STEP, not only after a failure.
+    //
+    // Step-by-step evidence is what a PASSING run is for: the record that the application
+    // looked right at each point. A report that can only show the step that broke cannot
+    // show that. Taken once the step's own work has settled - the locator policy has
+    // already awaited it - so there is nothing here to sleep for.
+    if (diagnostic && captureMode() === 'on') await take('POST_STEP');
+    // Asked for pictures only on failure, and this step did not fail: the pre-step frame
+    // it was holding is dropped rather than retained against a setting that said not to.
+    else if (captureMode() === 'only-on-failure') captures.length = 0;
+    const record: StepRecord = { ...identity, index, title:diagnosticText(title), diagnostic, captures, locatorTimeoutMs: LOCATOR_TIMEOUT_MS, locatorWaits, status: 'passed', durationMs: Date.now() - started };
     if (captureMode() === 'on')
       record.screenshotPath = await photograph();
+    // Timing is read from the picture that was actually taken, so a step stops reporting
+    // "capture timing not recorded" about evidence it is holding.
+    if (captures.some(capture => capture.captureType === 'POST_STEP') || record.screenshotPath)
+      record.captureTiming = 'after-step';
+    else if (unavailable.length) record.captureUnavailable = unavailable.join('; ');
     recorder.add(record);
     return result;
   } catch (error) {
+    if (diagnostic) await take('FAILURE');
     const record: StepRecord = {
-      index, title, status: 'failed', durationMs: Date.now() - started,
+      ...identity, index, title:diagnosticText(title), diagnostic, captures, locatorTimeoutMs: LOCATOR_TIMEOUT_MS, locatorWaits, status: 'failed', durationMs: Date.now() - started,
       error: firstLine(error),
     };
     if (captureMode() !== 'off')
       record.screenshotPath = await photograph();
+    if (captures.some(capture => capture.captureType === 'FAILURE') || record.screenshotPath)
+      record.captureTiming = 'after-failure';
+    else if (unavailable.length) record.captureUnavailable = unavailable.join('; ');
     recorder.add(record);
     throw error;
   }
@@ -142,7 +240,7 @@ export async function runStep<T>(
 
 function firstLine(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
-  return message
+  return diagnosticText(message)
       .replace(/\[[0-9;]*m/g, '')
       .split('\n')
       .map(line => line.trim())
@@ -163,6 +261,6 @@ export function flushSteps(testCaseId: string, testTitle: string, recorder: Step
   if (!recorder.steps.length)
     return;
   fs.mkdirSync(STEPS_DIR, { recursive: true });
-  const log: StepLog = { testCaseId, testTitle, steps: recorder.steps };
-  fs.writeFileSync(path.join(STEPS_DIR, `${testCaseId}.json`), `${JSON.stringify(log, null, 2)}\n`, 'utf8');
+  const log: StepLog = { ...recorder.identity, testCaseId, testTitle, steps: recorder.steps,console:recorder.console };
+  fs.writeFileSync(path.join(STEPS_DIR, `${testCaseId}${log.attemptId ? "." + log.attemptId : ""}.json`), `${JSON.stringify(diagnosticData(log), null, 2)}\n`, 'utf8');
 }

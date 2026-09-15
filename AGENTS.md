@@ -28,7 +28,7 @@ Also read the `status_version` block in [REMAINING.md](docs/history/REMAINING.md
 - Preserve deterministic-first behavior, runtime target identity, provenance and Page Object reuse before creation. One match or a similar name is not identity; unknown is not success. Do not invent evidence, acceptance criteria, ownership or locators.
 - Preserve append-safe, idempotent knowledge enrichment and transactional knowledge/Page Object/fixture writes. Retain recordings and evidence; never silently regenerate accepted specs or overwrite established capabilities. Follow the contracts for reviewed maintenance.
 - Preserve mutation and falsification practices: protections need behavioral tests that fail when the protection is removed; generated specs must pass clean and fail under assertion mutation. Falsifiability alone does not prove the correct business requirement was tested. Never heal an assertion mismatch into a pass.
-- Measure before optimizing. Compare relevant corpus impact, verify artifact integrity, and run exactly one final full regression after framework changes settle, as required by the testing contract. Report actual checks and exit codes; never present a historical baseline as a fresh run.
+- Measure before optimizing. Compare relevant corpus impact and verify artifact integrity. Run focused tests and meaningful mutations as needed. Run the full framework regression only when the user explicitly instructs it; do not start it automatically after changes. When authorized, run it once on the settled tree, as required by the testing contract. Report actual checks and exit codes; never present a historical baseline as a fresh run.
 
 ## Repository and execution safety
 

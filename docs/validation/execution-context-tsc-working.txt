@@ -1,0 +1,25 @@
+ai/autocode/abstraction/lifecycle.fixture.ts(105,9): error TS2741: Property 'alternatives' is missing in type '{ proposals: Proposal[]; reused: never[]; unmeasured: never[]; counts: {}; }' but required in type 'CorpusResult'.
+ai/autocode/abstraction/propose.ts(1174,11): error TS2353: Object literal may only specify known properties, and 'identityProofs' does not exist in type '{ signature: string; role: TargetRole; testCaseId: string; from: string; owner: string | null; ownerWhy: string; ownerCode: RefusalCode | null; ownerCandidates: string[] | null; ... 5 more ...; refusals: Refusal[]; }'.
+ai/autocode/abstraction/propose.ts(1425,48): error TS2339: Property 'identityProofs' does not exist on type '{ signature: string; role: TargetRole; testCaseId: string; from: string; owner: string | null; ownerWhy: string; ownerCode: RefusalCode | null; ownerCandidates: string[] | null; ... 5 more ...; refusals: Refusal[]; }'.
+ai/autocode/abstraction/semantic.fixture.ts(114,9): error TS2741: Property 'alternatives' is missing in type '{ proposals: Proposal[]; reused: never[]; unmeasured: never[]; counts: {}; }' but required in type 'CorpusResult'.
+ai/autocode/abstraction/semantic.fixture.ts(341,32): error TS2345: Argument of type '{ proposals: Proposal[]; reused: never[]; unmeasured: never[]; counts: {}; }' is not assignable to parameter of type 'CorpusResult'.
+  Property 'alternatives' is missing in type '{ proposals: Proposal[]; reused: never[]; unmeasured: never[]; counts: {}; }' but required in type 'CorpusResult'.
+ai/autocode/abstraction/semantic.fixture.ts(415,9): error TS2741: Property 'alternatives' is missing in type '{ proposals: Proposal[]; reused: never[]; unmeasured: never[]; counts: {}; }' but required in type 'CorpusResult'.
+ai/autocode/abstraction/semantic.ts(627,80): error TS2345: Argument of type '{ matchCount: number | null; identityMatched?: boolean | undefined; sameDocument?: boolean | undefined; measuredAt?: string | undefined; strategy?: string | undefined; expression?: string | undefined; }' is not assignable to parameter of type 'CandidateMeasurement'.
+  Types of property 'strategy' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+ai/autocode/abstraction/semantic.ts(629,27): error TS2339: Property 'canonicalId' does not exist on type 'BootstrapResult'.
+  Property 'canonicalId' does not exist on type '{ owner: null; code: RefusalCode; why: string; }'.
+ai/autocode/accessible-name-stability.fixture.ts(165,14): error TS2551: Property 'accessibleNameSource' does not exist on type '{ tag: string; accessibleName: string; }'. Did you mean 'accessibleName'?
+ai/autocode/accessible-name-stability.fixture.ts(165,59): error TS2339: Property 'accessibleNameVerified' does not exist on type '{ tag: string; accessibleName: string; }'.
+ai/autocode/content-candidates.fixture.ts(394,33): error TS2307: Cannot find module './dom-evidence.mutant' or its corresponding type declarations.
+ai/autocode/preaction-claim.fixture.ts(336,33): error TS2307: Cannot find module '../dashboard/live-recorder.mutant' or its corresponding type declarations.
+ai/autocode/scoped-dynamic-id.fixture.ts(238,33): error TS2307: Cannot find module './locator-quality.mutant' or its corresponding type declarations.
+ai/dashboard/live-recorder.ts(1020,11): error TS2554: Expected 2 arguments, but got 1.
+ai/dashboard/server.ts(763,14): error TS2339: Property 'screenshotUrl' does not exist on type '{ locatorTimeoutMs?: number | undefined; locatorWaits?: LocatorWaitDetail[] | undefined; diagnostic?: Partial<DiagnosticStep> | undefined; ... 12 more ...; error?: string | undefined; }'.
+ai/excel/mapping.ts(115,5): error TS2783: 'module' is specified more than once, so this usage will be overwritten.
+ai/excel/mapping.ts(116,5): error TS2783: 'scenario' is specified more than once, so this usage will be overwritten.
+ai/excel/mapping.ts(117,5): error TS2783: 'status' is specified more than once, so this usage will be overwritten.
+ai/excel/mapping.ts(118,5): error TS2783: 'sourceWorkbook' is specified more than once, so this usage will be overwritten.
+ai/excel/mapping.ts(119,5): error TS2783: 'sourceWorksheet' is specified more than once, so this usage will be overwritten.

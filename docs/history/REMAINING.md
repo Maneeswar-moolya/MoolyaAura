@@ -1,6 +1,8 @@
 # REMAINING
 
-Last updated: 2026-09-12 (old project cleanup; empty registry; full sweep 79/80, documentation follow-up green)
+Last updated: 2026-09-15 (EXECUTION STEP EVIDENCE AND THE DOWNLOADABLE REPORT. A passing step now keeps its own after-step screenshot, addressed by its own step and capture reference and served by the execution API; capture timing is said rather than unknown; and every completed run writes its own self-contained report, which is why the Download control had nothing to offer. Historical runs are unchanged and stay honest)
+
+User instruction: full framework regression runs require an explicit user request. Do not start one automatically; use focused tests/mutations during implementation.
 
 <!-- ===================================================================== -->
 <!-- MACHINE-READABLE STATUS. Any session, any account: read this first.   -->
@@ -8,9 +10,333 @@ Last updated: 2026-09-12 (old project cleanup; empty registry; full sweep 79/80,
 <!-- ===================================================================== -->
 
 ```yaml
-status_version: 44
-updated: 2026-09-12
+status_version: 71
+updated: 2026-09-15
 verified_by: >
+  Execution step evidence, 2026-09-15, TRACED ON THE REAL ATTEMPT THEN FIXED GENERALLY.
+  A successful execution showed its whole step list and, for every step, "No screenshot
+  captured" and "Capture timing not recorded", with Evidence "-" and no Download Report.
+  Traced read-only on TC_SMOKE_037 attempt 71373da6: eight screenshots were physically on
+  disk. Three controls disagreed. playwright.excel.config forces native capture off for a
+  selection run; server.ts ALSO forced EXCEL_SCREENSHOT=off for it; and steps.ts took a
+  PRE_STEP picture unconditionally, ignoring that control, while the after-step picture ran
+  only when the mode was 'on'. So the settings said no pictures, pictures were taken anyway,
+  and a passing step never got the one it needed.
+  FIRST LAYER WHERE EVIDENCE DISAPPEARED: the execution API. collectSteps published only the
+  legacy single screenshotUrl, derived from a path the forced-off mode never set; the per-step
+  captures[] were passed through untouched and their files were never copied into the run. Two
+  further defects made them unusable anyway - a capture named its artifact relative to the
+  TEST output directory while retention keeps it one level down, and manifest.steps[] carried
+  no status, duration or captures at all.
+  Now one capture policy, the control the dashboard already offers: off means off (previously
+  ignored); only-on-failure keeps the failing step's PRE_STEP and FAILURE, discarding a passing
+  step's frame - the reading runtime-pictures.fixture already contracted, kept rather than
+  overruled; on keeps PRE_STEP + POST_STEP per step. A SELECTION RUN NOW TURNS FRAMEWORK
+  EVIDENCE ON, not off: native screenshot/video/trace stay off there because they are unmasked
+  and cannot cross the retention boundary, while the framework's captures are masked at source
+  and can. Artifacts are recorded relative to the output root; collectSteps copies each capture
+  to runs/<id>/evidence/steps/<case>/<attempt>/<step>/<captureRef>.png and serves it at its own
+  url, so no step can be served another's and there is no global latest screenshot. manifest
+  steps are joined to what happened by recordingStepKey. Capture timing is derived from the
+  picture taken, and where none could be taken the REASON is recorded and shown.
+  DOWNLOAD REPORT ROOT CAUSE: hasReport = executionSelection ? false : keepPlaywrightReport().
+  The artifact was never produced for a selection run, so the control correctly hid something
+  that did not exist. The route, hasReport and the link were all already wired. ai/dashboard/
+  run-report.ts now writes the run's own self-contained report (inline CSS, no scripts, no
+  network, screenshots embedded) for every completed run; Playwright's kept copy stays reachable
+  at /report/playwright/. Every string is redacted then escaped, the credential profile appears
+  by NAME, and a report-scoped local-path redaction was added because diagnosticText does not
+  cover a user's home directory and the report is the artifact that leaves the machine.
+  65 assertions in ai/diagnostics/execution-evidence.fixture.ts and 31 through the real server
+  and a real browser in ai/dashboard/execution-evidence.browser.fixture.ts; 16 mutants killed
+  (11 + 5). TypeScript 20 BEFORE / 19 AFTER - the diagnostic that disappeared is the
+  pre-existing server.ts TS2339 for screenshotUrl, removed by declaring the per-step capture
+  model; no new diagnostic appeared. Zero application artifacts written.
+  NOT carried, reported rather than claimed: two requested mutants target collectSteps, which
+  the browser fixture bypasses by seeding at the API storage boundary so its contracts run in
+  seconds; collectSteps is exercised by environment-execution.fixture, whose server block passed
+  here and whose browser half exceeds the harness's own 300s isolated cap in this environment -
+  that fixture is byte-identical to its pre-session copy, so the cap is not new.
+  NOT done: the one focused LIVE validation run against TC_SMOKE_037. It needs the dashboard
+  restarted first and is a live authenticated run against a customer environment; the decision
+  to spend one is the user's. The existing TC_SMOKE_037 attempt was NOT rewritten and cannot
+  show step evidence - its captures carry the old bare-filename references and the files they
+  were copied from were wiped by later runs. See docs/validation/EXECUTION-STEP-EVIDENCE.md.
+  PREVIOUS ENTRY: Multi-line statement parsing, 2026-09-15, REPRODUCED THEN FIXED STRUCTURALLY. parseRecording
+  read the generated script a line at a time and splitCall required a whole
+  await <receiver>.<method>(<args>); on one of them. Codegen makes no such promise, so every
+  WRAPPED call was dropped - not mislabelled, absent. Reproduced across every wrapping Codegen
+  produces: a wrapped chain, filter, fill, press, selectOption, dblclick, check, hover, a
+  wrapped expect(...) and a wrapped page.goto with its navigation marker were ALL lost, so the
+  reported click was one instance of a broader defect.
+  Now one complete TypeScript statement is one candidate action. ts.createSourceFile finds each
+  ExpressionStatement wrapping an AwaitExpression, sorted by source position so recording order
+  is stated rather than assumed, and the outermost call is decomposed from the tree rather than
+  from a regex. splitCall is gone. The three strings the rest of the parser receives are the
+  strings it always received, normalised by flattenExpression to the single-line spelling -
+  including removing spaces around '.' so a wrapped chain still matches ^page\. - with string
+  literals copied verbatim so no recorded value is reformatted. rawActions is now DERIVED from
+  the source using countRecordedActions' own definition, so the picker's position space and the
+  parser's cannot drift.
+  Measured over the whole saved corpus: 37 recordings, 22 byte-identical, 15 changed, each
+  recovering EXACTLY ONE action - always the same wrapped click({ modifiers: ['Alt'] }) on the
+  password field. TC_SMOKE_037 10->11, TC_SMOKE_038 14->15, TC_SMOKE_039 12->13, and in all
+  three the source's await-statement count now equals the parsed action count exactly. Read-only;
+  no source file was modified. Deterministic recovery from persisted source - no screenshot,
+  navigation or evidence was used to reconstruct anything.
+  CONSEQUENCE HANDLED, NOT DISCOVERED LATER: recovering an action renumbers every step after it,
+  and an ownership sidecar is keyed by action:<n>. AuthoringOwners now carries `revision` - the
+  step stream (ownershipRevision) the choices were made against, not just recordingHash which
+  only says which script this is - and loadOwners refuses when both sides know their stream and
+  differ. Additive; an older sidecar reads as UNKNOWN, never as still-current. THIRTEEN existing
+  sidecars predate the field and now describe a different stream: TC_SMOKE_013, 015, 017, 021,
+  023, 027, 029, 030, 031, 035, 037, 038, 039. They were NOT modified and NOT re-keyed - two
+  steps in these recordings share a locator, so re-keying would be guessing. Re-review their
+  bindings before generating from them again.
+  Screenshot attribution is restored by the ACTION, not by loosening the rule: 10 observations
+  with 10 actions pair into ten distinct step keys; 10 with 9 still attribute nothing.
+  93 assertions in ai/dashboard/recording-statements.fixture.ts; 11 of 11 mutants killed.
+  TypeScript 20 before / 20 after, identical identities. Zero application artifacts written.
+  NOT done: no full regression (focused checks only, as instructed), no live Recording Review
+  observation - the dashboard still runs the pre-change server and the pending recording that
+  reported 10 observed / 9 recorded is gone ("No recording is waiting for review"), so that one
+  cannot be re-measured. The affected recordings do NOT need re-recording; the source always
+  contained the action. See docs/validation/MULTILINE-STATEMENT-PARSING.md.
+  PREVIOUS ENTRY: Authoring locator refusal, 2026-09-15, TRACED AGAINST THE LIVE DASHBOARD. Save Mapping failed
+  with "Enter a supported Playwright locator expression beginning with page" on a locator that
+  visibly began with page. Read read-only from the running server, not inferred from the UI:
+  step action:12 submits page.locator('div').filter({ hasText: 'Close1closeSELECTED ASSETS' })
+  .nth(1). Measured against the real validator, the prefix condition is FALSE and the condition
+  that fires is forbiddenMechanisms -> ["nth() - chosen by position, and nobody chose a
+  position"]. validateAuthoringLocator collapsed five independent rules into one sentence about
+  the prefix, so the screen told a person to fix the only thing that was already correct.
+  .filter() is supported - the identical chain without .nth(1) is accepted - and the expression
+  is neither malformed nor mis-quoted.
+  NOTHING WAS RELAXED. .nth() is still refused in authoring, which carries no measurement; the
+  contract's one positional exception stays where it belongs, in validateCandidate on
+  effectiveLocator().positionProven, and a contract proves a measured index is still admitted
+  there and an unmeasured one is not. The refusal now returns a category and an actionable
+  sentence, ReviewStep.locatorSafety carries the same verdict into the review, and Save is
+  disabled with the reason beside the locator instead of spending a transaction on a known
+  refusal. The browser decides only WHEN the verdict applies - an established capability runs
+  its own declared locator and is not judged on the recorded chain - and never re-states the
+  rule. RECORDED_LOCATOR was already validated; that was verified, not changed, and is now held
+  by a contract and a mutant.
+  No safe locator exists for that step and none was invented: evidence missing, route null,
+  documentId null - the recorder captured nothing for that element. The step stays
+  USER_BINDING_INCOMPLETE and the choice is the person's: bind an established capability,
+  re-record the interaction so it is measured, or type a locator override, which is judged by
+  the same rule.
+  50 assertions in ai/dashboard/authoring-locator-safety.fixture.ts; 8 of 8 mutants killed.
+  TypeScript 20 before / 20 after, identical identities. No application artifact written by this
+  work. See docs/validation/AUTHORING-LOCATOR-REFUSAL.md.
+  SEPARATE FINDING, REPORTED AND NOT FIXED: the 10-observed / 9-recorded action mismatch behind
+  "17 screenshots captured" is a real user action missing from the recording. parseRecording
+  reads the codegen script line by line, so a click codegen wrote as a MULTI-LINE call -
+  .click({\n modifiers: ['Alt']\n }) - fails splitCall and is dropped. Proven on the saved
+  TC_SMOKE_038: the source has the Password click, the parsed actions do not, and the resulting
+  index sequence matches that recording's persisted review keys exactly. The picture hook
+  observed it, so observed exceeds recorded by one and no action screenshot is attributed. The
+  screenshots are the symptom; the defect is the dropped click, same family as the navigating
+  click fixed earlier today. Screenshot attribution was deliberately not changed.
+  PREVIOUS ENTRY: Live recorder action loss, 2026-09-15, REPRODUCED IN A BROWSER THEN FIXED. A user click that
+  causes a document navigation was never reaching Playwright's recorder. Cause measured, not
+  inferred: recordingPictureHook wrapped __pw_recorderRecordAction and AWAITED an
+  out-of-process screenshot before delegating. Ordinary clicks are recorded AFTER native
+  dispatch, so for a navigating click the document was already going away, the awaited binding
+  never returned and the original was never called. The generator then wrote page.goto(...)
+  for a navigation nothing caused - the consequence standing in place of its cause. The same
+  three-click synthetic scenario recorded all three clicks with the hook uninstalled and lost
+  both navigating ones with it installed; after the fix the recorded script is identical to the
+  un-hooked one.
+  Second, independent divergence measured in the same run: the assertion picker's own overlay
+  click is dropped by parseRecording and was NOT dropped by the picture layer, so any
+  recording made with the picker had one observation more than it had actions. Since pairing is
+  all-or-nothing by design, either divergence discards EVERY action picture while the assertion
+  picture - kept in its own list with its own length check - survives alone. That is exactly
+  what the user saw: one ASSERTION_STATE and "No recording screenshot was captured for this
+  step" on every action, with twelve screenshots from that session sitting on disk.
+  Generalized rule: observation must never sit between a user action and the recorder's record
+  of it. After dispatch the recorder is told first and the picture is reported without being
+  waited for; before dispatch, where nothing is navigating, waiting is safe and is kept. The
+  recorder-own-action rule is now INJECTED into the picture layer rather than restated, so the
+  two streams cannot drift. Observation work is chained in arrival order and settle(page) is a
+  protocol barrier, the pattern NavigationJournal already uses - not a delay. Where the streams
+  genuinely cannot be paired, CaptureAttribution says so with its four counts and Recording
+  Review stops calling unattributed screenshots uncaptured.
+  24 assertions in six groups in ai/diagnostics/recording-navigation.fixture.ts; 5 of 5 mutants killed.
+  TypeScript 20 before / 20 after, identical identities, measured against a pre-change copy of
+  the tree. Zero application artifacts written. One HARNESS correction, labelled as such:
+  recording-pictures.fixture.ts settles reports before pairing them, because it had assumed a
+  wait a navigating click could not afford.
+  NOT done: no full framework regression (focused checks only, as instructed), no live recording
+  against a real application, no credential used, and the user's 14:22 draft was not edited or
+  deleted. THE USER'S RECORDING MUST BE RE-RECORDED - the clicks were never recorded, so there
+  is nothing to repair - and the dashboard must be restarted first; the running process predates
+  every file changed here. See docs/validation/RECORDING-ACTION-LOSS.md.
+  PREVIOUS ENTRY: Promotion semantics and refusal visibility, 2026-09-15. The suspected zero-file
+  ORIGINAL_GENERATED promotion defect was NOT real: promoteQuarantine publishes the generated
+  spec from the composed overlay, not from the revision delta, and a synthetic contract now
+  proves a zero-file validated draft promotes and reappears in the suite. Reported as a
+  suspicion last turn and labelled unmeasured; measurement disproved it.
+  Publication is now one ownership-split rule shared by quarantinePromotionPlan() and
+  promoteQuarantine(), so a read-only plan cannot describe something different from what the
+  commit writes. Five contracts across two new phases; six mutants.
+  TC_SMOKE_035: drift re-measured and byte-identical to the previous inspection, so the
+  supported dependency refresh was taken. New revision 6d850a79 descends from the validated
+  3075aa72, provenance APPLICATION_DEPENDENCY_REFRESH, delta exactly the two application-owned
+  files and nothing else, eligible reset to false, promoted false, original.json and the
+  two-run history byte-unchanged, and the effective revision still carries the generated spec
+  (4827 bytes) through ancestry. Drift is now clear. NOT run live, NOT promoted.
+  A stale assertion from the earlier gate rewrite was also corrected: the fixture still
+  expected /dependency changed/, a message no current code emits.
+  PREVIOUS ENTRY: Recording Review execution choice, 2026-09-15. The safeguard refusing an incomplete mapping
+  was NOT weakened; what was fixed is that a person could not act on it. Cause measured as C:
+  the server returned SsoauthLoginPage's four methods to the browser all along, and the
+  controls that would use them were rendered inside a collapsed <details> below the refusal.
+  Verified in a REAL browser against the REAL save path: the section appears without expanding
+  Advanced, the matching capability is offered by name with its evidence stated, choosing it
+  enables Save, and after save and reload the step is still PAGE_OBJECT_METHOD; a Page Object
+  with no capability offers Create method and Use recorded locator and applies neither by
+  itself; a recorded-locator election survives save and reload as RECORDED_LOCATOR.
+  TC_SMOKE_031, read-only and unmodified: action:3 recommends enterEmailField(), action:4
+  recommends passwordField(), action:5 and action:11 offer their Page Object's full method
+  list plus Create method and Use recorded locator. No recommendation is made for action:5 or
+  action:11 because no declared locator matches - an honest silence rather than a guess.
+  PREVIOUS ENTRY: Explicit authoring precedence, 2026-09-14, DIAGNOSED FROM TC_SMOKE_031's OWN ARTIFACTS.
+  Measured, not inferred: owners.json holds 8 choices, all marked USER_CONFIRMED; four carry a
+  method (action:1 logIn, action:2 enterEmailField, action:10 productHelp, assertion:0
+  headingState) and four carry method:null + executionMode AUTO + explicit:false while still
+  naming a Page Object (action:3 fill email, action:4 fill password, action:5 Log In button,
+  action:11 My Support Cases). The methods were never missing - SsoauthLoginPage has
+  enterEmailField, passwordField and logInButton - they were never BOUND. page-ownership.ts
+  line 53 clears the method as Page/PO context inherits, which is correct, and then labelled
+  the result USER_CONFIRMED, which was not. UsEnHomePage has no My Support Cases capability at
+  all, so action:11 fell to AUTO, emitted a raw menuitem locator and hit the evidence gate.
+  Fixed by naming the state rather than inventing a binding: three provenance values and one
+  executableBinding() predicate shared by review, save and generation. Save Mapping refuses the
+  contradictory state; generation reports USER_BINDING_INCOMPLETE. AUTO evidence rules
+  unchanged. Navigation caused by a confirmed action stops blocking assembly without claiming a
+  destination; unproven navigation still blocks. Evidence gaps are named by transport.
+  27 contracts and 12 mutants. TypeScript 20 before / 20 after. Two mutants were retargeted
+  rather than accepted: one crashed on a null cause instead of changing behaviour, and a
+  mutant that only proves the code can throw proves nothing about the contract it aims at.
+  The credential span is contracted as ONE rule, not three: it is planned atomically - never
+  emit partial credentials - so email, password and submit cannot be told apart by inspecting
+  the output, and three contracts would assert a distinction the design refuses to make. Three
+  mutants break that one rule three different ways.
+  Recording Review, the recorder transport labelling and the live-recorder capability probe
+  are part of this phase; see the phase note.
+  NOT done, deliberately: TC_SMOKE_031 was NOT regenerated and its mappings were NOT edited.
+  It was recorded on the CODEGEN transport by a dashboard process started 16:26:56, which
+  predates both the evidence-sidecar and credential-identifier fixes, so it has no sidecar and
+  its spec holds a real account identifier in clear text. It must be re-recorded on a restarted
+  dashboard with kspuserCommon selected before any acceptance use.
+  PREVIOUS ENTRY: Credential profile propagation for new-case generation, 2026-09-14, REPRODUCED THEN FIXED.
+  The Execution Data modal was serving two workflows. Its rule - name the existing workbook
+  cases to run - is right for execution and is unchanged. It was wrong as the only route to a
+  generation credential, because a just-recorded case is in no workbook and checked nowhere.
+  Measured before the change: a save naming kspuserCommon-shaped profile started the generator
+  with no execution profile at all, silently on the application binding. Now the recording
+  context carries the profile ID from Start, through Stop, to the ID the workbook assigns, and
+  generation runs under one coherent context. Ephemeral by construction: no Example row is
+  written and a later run may choose any profile, or several.
+  Live, read-only against the real ksp store, on a separate instance leaving the user's own
+  dashboards running: kspuserCommon active, stg username and password available, preview still
+  refusing an empty case selection, and the resolved context ksp/stg/stg + kspuserCommon +
+  chromium + locatorTimeoutMs 40000. 22 contracts, 8 mutants. TypeScript 20 before / 20 after.
+  NOT claimed: the interactive Record -> Save, generate & run leg, which needs a person at the
+  recorder browser; no workbook row was created and no live generation was started.
+  PREVIOUS ENTRY: Recording evidence, recording credentials, generation reporting and Page Object template,
+  2026-09-14, MEASURED IN THIS TREE. Four defects, four named causes, none inferred.
+  (A) persistRecording wrote the evidence sidecar only on the available branch, so a
+  recording whose capture produced nothing left no file - on disk identical to a recording
+  made before evidence existed. hasEvidence is now admissibility, not presence; the ABSENCE
+  and its reason are written; describeRecording reports RECORDING_EVIDENCE_INCOMPLETE before
+  the fingerprint verdict; recordingEvidenceGap stays silent for a case nobody recorded.
+  (B) A dashboard recording carries no execution selection, so protectedCredentials had
+  nothing to compare against and the ACCOUNT IDENTIFIER was persisted verbatim while the
+  password survived only by its label. The credential profile is now named at Start,
+  resolved once in the server process, never sent to the browser, and dropped at Stop; an
+  unresolvable profile refuses the recording. (C) VERDICT_LINE did not match a qualified
+  verdict, so BLOCKED (REASON) was recorded as UNREPORTED with no reason. (D) Two divergent
+  Page Object templates; a runtime probe proved both construct correctly, so this is a
+  GENERATION_TEMPLATE_CONSISTENCY defect, not a runtime one. One skeleton now serves both
+  production emitters, with imports computed from the file location.
+  Green: 10 recording-evidence + 17 recording-credential + 11 generation-status +
+  12 Page-Object-template + 8 case-lifecycle + 13 credential-redaction contracts, and
+  recorder.fixture 54/54, explicit-authoring, recording-mapping, abstraction and
+  bootstrap-knowledge fixtures. Mutants killed: 5 + 5 + 3 + 3 + 2 + 8 = 26. Two mutants were
+  RETARGETED rather than accepted: validateAuthoringChanges typechecks emitted source before
+  commit, so a template with an unresolvable import dies by exception instead of reddening a
+  contract - each Page Object mutant now compiles and commits and is caught only by the
+  contract it aims at. TypeScript 20 diagnostics before and 20 after, identical identities.
+  NOT claimed: any promotion, any live browser run, any whole-framework regression, and no
+  historical recording rewritten - TC_SMOKE_023/024/025/027 still have no evidence sidecar
+  and say so honestly; TC_SMOKE_028 is retained untouched. A dashboard process started
+  2026-09-14 16:26:54 local predates every file changed here and must be restarted.
+  PREVIOUS ENTRY: Execution context propagation, 2026-09-14, VERIFIED FROM THE REPOSITORY rather than
+  from the previous handoff, which was stale. The two defects carried forward - the
+  source environment missing from the Playwright clean-run process, and Headed mode not
+  reaching a quarantine rerun - were already implemented in the working tree; the tree
+  changed after the 17:09 UTC TC_SMOKE_026 failure that state.json still records, and no
+  handoff was written. One typed ExecutionContext is resolved per entry point and carried
+  as AURA_EXECUTION_CONTEXT through dashboard, autocode CLI, orchestration, gate, excel
+  run and quarantine rerun; a missing or foreign source is refused before any child is
+  spawned. Re-measured green: 18 execution-context checks; 3 real UI-to-Playwright-child
+  contracts with no mocked transport; quarantine --phase=rerun and --phase=package;
+  quarantine browser. One untested link was found and closed: nothing checked what the
+  quarantine workspace SENDS, which is the exact shape the defect had. A new browser
+  check captures the rerun request and requires the approved Headed mode, source
+  environment, engine and applicationId; two new mutants faulting the workspace script
+  make it red. Ten of ten execution-context mutants killed on the settled tree.
+  TypeScript 20 before / 20 after, identical identities, repository typecheck still
+  exits 1. Application artifacts 209 before / 209 after, zero changed/added/removed;
+  TC_SMOKE_026's quarantine record, recording, mapping and USER_CONFIRMED bindings
+  untouched. NOT claimed: any live re-run of TC_SMOKE_026, any live quarantine rerun or
+  assertion mutation, any promotion, and any whole-framework regression. A dashboard
+  process started before 2026-09-13 22:55 local still runs the old code and must be
+  restarted. Earlier entries below are historical.
+  Navigation follow-up: fragment mismatch reproduced; request/loader correlation, refresh
+  initiators, protocol drain, safe marker diagnostics and accurate review labels implemented.
+  Browser and event-isolation focused checks pass. Original LF format restored; the former
+  semantic-candidates failure passes focused validation. First correction: 19 mutants killed,
+  full sweep 84/84 in 989.89 seconds. TC_SMOKE_007 used that recorder and still blocked;
+  follow-up reproduces same-URL history rewrite obscuring a proven document cause. Event
+  kinds now separated, URL-free counts retained; nine mutants killed, full sweep 84/84
+  in 1029.38 seconds. Concurrent TC_SMOKE_009 still blocked; its counts exposed the need
+  to distinguish the framework entry request from later visits. Real-browser reproduction
+  red then green: bind actual entry command, consume only its first matching non-redirect
+  request, preserve independent proof for later visits. Twelve mutants killed (301.03 seconds);
+  focused browser and four integration fixtures pass; entry-correction broad sweep stopped incomplete (43/84 recorded, all passed).
+  Full regression deferred until TC_SMOKE_011 ownership/reuse corrections and focused verification settle.
+  TC_SMOKE_011 passes navigation but blocks authenticationCapability: identity evidence is
+  valid; duplicate login controls on SsoauthLoginPage/UsEnHomePage cause ambiguity. Measured
+  route resolves all three in read-only comparison. Header link also wrongly maps to form
+  button by name with missing evidence. Ownership/reuse correction and artifact review remain.
+  No end-to-end live generation success claimed; old recordings remain unchanged.
+  TC_SMOKE_005 still requires new navigation evidence; its old unknown marker is preserved.
+  Recorded-flow implementation: scoped proven-control authentication, captured navigation
+  provenance, deterministic assertion bootstrap, and terminal typed mapping failures.
+  Existing TC_SMOKE_002 retry created UsEnHomePage.myDashboardState deterministically,
+  reused authentication controls and blocked on six legacy navigation events without causality.
+  No generic AI fallback or accepted spec. Focused checks passed; all 11 mutants killed.
+  Exactly one full sweep: 83/84 in 1817.51 seconds. The sole failure is the LF-only
+  semantic-candidates assertion against CRLF in live-recorder.ts; call behavior is unchanged.
+  No post-sweep code correction or second full sweep. Framework/registry/TC_SMOKE_002 inputs
+  were unchanged; concurrent dashboard TC_SMOKE_003/004 activity changed application files.
+  Earlier dashboard/cleanup observations below are historical; the current registry contains KSP.
+  2026-09-12 dashboard/environment work: exactly one full 82-fixture sweep passed 81/82
+  in 870.69 seconds; only the recorder fixture's blanket global-hidden CSS ban failed.
+  All repository files/directories unchanged during the sweep; real registry/state empty.
+  Test-only follow-up: recorder 54/54, actual browser note visibility green, sixth source
+  mutant killed. Five environment/ownership/scope mutants also bit. No production change
+  after the full run and no second full run; do not relabel it 82/82. See dashboard_environment_execution.
+  2026-09-12 baseline closure: a separately authorized full regression after the
+  elementRef/captureRef documentation correction passed 80/80 by exit code, zero failures,
+  1470.07 seconds sequentially. All 267 repository files unchanged across the run;
+  registry and application stores empty. Recovery: 2740 files readable/hash-verified,
+  2488 removal entries backed up. See cleanup_baseline_closure. Historical results follow.
   2026-09-12 cleanup: 2488 verified application-owned files removed; registry and state
   empty. 13/13 post-cleanup focused fixtures; 20 source mutants killed. One complete
   full sweep: 79/80 in 728.93 seconds. Sole failure: omitted elementRef/captureRef guide
@@ -31,13 +357,441 @@ verified_by: >
   2026-08-24 (still true, not re-run): Playwright collection of the fresh TC_LOGIN_112
   spec (2 tests in 2 files) + LIVE execution against my.bugasura.io passing in 24.8s +
   four live resolver exchanges through the real headless Claude Code transport.
-implementation: COMPLETE for future generations; see blockers for what is not
+execution_step_evidence:
+  status: ROOT_CAUSE_FIXED_AND_CONTRACTED
+  root_cause_proven: >
+    Measured read-only on TC_SMOKE_037 attempt 71373da6. Screenshots existed (8 PNGs) and the
+    execution API never published them: collectSteps served only the legacy screenshotUrl,
+    which a run with EXCEL_SCREENSHOT forced off never sets. A capture also named its artifact
+    relative to the test output directory while retention keeps it one level down, and
+    manifest.steps carried no status, duration or captures.
+  policy_now: >
+    off = no step captures; only-on-failure = the failing step's PRE_STEP and FAILURE only;
+    on = PRE_STEP + POST_STEP per step plus FAILURE. A selection-driven run turns the framework
+    channel ON while native screenshot/video/trace stay off, because those are unmasked and
+    cannot cross the retention boundary.
+  download_report: >
+    hasReport was forced false for selection runs, so no artifact was produced and the control
+    correctly hid it. ai/dashboard/run-report.ts writes a self-contained run report for every
+    completed run; the existing /report/ route serves it and Playwright's copy moves to
+    /report/playwright/. Redacted then escaped, profile by name, local paths removed.
+  tests: ai/diagnostics/execution-evidence.fixture.ts - 65 assertions.
+    ai/dashboard/execution-evidence.browser.fixture.ts - 31 assertions through the real server
+    and browser. ai/testing/execution-evidence-mutations.ts - 11 mutants.
+    ai/testing/execution-evidence-ui-mutations.ts - 5 mutants. All killed.
+  uncovered: >
+    collectSteps publishing has no biting mutant here: the browser fixture seeds at the API
+    storage boundary, and environment-execution.fixture - which does exercise it - exceeds the
+    harness's 300s isolated cap in this environment after passing its server block.
+  next_action: >
+    Restart the dashboard, then run TC_SMOKE_037 once from the dashboard and confirm each step
+    shows its own screenshot and Download Report appears. The historical attempt stays honest
+    and was not re-indexed.
+
+authoring_locator_refusal:
+  status: ROOT_CAUSE_FIXED_AND_CONTRACTED
+  root_cause_proven: >
+    ai/dashboard/authoring-catalog.ts validateAuthoringLocator evaluated five independent
+    conditions and threw one sentence for all of them. For the submitted chain the prefix
+    condition is false and forbiddenMechanisms fires on .nth(1). Measured by running the real
+    validator on the exact string read from the live server, not inferred from the UI message.
+  not_relaxed: >
+    .nth() is still refused in authoring. The locator contract's positional exception remains
+    in validateCandidate, keyed on effectiveLocator().positionProven, and is contracted both
+    ways. Authoring receives a bare string and no evidence route was added to it.
+  fix: >
+    authoringLocatorProblem returns a category plus an actionable sentence; validateAuthoringLocator
+    throws CODE: message. ReviewStep.locatorSafety carries the same verdict into the review so the
+    screen can refuse before the transaction, show the reason beside the locator and disable Save.
+    The browser mirrors the server's CONDITION (when the recorded locator is authored) and never
+    its rule.
+  no_safe_candidate: >
+    action:12 has evidence missing, route null and documentId null - nothing was captured for that
+    element, so there is no measured candidate to offer and none was invented. The step stays
+    USER_BINDING_INCOMPLETE.
+  tests: ai/dashboard/authoring-locator-safety.fixture.ts - 50 assertions.
+    ai/testing/authoring-locator-mutations.ts - 8 mutants, all killed.
+  uncovered: >
+    The rendered DOM of the new review controls is not exercised; the decision behind them is,
+    through the two pure helpers the review now exports. .nth() has no single-point acceptance
+    mutant because three independent checks refuse it - a property of the design, reported rather
+    than claimed as coverage.
+  next_action: >
+    Restart the dashboard so the server returns locatorSafety and the specific refusals; the
+    running process predates this change. A browser refresh alone is safe - the review degrades
+    to previous behaviour when the field is absent - but will not show the new reasons.
+
+multiline_codegen_action_dropped:
+  status: ROOT_CAUSE_FIXED_AND_CONTRACTED
+  fixed: >
+    parseRecording now reads complete TypeScript statements via ts.createSourceFile instead of
+    source lines, and decomposes the outermost call from the syntax tree instead of splitCall's
+    regex. flattenExpression normalises the receiver and argument text to the single-line
+    spelling, leaving string literals verbatim, so every downstream helper - redaction,
+    describeLocator, matcher lookup, toggle collapsing - receives exactly what it received
+    before. rawActions is derived from the source with countRecordedActions' own definition.
+  corpus_measured: >
+    37 saved recordings compared old parser against new: 22 byte-identical, 15 changed, each
+    recovering exactly one action, always the wrapped click on the password field. Source
+    await-statement count now equals parsed action count for every affected recording.
+  renumbering_consequence: >
+    Recovering an action renumbers every later step key. AuthoringOwners gained an additive
+    `revision` recording the step stream its choices were made against; loadOwners refuses a
+    mismatch when both sides know their stream. Thirteen existing sidecars predate the field,
+    read as unknown, were not modified and were not re-keyed. Listed in the status block.
+  tests: ai/dashboard/recording-statements.fixture.ts - 93 assertions.
+    ai/testing/recording-statement-mutations.ts - 11 mutants, all killed.
+  next_action: >
+    Restart the dashboard to pick up the parser. Re-review the bindings on the thirteen listed
+    recordings before generating from them again; nothing about them was changed.
+
+multiline_codegen_action_dropped_history:
+  status: SUPERSEDED_BY_THE_ENTRY_ABOVE
+  proven: >
+    parseRecording splits the codegen script on newlines and requires a complete await call on one
+    line, so a click codegen wrote across lines - .click({ modifiers: ['Alt'] }) - fails splitCall
+    and is dropped. Verified by running the real parser over the saved TC_SMOKE_038.spec.ts: the
+    source contains the Password click and recording.actions does not, and the resulting index
+    sequence matches that recording's persisted review keys exactly.
+  impact: >
+    A real user action is absent from the recording. The recorder's picture hook observed it, so
+    observed actions exceed recorded actions by one and the all-or-nothing pairing attributes no
+    action screenshot - which is the "10 observed / 9 recorded, 17 screenshots" the user saw. The
+    screenshots are the symptom, not the defect.
+  not_done: >
+    Screenshot attribution was deliberately not changed. No parser change was made under a save-
+    failure diagnosis.
+  next_action: >
+    Reproduce a multi-line codegen action in a focused contract, then make parseRecording read
+    complete statements rather than lines. Same family as the navigating-click loss.
+
+live_recorder_action_loss:
+  status: ROOT_CAUSE_FIXED_AND_CONTRACTED
+  root_cause_proven: >
+    ai/diagnostics/recording.ts recordingPictureHook wrapped Playwright's recorder bindings and
+    awaited __auraPictureBefore - an exposeBinding round trip that takes a masked screenshot with
+    a 1500ms timeout - BEFORE calling the original binding. playwright-core's RecordActionTool
+    does not consume the click, so an ordinary click is dispatched natively and recorded
+    afterwards; for a navigating click the document was being torn down while the wrapper waited,
+    the awaited call never returned and __pw_recorderRecordAction was never reached. Measured in a
+    real browser on a synthetic A -> B -> C scenario: without the hook all three clicks recorded;
+    with the hook the two navigating ones were replaced by page.goto lines.
+  second_divergence_proven: >
+    The picker overlay records as page.locator('ba-aura-assert').click() and is dropped by
+    parseRecording. RecordingPictures kept an observation for it, so observed and recorded streams
+    differed by one in every recording made with the picker. Pairing is all-or-nothing by design,
+    so this alone discards every action picture.
+  fix: >
+    After dispatch the recorder is told first and the picture is reported without being awaited;
+    before dispatch the wait is kept, because nothing is navigating and it is the only moment a
+    true before-action picture exists. isRecorderOwnAction is injected into RecordingPictures so
+    one rule serves both streams. Observation work is chained in arrival order; settle(page) is a
+    protocol round-trip barrier. CaptureAttribution records whether pairing succeeded and travels
+    to Recording Review, which no longer calls unattributed screenshots uncaptured.
+  not_changed: >
+    The all-or-nothing pairing rule itself. A picture reaches a step because the streams are one
+    stream, never because a name or a filename looked right. No action was reconstructed from a
+    navigation and no historical recording was rewritten.
+  tests: ai/diagnostics/recording-navigation.fixture.ts - 24 assertions in six groups through the real
+    _enableRecorder, the real hook, a closed-shadow picker overlay and a picked assertion.
+    ai/testing/recording-navigation-mutations.ts - 5 mutants, all killed.
+  uncovered: >
+    The single line in startLiveRecording that injects isRecorderOwnAction into the picture layer
+    carries no biting mutant, because startLiveRecording launches headed by design and the
+    contract drives the same composition headlessly. Reported as uncovered rather than claimed.
+  next_action: >
+    Restart the dashboard (the running process predates this fix) and RE-RECORD the flow with
+    RECORDER_TRANSPORT=live. The lost clicks cannot be recovered from the existing draft; they
+    were never recorded. The 14:26 draft ownership sidecar is keyed by the old recording hash and
+    is inert, and was deliberately left in place as evidence.
+
+new_case_lifecycle_synchronisation:
+  status: ROOT_CAUSE_FIXED_TWO_SEPARATE_DEFECTS_REPORTED
+  root_cause_proven: >
+    /api/case POST committed the workbook row and then called startAutocode UNGUARDED. With no
+    Source Environment selected (executionSettings sends sourceEnvironmentId:'' when the header
+    is unset, and ksp has two environments with no default) resolveExecutionContext threw
+    SOURCE_ENVIRONMENT_CONFIGURATION_FAILURE, the top-level handler returned HTTP 400, and both
+    client save handlers do `if(!res.ok) return ...` - returning BEFORE their own
+    `await loadWorkbook()`. The row was committed but the Test Cases list never refreshed, so it
+    only appeared on a manual browser reload. Pressing Save again appended a SECOND row, and the
+    pending recording had already been consumed by the first - which is exactly TC_SMOKE_027
+    (recording, row 28) and TC_SMOKE_028 (no recording, row 29, same scenario text).
+  fix: >
+    The workbook write is the transaction boundary. Post-commit work - rebuilding derived state
+    and starting the generator - is now guarded and reported as DATA on a 200 response
+    (autocode.started/reason/code), never as an error status. The page therefore always runs its
+    refresh, Test Cases updates immediately and the count moves, and the real reason is shown.
+  generation_tab_truth: >
+    The Generation tab has no case list and never did. It is a live generation panel plus the
+    latest-5 generation HISTORY from /api/generations. A case that has never been generated
+    cannot appear there by design; generation is started from Test Cases or from the save.
+    Making it a backlog view is a product change, deliberately not made under a sync fix.
+  separate_defect_1_no_evidence_sidecar: >
+    Recordings have NO evidence.json from TC_SMOKE_023 onward (023, 024, 025, 027 all lack it;
+    013-022 have it). Live generation of TC_SMOKE_027 blocked on exactly this:
+    REFUSED_NO_ADMISSIBLE_EVIDENCE, "the recording carries no DOM evidence sidecar", plus
+    authentication action 3 missing interaction-time identity evidence. This - not the sync bug -
+    is why these cases cannot be generated. Needs its own investigation of the recording save path.
+  separate_defect_2_credential_identifier_in_recording: >
+    ai/dashboard/recordings/ksp/TC_SMOKE_027.spec.ts contains a literal account email in a
+    .fill(). The password was redacted. The provenance guard added earlier resolves credentials
+    from executionSelectionFromTransport() and the registry credential bindings; a dashboard
+    RECORDING carries neither (ksp declares no registry credentials block), so the profile-based
+    guard never fires during recording and only the label heuristic applies - and "Enter email"
+    does not match it. Fix: resolve the active application's credential profiles for the recording
+    scope, not only via an execution selection. Not fixed here; the recording was not modified.
+  generation_history_status: Record for the blocked run shows status UNREPORTED with an empty reason although the log says BLOCKED (authenticationCapability). Minor reporting gap.
+  tests: ai/dashboard/case-lifecycle-sync.fixture.ts - 8 contracts. ai/testing/case-lifecycle-mutations.ts - 2 mutants, both killed. The activate() guard is defensive and carries no biting mutant; reported as uncovered rather than claimed.
+  integrity: excel/ksp-test-cases.xlsx sha256 5c0d3619cd9a10e55eee828e1ea95e96a25b1dcb0c4c5da94fab204ff714636f unchanged across the live check. No row added, no mapping entry, no spec written, nothing promoted.
+  next_action: Investigate why recordings stopped writing evidence.json after TC_SMOKE_022, then re-record TC_SMOKE_027 or clear the duplicate TC_SMOKE_028 by hand. Both are the user's decision.
+end_user_guide:
+  status: DELIVERED
+  scope: Documentation and screenshot capture against the live dashboard (API v11). No architecture change.
+  deliverables:
+    - docs/user-guide/MoolyaAura-End-User-Guide.md (source of truth, 22 chapters)
+    - docs/user-guide/MoolyaAura-End-User-Guide.docx (title page, TOC field, headers/footers, page numbers, 29 embedded figures)
+    - docs/user-guide/MoolyaAura-End-User-Guide.pdf (58 pages, A4)
+    - docs/user-guide/images/ - 31 real screenshots at 1440x900, including 2 annotated copies beside their raw originals
+  ui_fix_made: >
+    The legacy Source Environment explanation in ai/dashboard/public/quarantine-workspace.js was
+    built with class 'note' but not 'show'. The stylesheet sets .note{display:none} and
+    .note.show{display:block}, so the message sat in the DOM invisible to the person being asked
+    to choose a source. Capturing the screenshot for chapter 15 exposed it. Class corrected; the
+    quarantine browser fixture now asserts the note is VISIBLE, not merely present, which is the
+    check that would have caught it.
+  known_gap: Recorder panel copy says only "Passwords are never captured". Identifier protection by provenance is implemented but not described in the UI text. Documented in the guide; the UI copy is unchanged.
+  concurrent_change_observed: >
+    Credential profile 'camsuserCommon' appeared in ai/test-data/ksp/test-data.json at
+    2026-09-14T10:33:39Z, about 13 minutes after the documentation capture scripts exited
+    (credential screenshots 10:20:48-10:20:51Z). It was not created by this task - no save call
+    was made and the name was never typed here. Left untouched. The Credential Profile
+    screenshots predate it and correctly show one profile as of capture time.
+  safety: All 34 deliverable files scanned against both profiles' usernames and passwords - zero credential values present. Password fields captured empty and masked. No case promoted, no production data modified by this task.
+quarantine_execution_basis:
+  status: IMPLEMENTED_TC_SMOKE_021_ELIGIBLE_NOT_PROMOTED
+  completed:
+    - Two explicit execution bases. CURRENT_FRAMEWORK_VALIDATION runs the retained TEST_OWNED and APPLICATION_OWNED artifacts on the CURRENT shared framework; HISTORICAL_REPLAY also replays the retained shared framework and is labelled REPRODUCTION_ONLY.
+    - Ownership is a projection of the existing code-workspace category() contract, not a second set of path rules - dependencyOwnership() returns TEST_OWNED, APPLICATION_OWNED, SHARED_FRAMEWORK or null. No application-specific path checks.
+    - An unclassifiable retained dependency, or a retained shared framework file missing from the current checkout, stops the run with QUARANTINE_DEPENDENCY_OWNERSHIP_UNKNOWN. Never guessed.
+    - Eligibility requires executionBasis CURRENT_FRAMEWORK_VALIDATION plus a clean pass and a failing assertion mutation. A HISTORICAL_REPLAY can never set eligible, and promoteQuarantine refuses any last run not labelled CURRENT_FRAMEWORK_VALIDATION, including unlabelled pre-basis runs.
+    - Clean and mutation share one basis structurally - both are the same gate() call in the same private checkout - and the basis, provenance, framework revision and retained/current artifact hashes are persisted per attempt.
+    - Dashboard exposes an Execution basis fieldset defaulting to Validate with current framework; the replay option states that it cannot establish eligibility. No mode is ever switched silently.
+    - Focused contract quarantine-workspace.fixture.ts --phase=basis proves the two bases are OBSERVABLY distinct on one package via a marker in the retained shared framework. Six mutants added (19 total).
+  proven_live:
+    - TC_SMOKE_021 CURRENT_FRAMEWORK_VALIDATION rerun ACCEPTED. Clean run passed; step 7 resolved at 9826 ms, beyond the retained resolver's 4000 ms window, which is exactly why the historical basis could not pass it.
+    - Assertion mutation failed at 40516 ms having found the heading and rejected its content, so the assertion genuinely inspects the application.
+    - All fourteen steps across both runs carry locatorTimeoutMs 40000; the mutation run recorded a locator-wait diagnostic.
+    - original.json byte-identical (sha256 dd8bdd7ece465fbf723bf3290d43bdbcbb2afeb6298a8e6a6f0082d80a866393); only the package state.json changed.
+    - Framework revision recorded: e2d308fa3e81041a4961c28e6202472b831a438c. 14 retained application artifacts, 20 current framework artifacts, all hashed.
+  state: TC_SMOKE_021 eligible=true, promoted=false. Promotion remains an explicit human action and was not performed.
+  remaining:
+    - Promote TC_SMOKE_021 only if a person decides to; nothing here promotes.
+    - Whole-framework regression not run and not authorized.
+  next_action: Review the eligible TC_SMOKE_021 attempt and decide on promotion. Do not treat eligibility as promotion.
+  evidence: docs/validation/QUARANTINE-EXECUTION-BASIS.md
+recorded_flow_fixture_source_environment:
+  status: STALE_FIXTURE_CORRECTED_PRODUCTION_UNCHANGED
+  stale_assumption: >
+    recorded-flow.fixture.ts's own 'runtime credentials stay application scoped' check adds a
+    second environment (alternate) to the synthetic north application and leaves it in the
+    registry. A later scenario then called run() with no execution context, so the application
+    had two environments, no defaultSourceEnvironmentId and no explicit source. Under the
+    current contract that must fail closed, and it did - the fixture predated the contract.
+  fix: >
+    TEST-ONLY. The orchestration scenario now states its source explicitly through the product
+    API, resolveExecutionContext(activeScope(), {sourceEnvironmentId:'qa'}), using this
+    synthetic application's own environment id and passing the result to run(). No ambient
+    variable is set and no production file was touched.
+  negative_contract_added: >
+    Before the positive run, the same state is asserted to fail closed with
+    SOURCE_ENVIRONMENT_CONFIGURATION_FAILURE, with a spawn spy proving zero child processes or
+    browsers start. The fail-closed behaviour is now covered rather than merely encountered.
+  mutation: recorded-flow-mutations.ts gains 'recorded-flow drops its explicit source environment' - dropping the sourceEnvironmentId must reproduce the failure, so the fixture can never silently depend on an ambient source again. 12/12 killed.
+  results: recorded-flow fixture fully green; credential-redaction 13/13; TypeScript 20 before / 20 after identical; application artifacts 285 files, zero changed.
+  next_action: None. Production execution-context behaviour is unchanged and was not weakened.
+credential_recording_redaction_followup:
+  status: IMPLEMENTED_PROVENANCE_BASED_REDACTION
+  finding: >
+    The recorder redacts passwords but not account identifiers. SENSITIVE in
+    ai/dashboard/recorder.ts matches password|passwd|pwd|secret|token|otp|cvv|credit card|
+    card number, so "Email", "Enter email", "Username", "User ID", "Account" and "Login" are
+    all false. The second guard, looksLikeAKnownSecret, compares only against environment
+    variable names matching PASSWORD|PASSWD|PWD|TOKEN|SECRET|API_KEY|PRIVATE_KEY plus the
+    registry's environment.credentials.password - credentials.email is never consulted, and
+    the JSON credential profile store is not consulted by either guard. A typed email
+    therefore persists literally into the recording, which is how the account address in
+    ai/dashboard/recordings/ksp/TC_SMOKE_021.spec.ts got there. The password did not.
+  scope_note: Deliberately NOT fixed inside the execution-basis task. It is a separate subsystem and needs its own focused contract and mutants.
+  proposed: Extend guard 2 to the credentials.email binding and to credential-profile usernames, and treat an authentication/test-data-bound field as sensitive by intent rather than by label. Emit appCredentials.email / appCredentials.password as semantic references instead of literals.
+  implemented:
+    - Sensitivity is decided by PROVENANCE, not field labels. PUBLIC / SENSITIVE (credential identifier) / SECRET (password). A value is protected because it IS the configured account or password.
+    - Both halves protected for legacy registry bindings (credentials.email and credentials.password) and for the selected JSON Credential Profile. The selected profile is used rather than decrypting every profile.
+    - Recorded fills carry structured valueSource {kind, field, sensitivity} instead of a substituted literal; generation reads the field from it.
+    - from-recording credentialFieldOf prefers provenance and keeps the legacy "redacted means password" inference EXACTLY for recordings made before this, which is still true for them.
+    - The belt-and-braces source scrub now covers identifiers as well as secrets, catching a credential in a URL or comment the parser never modelled.
+    - Ordinary data is untouched: a business contact email that is not a credential stays recordable, proven by contract and by a mutant that broadens the label regex.
+  not_implemented_deliberately:
+    - No SECRET Test Data path was added. ai/test-data/store.ts already REFUSES data keys named password/passwd/secret/token/cookie/authorization/username/email with "Use Credential Profiles for credentials", so Test Data cannot hold a secret by contract, and adding a secret flag would modify the Test Data storage architecture this task forbids. Credential-valued input is still protected wherever it is typed.
+  tests: ai/dashboard/credential-redaction.fixture.ts - 13 contracts including a synthetic secret scan over 6 produced artifacts. ai/testing/credential-redaction-mutations.ts - 8 mutants, all killed.
+  next_action: None for this finding. Historical recordings are unchanged and remain immutable.
+legacy_quarantine_execution_context:
+  status: SUPERSEDED_BY_quarantine_execution_basis_ROOT_CAUSE_RESOLVED
+  completed:
+    - legacyExecutionContext() asks the ORIGINAL only whether it recorded a source environment; a rerun appended to a legacy package never makes the historical record look as though it did.
+    - SourceEnvironmentProvenance distinguishes ORIGINAL_EXECUTION, USER_SELECTED_FOR_RERUN and CARRIED_FROM_RERUN_SELECTION. There is deliberately no word meaning "original" or "inherited" for a value a person supplied.
+    - A legacy package refuses to rerun until a source is explicitly selected, and the selection is stored on the NEW attempt only. original.json is never written.
+    - A later rerun of the SAME revision defaults from the earlier attempt's context and says it was carried; editing the draft creates a new revision and asks again.
+    - Dashboard shows an empty Source Environment plus the "predates Source Environment tracking / original record will not be changed" note for legacy packages, and prefills only from a prior attempt on that revision.
+    - Focused contract quarantine-workspace.fixture.ts --phase=legacy; UI contract in quarantine-browser.fixture.ts; three mutants added (13 total, all killed).
+  proven_live:
+    - TC_SMOKE_021 rerun carried sourceEnvironmentId stg, USER_SELECTED_FOR_RERUN, kspuserCommon by ID, bundled Chromium, headed, locatorTimeoutMs 40000.
+    - original.json byte-identical (sha256 dd8bdd7ece465fbf723bf3290d43bdbcbb2afeb6298a8e6a6f0082d80a866393); only the package state.json changed.
+    - Authentication executed: steps 1-6 passed through InitialLandingPage.logIn, SsoauthLoginPage.enterEmailField/passwordField/logInButton.
+  blockers:
+    - "TC_SMOKE_021 remains QUARANTINED. Clean run failed at the final assertion after 5073 ms with the page still on the Oracle IDCS federation endpoint. ROOT CAUSE PROVEN: the package retains tests-e2e/support/resilient-locator.ts as it was at package creation, whose CANDIDATE_TIMEOUT_MS is 4000; rerunQuarantine overlays the package's retained files over the current checkout, so the rerun executed the PRE-POLICY resolver, not the live 40000 ms policy. The heading previously resolved at 5273 ms, which 4000 ms cannot reach. Not an application change, not a locator defect, not a mapping defect."
+    - "OPEN DESIGN QUESTION, not decided here: the retained snapshot includes SHARED FRAMEWORK files (resilient-locator, base.page, base-fixtures, steps, diagnostics, scope). Replaying them is right for reproducing a historical failure and wrong for validating a framework fix - a quarantine rerun currently cannot prove a framework correction. Needs an explicit decision before TC_SMOKE_021 can be validated against current code."
+    - "PRE-EXISTING, not written by this rerun: the recorded account email appears literally in ai/dashboard/recordings/ksp/TC_SMOKE_021.spec.ts (Playwright codegen captured what was typed) and therefore in the package's retained copy. The PASSWORD appears nowhere. The generated spec uses appCredentials.email, not a literal. New run diagnostics contain no credential value."
+  next_action: Decide whether a quarantine rerun overlays retained SHARED FRAMEWORK files or uses current ones (or offers both, labelled). Until then TC_SMOKE_021 cannot be validated against the 40-second policy. Do not promote it; do not edit its locator or mapping.
+  evidence: ai/diagnostics/artifacts/ksp/runs/94206769-bc15-4b14-b687-b4bda3bc7fb3
+execution_context_propagation:
+  status: FOCUSED_VALIDATION_COMPLETE_LIVE_RERUN_NOT_ATTEMPTED
+  completed:
+    - One typed ExecutionContext carries application, target and source environment, credential/data/row selection, browser engine, channel, Headed mode and the locator timeout as a single transport.
+    - Dashboard generation and run, autocode CLI, orchestration, the falsification gate, excel run and quarantine rerun all resolve it once and pass it to every child process; playwright.excel.config.ts reads the same context for headless and channel.
+    - A missing, unselected or foreign source environment is refused as SOURCE_ENVIRONMENT_CONFIGURATION_FAILURE before any browser or child process starts.
+    - Real UI-to-Playwright-child validation navigates the target origin and never the source, with Headed mode present in both the clean and mutation diagnostic manifests.
+    - New browser check on the quarantine rerun request itself - the one link nothing covered - requiring the approved Headed mode, selected source environment, engine and owning applicationId.
+    - Ten execution-context mutants killed on the settled tree, including the two new ones that fault the quarantine workspace script.
+    - A read-only probe against the real ksp registry calls the exact statement TC_SMOKE_026 died on: it resolves once the context reaches the process, rebases a differing source onto the target, and otherwise fails closed with a named configuration code rather than RUNTIME_FAILURE. No browser, no network, no write.
+  remaining:
+    - Live TC_SMOKE_026 re-run against Keysight staging with the saved kspuserCommon profile and a headed browser; needs network access and explicit authorization.
+    - Live quarantine clean and assertion-mutation validation; no eligibility or promotion state has been changed.
+    - Whole-framework regression remains separate and requires explicit authorization.
+  operational_note: A dashboard process started before 2026-09-13 22:55 local still runs the pre-correction code; restart it before re-running any case.
+  next_action: Restart the dashboard, then re-run TC_SMOKE_026 generation with an explicitly selected Source Environment when a live run is authorized; preserve its quarantine record, mapping and USER_CONFIRMED bindings until it passes.
+  evidence: docs/validation/EXECUTION-CONTEXT-PROPAGATION.md
+runtime_locator_wait_policy:
+  status: FOCUSED_VALIDATION_COMPLETE_HEADED_DIAGNOSIS_PASSED
+  completed:
+    - One shared runtime locator maximum covers Page Object resolution, candidate rechecks, manual and recorded locator actions, authentication controls and framework assertions.
+    - UI operations share a deadline across resolution and execution; available targets continue immediately and ambiguous targets remain rejected.
+    - Runtime and quarantine diagnostics retain timeout configuration, target counts and observed readiness without inventing application readiness from a completed DOM.
+    - The unchanged saved dashboard heading resolved and asserted successfully during the authorized headed diagnostic with the selected JSON profile.
+    - Focused browser, deadline, mutation, isolation and diagnostic contracts protect the change; application artifacts were preserved.
+  remaining:
+    - Normal live quarantine validation remains outstanding. Its stated blocker - browser-mode propagation through the generalized rerun path - is RESOLVED and re-measured; see execution_context_propagation. What is left is the live run itself.
+    - Whole-framework regression and live promotion remain separate and require explicit authorization.
+  superseded: The browser-mode propagation blocker recorded in this block was fixed in the working tree and verified on 2026-09-14; this block's wording predates that.
+  next_action: Run normal live clean and assertion-mutation validation with the unchanged saved profile and mapping when authorized; no framework propagation work is outstanding.
+  evidence: docs/validation/LOCATOR-TIMEOUT-POLICY.md
+test_data_execution:
+  status: FOCUSED_IMPLEMENTATION_COMPLETE_HEADED_LIVE_DIAGNOSIS_PASSED
+  completed:
+    - Application-scoped versioned JSON stores reusable credentials, typed data, tags and stable Example references separately from Page knowledge.
+    - Windows CurrentUser DPAPI protects passwords without a key file, plaintext fallback or new credential environment-variable dependency.
+    - Dashboard profile, data and Example editors use safe catalogs, searchable selectors, masked password updates and visible Save/Cancel footers.
+    - Test Data forms and selectors work on the dashboard's HTTP hostname; DOM IDs are local to the page and new persistent Example IDs come from the scoped backend.
+    - Explicit profile selection feeds appCredentials and testData; coherent legacy application credentials remain available when no profile is selected.
+    - Selected rows and explicit matrices execute one unchanged spec in independent browser sessions with separate results and quarantine attempts.
+    - Profile diagnostics retain safe metadata and masked screenshots; raw native trace, video and reporter payloads are disabled for these executions.
+    - Quarantine reruns can select the original or another profile while preserving original revisions and requiring explicit promotion.
+    - Focused browser, persistence, isolation, credential precedence and mutation checks protect these contracts.
+    - The user-selected staging JSON profile passed scoped availability/decryption preflight without credential environment variables.
+    - Headed bundled Chromium accessed staging and executed the saved initial login and SSO control calls with the scoped JSON profile; the reviewed evidence remains diagnostic only.
+  remaining:
+    - Complete normal product validation. Quarantine execution configuration now propagates the approved browser mode; that precondition is met and re-measured (see execution_context_propagation), so only the live run is outstanding.
+    - Non-Windows secure storage providers and secure full-credential backup are not implemented; unsupported hosts fail closed.
+    - Native trace and HTML reporting for profile executions require a proven credential-safe retention path.
+    - Whole-framework validation and live acceptance remain separate from focused implementation validation.
+  next_action: Preserve the selected profile, mappings and quarantine status until normal live validation succeeds; the approved browser mode now reaches the rerun.
+  evidence: docs/validation/TEST-DATA-EXECUTION.md
+quarantine_diagnostics_workspace:
+  status: FOCUSED_IMPLEMENTATION_COMPLETE_HEADED_LIVE_DIAGNOSIS_PASSED
+  completed:
+    - Retained runtime reports, sanitized trace and screenshots distinguish credential skips from locator failures.
+    - Recording and runtime captures use structural step keys and parsed source relationships without promoting observations into locator proof.
+    - Quarantine preserves its original source, supporting snapshots, immutable revisions and run history, with a separate validated editable draft.
+    - Scoped inspection, screenshot navigation, code definitions, diff, atomic save, private rerun and explicit promotion use the existing workspace and execution contracts.
+    - Quarantine mapping reuses simplified Recording Review and transactional application YAML, Page Object, fixture and ownership persistence.
+    - Logical Page creation requires a name only; optional, shared and parameterized routes remain context rather than identity.
+  remaining:
+    - Complete normal live clean and assertion-mutation validation; no eligibility is established by diagnostic replay alone. The execution-mode propagation concern that blocked this is resolved and re-measured - see execution_context_propagation.
+    - Historical run screenshots and discarded reports cannot be reconstructed as original evidence.
+    - Whole-framework and live acceptance remain separate from focused validation; no live case was promoted.
+  next_action: Use docs/validation/LOCATOR-TIMEOUT-POLICY.md for the passing headed diagnosis and docs/validation/EXECUTION-CONTEXT-PROPAGATION.md for the now-closed quarantine mode propagation; live execution requires the next authorized task.
+  evidence: docs/validation/LOCATOR-TIMEOUT-POLICY.md
+recording_review_mapping_workflow:
+  status: FOCUSED_VALIDATION_COMPLETE_BROAD_ACCEPTANCE_NOT_RUN
+  completed:
+    - Step review now uses searchable Page and Page Object comboboxes with staged creation and one Save Mapping action.
+    - Recorded route is read-only context for relevance; logical Page identity remains application plus name and permits shared routes or no route.
+    - Save prepares scoped YAML knowledge, append-safe Page Object source, fixture registration, manual status and revision-bound ownership together, then validates, commits, reads back and rolls back on failure.
+    - Compatible capabilities and parameterized locator methods are reused before deterministic method creation; established methods are never silently overwritten.
+    - Reusable authoring is reconstructed through existing YAML and source readers for later steps, recordings and application restarts.
+    - Advanced explicit execution, honest unvalidated provenance, per-step overrides, application isolation, credentials and navigation safety remain intact.
+    - Dirty choices, Reset, accessible keyboard navigation, virtualized catalogs and stale-refresh protection are covered by focused browser checks.
+  remaining:
+    - Whole-framework and live application acceptance are not established by the focused validation for this workflow.
+    - Existing repository-wide TypeScript diagnostics remain tracked separately from this authoring change.
+  next_action: Review the focused workflow report; run broader regression or live acceptance only when separately requested.
+  evidence: docs/validation/RECORDING-REVIEW-WORKFLOW.md
+recording_authentication_authoring:
+  status: MAPPING_UNBLOCKED_LIVE_ACCEPTANCE_PENDING
+  completed:
+    - Explicit scoped methods and explicitly selected recorded locators bypass automatic authentication identity and ownership inference.
+    - Recorded-locator execution is persisted per step, resets to Auto and does not inherit with Page context.
+    - Automatic controls retain measured identity requirements; explicit locators remain user authored and unvalidated.
+    - Existing application isolation, secret handling, navigation causality and code safety remain independent.
+    - TC_SMOKE_018 remaps without blockers after the user explicitly selected its existing recorded locator for the entry action.
+  remaining:
+    - Validate the mapped case through separately scoped live clean and assertion-mutated execution before claiming application acceptance.
+  next_action: Use the focused authentication validation report for this change; the earlier complete regression predates this follow-up.
+  evidence: docs/validation/USER-CONFIRMED-AUTHENTICATION.md
+recording_review_authoring:
+  status: FRAMEWORK_CLOSURE_READY_LIVE_ACCEPTANCE_PENDING
+  qualification: Historical closure before recording_review_mapping_workflow; its regression result does not validate the newer workflow tree.
+  completed:
+    - Explicit logical Pages, including multiple Pages on one route and Pages without a route.
+    - Scoped Page Object class creation, manual locator-method creation, and searchable catalogs.
+    - Persisted AUTO/USER_CONFIRMED provenance, recommendations, selections and per-step methods.
+    - Explicit method precedence, Page/PO inheritance and independent navigation-causality gates.
+    - Generic explicit authentication controls without automatic composite substitution.
+    - Case dependency workspace, parsed definitions, location history and atomic validated saves.
+    - Manual code saved with honest validation status and exclusion from automatic knowledge reuse.
+    - Corrected apps-readiness with scoped synthetic target identity evidence; all relevant focused checks pass.
+    - Completed the newly authorized full regression and verified source/application artifact integrity.
+    - Confirmed no additional authoring-module TypeScript diagnostics against the documented existing issues.
+    - Deferred canonical URL resolution so empty and unselected multi-project dashboards start without invented scope.
+    - Replaced obsolete regression expectations with behavior checks and supplied only missing positive synthetic identity evidence.
+    - Corrected native/Git/synthetic regression routing, startup diagnostics, timeout reporting and complete result collection.
+    - Validated the settled framework closure with focused/browser checks, meaningful mutations and one complete regression.
+  remaining:
+    - Validate a real case with user-authored bindings through clean and assertion-mutated execution.
+  blockers:
+    - TC_SMOKE_015 retains Auto choices and remains blocked on automatic authentication capability resolution.
+    - Whole-repository TypeScript diagnostics remain outside the new authoring modules.
+  next_action: Use the closure report as the validated framework baseline; separately scope live authored-binding acceptance without weakening identity or fabricating bindings.
+  evidence: docs/validation/REGRESSION-FAILURE-CLOSURE.md
+  previous_evidence: docs/validation/RECORDING-AUTHORING-CLOSURE.md
+implementation: "Recording Authoring closure followed by explicit authentication mapping correction; live case acceptance remains separate"
 regression:
-  fixtures: 80
+  latest_status: PASSED_FRAMEWORK_CONTRACTS
+  latest_evidence: docs/validation/regression-repair-full.json
+  # The numeric fields and verified_on narrative below are historical; latest evidence is above.
+  fixtures: 82
   failures: 1
   remaining_failures_after_focused_followup: 0
   verified_on: >
-    Current cleanup: one complete full sweep, 79/80, 728.93 seconds. Only F6 in
+    Dashboard/environment task, 2026-09-12: full 81/82, 870.69 seconds. Only recorder.fixture.ts
+    failed (54/55): obsolete global-hidden CSS ban. Test-only follow-up passed recorder 54/54,
+    real browser note visibility and a visibility mutant. No second sweep; a fresh all-green
+    full baseline after the test correction is unverified. Historical results follow.
+    Latest baseline closure, 2026-09-12: 80/80, zero failures, 1470.07 seconds, sequential
+    fixture execution with stop on first nonzero exit. Locator-validation F6, the locator
+    benchmark, workspace accordion and synthetic dashboard onboarding passed. This is
+    a fresh full run after the guide correction, not a relabeling of the earlier result.
+    Historical cleanup: one complete full sweep, 79/80, 728.93 seconds. Only F6 in
     locator-validation failed: shortened ai/CLAUDE.md omitted the elementRef/captureRef
     distinction. Documentation restored; targeted rerun passed. No second full sweep.
     The following results predate cleanup.
@@ -68,7 +822,8 @@ regression:
     real regressions, not stale assertions - see `p5_locator_engine`. Previously 63/63
     after the TypeScript diagnostic cleanup; final settled tree 2026-09-04 (Phase 8).
   failure_is_pre_existing: >
-    Current cleanup failure was a documentation omission, not a production regression.
+    Latest full regression: zero failures. The following describes the earlier run only.
+    The earlier cleanup failure was a documentation omission, not a production regression.
     Fixed in ai/CLAUDE.md only; targeted locator-validation rerun exit 0. Remaining
     known failures: zero. The following explanations are historical.
     No remaining failures in the current sweep. The prior locator-quality-benchmark
@@ -84,7 +839,7 @@ regression:
   baseline_before: >
     54 fixtures / 3282 checks / 0 failures, claimed on 2026-08-24 and measured on a tree
     whose knowledge YAML still parsed. 49 fixtures on 2026-08-21.
-  command: "for f in $(find ai -name '*.fixture.ts' | sort); do npx tsx $f; done"
+  command: "node node_modules/tsx/dist/cli.mjs <each sorted ai/**/*.fixture.ts>; sequential; stop on first nonzero exit"
   and_then: "Compare artifact hashes and counts against the measured pre-run baseline, never a historical total."
   flipkart_count: >
     20 files as of 2026-09-08, not the 8 quoted by earlier phases: four recordings
@@ -100,8 +855,90 @@ regression:
     corpus that has gained a recording since will move the corpus-derived ones.
 
 # ------------------------------------------------------------------- 2026-09-12
+dashboard_environment_execution:
+  status: IMPLEMENTED_WITH_FULL_BASELINE_CAVEAT
+  evidence: docs/validation/DASHBOARD-VALIDATION.md
+  api_version: 9
+  completed:
+    - Collapsible shell, project/source selectors, responsive settings and report inspector.
+    - Validated environment configuration with variable-name references only.
+    - Serial parent/child environment runs from one saved case; stable retry/step artifacts.
+    - Explicit request scope for workbook runner scanning and activation surveys.
+    - Foreign environment/artifact refusal and project-switch cache/evidence clearing.
+    - Actual Chromium screenshot, keyboard, responsive, missing-capture and failed-step checks.
+  regression:
+    full: "81/82, 870.69 seconds; one completed full sweep; never relabeled"
+    full_failure: "recorder.fixture.ts, 54/55: no global !important visibility rule was introduced"
+    followup: "Test-only correction; recorder 54/54 and actual note visibility pass; no production changes"
+    mutations: "Five environment/ownership/scope mutants plus one recording-visibility mutant killed"
+    fresh_all_green_full_baseline: NOT_VERIFIED_AFTER_TEST_ONLY_FOLLOWUP
+  integrity: "Empty real registry/state; no files or directories changed during the full run; no application artifacts created"
+  source_environment: "One explicit recording/generation source; selected execution targets use a frozen application configuration"
+  credential_configuration: "Project Settings manages supported variable NAME references; values remain external"
+  runtime_ai: "Existing Claude CLI path unchanged and not invoked; GitHub Copilot/provider abstraction NOT IMPLEMENTED"
+  keysight_added: false
+  remaining:
+    - Fresh all-green full baseline requires a separately requested sweep.
+    - Approved URLs, identifiers, secret values, network access, accounts and cases are external inputs.
+    - Real authentication/SSO/MFA and cross-browser/client-host behavior remain unverified.
+    - Custom specs bypassing shared framework fixtures are outside the environment-binding proof.
+  next_action: "Review the implemented dashboard and exact validation record; obtain real onboarding configuration before client validation"
+
+cleanup_baseline_closure:
+  status: "CLOSED; ready for registration with real configuration; authenticated Keysight use unverified"
+  verified: 2026-09-12
+  evidence: "PROVEN FROM REPOSITORY and fresh offline execution; live Keysight compatibility is not proven"
+  full_regression: "80/80 fixtures by exit code; zero failures; 1470.07 seconds; sequential, stop on first failure"
+  key_checks: "locator-validation F6, locator benchmark, workspace accordion, empty -> first -> second -> third onboarding, isolation and generic execution passed"
+  previous_result: "79/80 in 728.93 seconds plus documentation follow-up; historical report/JSON unchanged"
+  mutations: "No new mutation run; earlier cleanup's 20 killed source mutants remain historical evidence"
+  backup:
+    location: 'C:/Users/Maneeswar/AppData/Local/Temp/aura-cleanup-audit-ory0g08o'
+    readable_hash_verified_files: 2740
+    removal_manifest_entries_verified: 2488
+    errors: 0
+    delivery: "Private external recovery includes old data/secrets; exclude it, .git history and local secret files from client packages; no package built"
+  fresh_evidence_directory: 'C:/Users/Maneeswar/AppData/Local/Temp/aura-cleanup-audit-ory0g08o/baseline-closure-20260912-182223'
+  evidence_files: "preflight.json; full-regression.json; per-fixture logs; before/after-run-hashes.json; post-regression-integrity.json"
+  integrity:
+    repository_files_compared: 267
+    hash_inventory_excludes: ".git metadata and node_modules dependencies"
+    changed_during_run: 0
+    created_during_run: 0
+    deleted_during_run: 0
+    protected_core_files_unchanged: 16
+    governance_contracts_unchanged: 4
+    retained_baseline: "Source/tests match recorded pre-final-cleanup snapshot; only documented guide/handoff changes and three cleanup reports differ"
+    registry: "schemaVersion 1; applications: []; generation state: {}"
+    application_data: "No application files, fixture modules or subdirectories in checked stores; no removed files reappeared"
+  scope: "Only current-state and this handoff updated; no production/test/application changes, further cleanup, runtime AI, Keysight addition, history rewrite, commit or push"
+  dashboard_configuration:
+    required: "Project name; unique permanent lowercase project ID; environment ID; actual base URL including scheme"
+    automatic: "Validate; create application workbook; atomically register; select project/environment/workbook; derive application-scoped paths"
+    lifecycle: "Other artifacts are created on first write through existing lifecycles; starter row is an inactive example requiring real authored cases"
+    source: "ai/dashboard/public/index.html Add Project; ai/dashboard/server.ts POST /api/projects; ai/projects/provision.ts"
+  keysight_blockers:
+    facts: "Approved URL/IDs, network access, real test cases, test accounts and authentication requirements have not been supplied or validated"
+    credentials: >
+      The dashboard form accepts no credentials. Declare environment credential VARIABLE
+      NAMES outside that form: the registration API accepts them at creation, or update
+      registry environment configuration after form creation. No dashboard credential-edit
+      endpoint exists. Supply values separately through runtime environment, ignored local
+      .env or CI secret store. Configuration only; no framework source change is required.
+    authentication: >
+      ai/autocode/session.ts still uses fixed #loginForm email/password, .login-submit and
+      login-page probe selectors. Keysight compatibility is unknown. Credentials alone do
+      not prove it; do not assume password login, SSO or MFA behavior. A mismatch requires
+      separately authorized generalized investigation/change, not an app-specific patch.
+    authored_artifacts: "Use approved cases and actual recordings/evidence to build scoped knowledge/Page Objects; registration does not discover requirements or authenticate"
+    external_setup: "Client-host Node/npm and Playwright browser setup; required network access; account access; live CI secrets/scheduling if used"
+    runtime_ai: "Existing Claude CLI path needs external installation/sign-in if used later; no AI invoked here"
+    copilot: "NOT IMPLEMENTED; provider abstraction remains planned; not required for dashboard registration"
+  recommendation: "Obtain approved configuration and verify authentication compatibility; register only when requested; do not restore old application data"
+
+# ------------------------------------------------------------------- Historical cleanup
 old_project_cleanup:
-  status: "DONE; ready for dashboard onboarding, with the regression qualification below"
+  status: "DONE; earlier regression qualification closed by cleanup_baseline_closure; historical measurements below preserved"
   report: docs/history/OLD-PROJECT-CLEANUP.md
   results: docs/history/OLD-PROJECT-CLEANUP-RESULTS.json
   registry: "schemaVersion 1; applications empty; no Keysight added"
@@ -1376,7 +2213,7 @@ sessions_2026_08_22_24:
     what: >
       `isProvenAtPick` existed and NO consumer used it. An assertion's own pick-time
       measurement was discarded for saying `pick`, so TC_LOGIN_123's three assertions fell
-      past a byte-identical existing method to `.tabulator-table … .nth(0|1)`. ACTION still
+      past a byte-identical existing method to `.tabulator-table â€¦ .nth(0|1)`. ACTION still
       demands a press; only an assertion may act on its pick. 16 assertions across 11 cases
       gained a proven candidate.
     fixture: ai/autocode/assertion-pick-reuse.fixture.ts
@@ -1662,7 +2499,7 @@ application_isolation_phase_2:
     evidence_trace_mobiles_iphone:
       finding: NOT a generator defect and NOT a race.
       measured: >
-        candidatesTried: ✕ 2, Mobiles 0, iPhone 0, Become a Seller 3. The Mobiles/iPhone
+        candidatesTried: âœ• 2, Mobiles 0, iPhone 0, Become a Seller 3. The Mobiles/iPhone
         rows captured `{tag:'a', text:'...'}` and nothing else - no id, no surviving class,
         no aria, no data-*, and zero ancestors - so `candidateSelectorsFor` built no shapes.
         `pressTimeText` DID measure the one remaining signal: "Mobiles" matched 14 elements
@@ -3035,6 +3872,190 @@ phases:
       includeArchived is OFF by default and that default is load-bearing: reading the
       archive by default would make accepted recordings look live and a routine run
       would regenerate every accepted spec.
+  - name: recording evidence sidecar written for the ABSENCE as well as the presence
+    state: DONE
+    where: ai/dashboard/recorder.ts (persistRecording), ai/dashboard/case-status.ts (admissibleEvidence)
+    fixture: ai/dashboard/recording-evidence.fixture.ts (10 contracts)
+    mutants: ai/testing/recording-evidence-mutations.ts (5 killed)
+    note: >
+      The sidecar used to be written only when evidence was available, so a recording whose
+      capture produced nothing left NO FILE - indistinguishable on disk from one made before
+      evidence existed - while its spec, owners and authoring sidecar were all present.
+      Generation was the first thing to discover it. hasEvidence is now ADMISSIBILITY, not
+      presence, and describeRecording says RECORDING_EVIDENCE_INCOMPLETE before the
+      fingerprint verdict. recordingEvidenceGap answers undefined for a case nobody recorded:
+      a missing sidecar is only a finding about a recording that EXISTS.
+      NOT BACKFILLED: TC_SMOKE_023/024/025/027 were recorded before the fix and have no
+      sidecar. They report the honest reason and are left alone.
+  - name: credential IDENTIFIER redaction for dashboard recording
+    state: DONE
+    where: "ai/dashboard/recorder.ts (openRecordingCredentials, closeRecordingCredentials, protectedCredentials, resolvedSecret); ai/dashboard/server.ts /api/record/start; ai/dashboard/public/index.html"
+    fixture: ai/dashboard/recording-credentials.fixture.ts (17 contracts)
+    mutants: ai/testing/recording-credential-mutations.ts (5 killed)
+    note: >
+      An EXECUTION carries an execution selection, so the recorder could resolve the profile
+      in use. A RECORDING carries none - no Example row is chosen and the case may not exist
+      yet - so there was nothing to compare against: the password survived because the field
+      is called "password", and the account typed into "Sign-in ID" was written verbatim.
+      The credential profile is now named at Start, resolved ONCE in the server process, held
+      for the life of the session and dropped at Stop. Only the profile ID crosses the wire
+      in either direction. An unresolvable profile REFUSES the recording - recording
+      unprotected is the leak. After Stop a value this process decrypted stays redacted via
+      the field-blind secrets registry, but carries no valueSource: protection never weakens,
+      only the claim about WHICH field it is expires.
+  - name: blocked generation reported as BLOCKED with its classification
+    state: DONE
+    where: ai/dashboard/generation-history.ts (VERDICT_LINE, GenerationCase.code)
+    fixture: ai/dashboard/generation-status.fixture.ts (11 contracts)
+    mutants: ai/testing/generation-status-mutations.ts (3 killed)
+    note: >
+      VERDICT_LINE did not match a qualified verdict line - "  BLOCKED (REASON): text" - so a
+      blocked case was recorded as UNREPORTED with no reason. The qualifier is now captured
+      as `code` and prefixed onto `reason`.
+  - name: credential profile propagation for NEW-case generation
+    state: DONE
+    where: "ai/dashboard/recorder.ts (RecordingContext, contextOf, takeRecordedGenerationContext); ai/test-data/execution.ts (generationSelection); ai/dashboard/server.ts /api/case + startAutocode + configurationFailureCode; ai/dashboard/public/index.html; ai/dashboard/public/test-data.js"
+    fixture: ai/dashboard/generation-credentials.fixture.ts (22 contracts)
+    mutants: ai/testing/generation-credential-mutations.ts (8)
+    note: >
+      Two workflows were sharing one dialog. Execution Data exists to run EXISTING workbook
+      cases, so it defaults its testCaseIds to the workbook checkbox selection and
+      /api/test-data/preview rightly refuses an empty or unknown list. That rule is correct
+      and is untouched. But the modal was ALSO the only thing that set the selection the save
+      request forwards as executionData, so it was the only way to give GENERATION a credential
+      profile - and a case that had just been recorded is in no workbook and checked nowhere.
+      Reproduced before implementing: a save naming a profile started the generator with
+      executionProfile undefined, i.e. silently on the application binding.
+      The recording's own "Signing in as" selector is now the source. Its profile ID travels
+      on a RecordingContext (application, environment, sourceEnvironment, credentialProfile -
+      IDs only), is stamped by keepArtifactFor with the ID the workbook assigned, and is
+      collected once by the owning application at Save. /api/case resolves the generation
+      credential in a fixed order: explicit Execution Data selection, then the server-held
+      recording context, then the recording panel's profile ID, then none.
+      generationSelection builds an EPHEMERAL mode:'selected' request - never 'examples' -
+      so nothing is written into the case: the logical test stays profile-independent and any
+      later run may choose one or several profiles. executionPlan + credentialPreflight prove
+      the profile for the TARGET environment and refuse with CREDENTIAL_CONFIGURATION_FAILURE;
+      no profile is ever substituted. configurationFailureCode reads the typed code from both
+      shapes it is raised in, so a refused credential is no longer reported as the generic
+      GENERATION_NOT_STARTED.
+      NOT claimed: the interactive Record -> Save, generate & run leg. It needs a person in the
+      recorder browser. Verified live instead, read-only against the real ksp store:
+      kspuserCommon active with a stg binding, preflight Available/Available, the Execution
+      Data rule still refusing an empty selection, the served page carrying the selector, and
+      the generation context resolving to ksp/stg/stg + kspuserCommon + chromium + 40000ms.
+  - name: explicit authoring precedence and the executable-binding invariant
+    state: DONE
+    where: "ai/knowledge/authoring-owners.ts (OwnerProvenance, executableBinding); ai/dashboard/page-ownership.ts (ownershipReview); ai/autocode/from-recording.ts (incompleteBinding, navigation causedBy); ai/autocode/dom-evidence.ts (evidenceAbsence); ai/autocode/abstraction/propose.ts"
+    fixture: ai/dashboard/authoring-precedence.fixture.ts (27 contracts)
+    mutants: ai/testing/authoring-precedence-mutations.ts (12)
+    note: >
+      Page/Page Object context INHERITS down a screen and the method deliberately does not -
+      the method that finds the email box must never silently become the method that finds the
+      password box. What was wrong is what the inherited, method-less context was CALLED.
+      ownershipReview wrote it as provenance USER_CONFIRMED with explicit:false, method:null
+      and executionMode AUTO: a state that reads as a completed mapping in Recording Review and
+      is one nowhere else. Generation found no binding, fell through to automatic inference and
+      refused the step for missing interaction-time identity - accurate about the evidence,
+      misleading about the cause, and unfixable by re-recording, because nothing had ever said
+      how to run it.
+      There are now three states: AUTO, USER_BINDING_INCOMPLETE, USER_CONFIRMED, with
+      executableBinding() the single definition of a completed mapping (a method under
+      PAGE_OBJECT_METHOD, or RECORDED_LOCATOR). Save Mapping REFUSES to persist a Page Object
+      with nothing to run and names the choices; generation reports USER_BINDING_INCOMPLETE
+      against the step instead of demoting it to AUTO. The AUTO evidence gate is untouched, and
+      nothing converts a saved AUTO entry into a recorded-locator choice the user never made.
+      Navigation: a browser-managed redirect has no DOM target to prove, so one that follows a
+      step the user confirmed is retained as provenance and stops blocking assembly; the
+      destination is still never claimed and nothing is replayed. A navigation with no confirmed
+      action behind it still blocks.
+      evidenceAbsence() names an evidence gap by TRANSPORT, not by date:
+      CODEGEN_NO_BROWSER_EVIDENCE / CURRENT_RECORDING_EVIDENCE_CAPTURE_FAILED /
+      LEGACY_NO_EVIDENCE. Telling someone to treat a recording they made today as a legacy
+      artifact sends them to re-record it the same way with the same result.
+      Recording Review follows the same rule now: the method is REQUIRED for Page Object
+      execution rather than labelled optional, one compatible capability is offered for reuse,
+      several require a choice, none offers Create method / Use recorded locator, and Save is
+      refused while the state cannot run - so the visible state equals the stored state.
+      The recorder also stops presenting a fallback as the transport that was asked for:
+      a live request that cannot start reports LIVE_RECORDER_UNAVAILABLE, and every codegen
+      session reports browserEvidence:false in its start response and status.
+      Measured in this environment: playwright 1.63.0-alpha-2026-08-05, chromium launches and
+      context._enableRecorder is present, so LIVE_RECORDER_AVAILABLE - the live transport is
+      simply not requested unless RECORDER_TRANSPORT=live is set, and it is off by default.
+  - name: Recording Review execution choice (resolving USER_BINDING_INCOMPLETE)
+    state: DONE
+    where: "ai/dashboard/public/recording-review.js (executionChoice, summary, save enablement); ai/dashboard/authoring-catalog.ts (declaredLocator)"
+    fixture: ai/testing/review-browser-checks.ts (executionChoiceChecks, run by ai/dashboard/authoring-browser.fixture.ts)
+    mutants: ai/testing/execution-choice-mutations.ts (8, real browser, run narrowed by AURA_EXECUTION_CHOICE_ONLY)
+    note: >
+      The USER_BINDING_INCOMPLETE safeguard was correct and is untouched. The defect was that
+      every control able to RESOLVE one - the method list, the recommended capability, Create
+      method, Use recorded locator - was rendered inside the collapsed "Advanced" block, below
+      the summary reporting the refusal. Measured cause: C. The server was returning the
+      methods all along (SsoauthLoginPage exposes enterEmailField, passwordField, logInButton,
+      formState); nothing filtered them out; they were simply not reachable.
+      An Execution choice section now renders above the summary whenever a Page Object is
+      chosen. Recommendation is ranked by DECLARED LOCATOR, joined from knowledge by
+      (page_object, method) and surfaced as `declaredLocator` on the catalog - a method whose
+      declared locator IS the recorded one is the same element by the application's own
+      statement, whereas matching a method NAME is a guess, and a guess presented as a
+      recommendation is how the wrong control gets bound. It orders the list and offers a
+      single match by name; it never applies itself.
+      The summary now reports the mechanism that will actually run (PAGE_OBJECT_METHOD with
+      its method, or RECORDED_LOCATOR with its locator) instead of printing "Locator: Recorded
+      locator" for every non-AUTO mode including Page Object execution.
+      Save follows the state table: Page only or Page+PageObject disabled, an executable
+      choice enabled. This deliberately withdraws one established convenience - the save could
+      derive a method name when none was given. That server path is UNCHANGED and other callers
+      keep it; the UI no longer makes that decision and calls it the person's confirmation.
+      Two existing browser checks were updated to state their choice rather than rely on it.
+      Create method routes through the normal pipeline (prepareAuthoringMethod + transactional
+      validateAuthoringChanges), so no source is hand-appended.
+  - name: promotion publishes the EFFECTIVE revision, split by ownership
+    state: DONE
+    where: "ai/dashboard/quarantine-workspace.ts (planPromotion, quarantinePromotionPlan, promoteQuarantine); ai/dashboard/public/quarantine-workspace.js + .css (qdActionAlert)"
+    fixture: "ai/dashboard/quarantine-workspace.fixture.ts phases effective-revision and promotion-plan"
+    mutants: ai/testing/promotion-plan-mutations.ts (6, incl. a protected-artifact delta the supported paths cannot produce)
+    note: >
+      A suspected defect that MEASUREMENT DISPROVED, recorded because the wrong conclusion was
+      nearly acted on. promoteQuarantine builds its application write set from the revision
+      DELTA, which for an unedited ORIGINAL_GENERATED draft is empty - so it looked as though
+      such a draft would publish nothing. It does not: the generated spec is published from
+      `loaded.overlay`, the composition of original.files and revision.files, on its own line.
+      A synthetic contract now proves it end to end: zero-file ORIGINAL_GENERATED, validated
+      under CURRENT_FRAMEWORK_VALIDATION, promotes and the spec reappears in the suite.
+      The publication rule is now stated once, by ownership. TEST_OWNED: the spec, always,
+      from the effective revision, whether it lives in the delta or only in the snapshot.
+      APPLICATION_OWNED: only what a revision intentionally carries - promotion is not a bulk
+      restore. SHARED_FRAMEWORK: verified and never written, because under current-framework
+      validation the run deliberately used the current checkout and the package's copy is
+      evidence, not payload.
+      quarantinePromotionPlan() exposes that decision read-only, and promoteQuarantine shares
+      the same planner, so what the plan describes and what the commit writes cannot diverge.
+      Refusal UX: the reason was already returned and already rendered - into a polite live
+      region at the bottom of a long panel, below the code editor. A correct refusal therefore
+      read as a no-op and the same promotion was attempted again. It now renders as role=alert
+      beside the promotion controls, naming the code and the dependencies by their friendly
+      names. On success the package, the quarantine list and the case catalog are all
+      refreshed; the workbook Automated status is still never set by promotion.
+  - name: ONE Page Object skeleton for every creation path
+    state: DONE
+    where: "ai/autocode/abstraction/writer.ts (pageObjectSkeleton), used by renderPageObjectClass and by ai/dashboard/authoring-catalog.ts (preparePageObject)"
+    fixture: ai/autocode/page-object-template.fixture.ts (12 contracts)
+    mutants: ai/testing/page-object-template-mutations.ts (3 killed)
+    note: >
+      Two emitters wrote Page Object source: the abstraction engine wrote the full class with
+      its explicit constructor, and the dashboard manual/Save-Mapping path wrote a bare
+      `export class X extends BasePage {}` against a hard-coded tests-e2e/pages/base.page.
+      A runtime probe proved BOTH construct with page and healing bound - an implicit derived
+      constructor forwards its arguments - so this was a GENERATION_TEMPLATE_CONSISTENCY
+      defect, NOT a runtime defect, and is recorded as such. Imports are computed from where
+      the class lands, so a nested layout is not a second special case. Old valid Page Objects
+      are NOT rewritten.
+      The two production emitters are the only ones: writer.ts:renderPageObjectClass and
+      authoring-catalog.ts:preparePageObject (reached by manual creation, Recording Review
+      Save Mapping and quarantine Save Mapping). ai/testing/* scaffolding is fixture data.
 
 page_object_lifecycle:
   measured_before: "225 raw locators; 87 never evaluated; 45 of 60 proposals NEEDS_REVIEW"
@@ -3807,17 +4828,17 @@ and never handed to a model to re-derive.
 1. **Recorded order preserved.** `RecordedAssertion.afterActions` is set in `parseRecording`
    and re-based after `collapseRepeatedFills`; `mapRecording` puts each assertion back where
    it was made instead of appending them all last. Assertions with no position keep the old
-   append-last behaviour and set `orderReconstructed: false` — never guessed.
+   append-last behaviour and set `orderReconstructed: false` â€” never guessed.
 2. **Artifact retained until a verdict exists.** `generateFromRecording` no longer discards it;
    `acceptRecording()` does, and only on `accepted`. Every other outcome keeps the recording.
 3. **No assertion never reaches a model.** `surveyWork` stops a row whose Expected Result is
    still the `Needs confirmation` placeholder; the recorded branch stops again if the artifact
    asserts nothing. No spec, no quarantine, no state entry, no new status.
 4. **Page Object Required.** Raw Codegen locators are named (`recorded.pageObjectRequired`) and
-   reported in the log, and are no longer counted as reuse. The gate is unchanged — such a spec
+   reported in the log, and are no longer counted as reuse. The gate is unchanged â€” such a spec
    still has to run and still has to fail when mutated.
 5. **`RECORDED_*` failure classes** in `classifyRecordedFailure`, separating "we reassembled it
-   wrongly" from "the application refused it". Metrics schema 6 → 7.
+   wrongly" from "the application refused it". Metrics schema 6 â†’ 7.
 6. **Direct CLI runnability** (`ai/excel/cli.ts`) now requires the spec to exist, matching the
    dashboard. A stale entry is skipped by name with the `excel:mapping sync` hint instead of
    producing `No tests found` for the whole run.
@@ -3827,16 +4848,16 @@ Retained from the previous session, all still green: per-recorded-case spec file
 
 7. **Obsolete shared-spec mappings cleaned** (scoped, approved). The 8 entries pointing at the
    deleted `tests-e2e/generated/login-test-cases.spec.ts` were removed from `mapping.json` by an
-   exact two-condition rule — `testFile` equal to that path **and** the file absent — never by
+   exact two-condition rule â€” `testFile` equal to that path **and** the file absent â€” never by
    ID. `excel:mapping sync` was deliberately **not** used: it would also have dropped
-   TC_LOGIN_018, whose spec exists. Mapping 34 → 26 entries; every survivor byte-identical;
+   TC_LOGIN_018, whose spec exists. Mapping 34 â†’ 26 entries; every survivor byte-identical;
    Excel, `state.json` and all protected code unchanged; no AI call and no browser.
 
 8. **Locator quality engine** (`ai/autocode/locator-quality.ts`). Every recorded locator is now
-   scored, classified and explained before assembly. Only `invalid` blocks — a generated id or an
-   absolute XPath — and blocking costs no gate run. `weak`/`suspicious` are reported and still
+   scored, classified and explained before assembly. Only `invalid` blocks â€” a generated id or an
+   absolute XPath â€” and blocking costs no gate run. `weak`/`suspicious` are reported and still
    emitted, because the gate is the only thing that can settle them. Nothing writes a Page Object
-   method: `assessNewPageObject` reports what it cannot prove instead. Metrics schema 7 → 8;
+   method: `assessNewPageObject` reports what it cannot prove instead. Metrics schema 7 â†’ 8;
    `RECORDED_LOCATOR_NEEDS_REVIEW` added. 70 offline checks in
    `ai/autocode/locator-quality.fixture.ts`, 0 AI calls, 0 browsers.
 
@@ -3845,18 +4866,18 @@ Retained from the previous session, all still green: per-recorded-case spec file
    recording proves is inside it (`NORMALIZED_LOCATOR`, classified weak), ancestor/descendant
    axes are generated from recorded containment and rejected *with reasons* when they would need
    a prefix match or a position, and an assertion is never resolved to its own expected text.
-   Measured effect: TC_LOGIN_036 went from 2 needs-review locators to 1 — its click resolved,
+   Measured effect: TC_LOGIN_036 went from 2 needs-review locators to 1 â€” its click resolved,
    its assertion did not. 87 offline checks, 0 AI, 0 browsers.
 
 10. **DOM evidence contract (Phase 8, partial).** `ai/autocode/dom-evidence.ts` defines the
-    bounded relationship graph the next phase will consume — target/parent/ancestors/children/
+    bounded relationship graph the next phase will consume â€” target/parent/ancestors/children/
     descendants/siblings, relationships, `matchCount` (measured or null, never inferred), the
-    preserved Codegen locator and the dynamic-id record — with every bound in one place and a
+    preserved Codegen locator and the dynamic-id record â€” with every bound in one place and a
     redaction funnel nothing can opt out of. `Recording.evidence` now always says whether
     evidence exists, and every existing recording reports `available: false` with a reason.
-    50 offline checks. **The capture itself is NOT implemented — see blockers.**
+    50 offline checks. **The capture itself is NOT implemented â€” see blockers.**
 
-10B. **Live DOM evidence (Phase 8C) — implemented, awaiting human acceptance.** A second
+10B. **Live DOM evidence (Phase 8C) â€” implemented, awaiting human acceptance.** A second
     recording transport (`ai/dashboard/live-recorder.ts`) runs Playwright's own recorder in a
     browser this process owns, so a locator's surroundings can be measured while it is
     recorded. Guarded on `typeof context._enableRecorder === 'function'` and behind
@@ -3992,14 +5013,14 @@ Retained from the previous session, all still green: per-recorded-case spec file
 
 19. **P0.9: the test's sign-in and the exploration browser's sign-in are different questions.**
     `groups.ts` had one boolean, `authRequired`, answering both. A manually authored plain-English
-    row (TC_LOGIN_066: "Sign in → open Faclon labs → search fac11 → select New → verify the issue")
+    row (TC_LOGIN_066: "Sign in â†’ open Faclon labs â†’ search fac11 â†’ select New â†’ verify the issue")
     was therefore handed an anonymous browser, could not reach `/apps`, and the generator declined
-    it — correctly, since it will not invent selectors for a screen it cannot see.
+    it â€” correctly, since it will not invent selectors for a screen it cannot see.
 
     `authRequirement()` now returns `{ testStartsSignedIn, explorationNeedsAuth }` with a reason
     for each. The exploration answer is structural and measured over all 76 rows: a signed-in
     precondition says yes; otherwise the last step that *performs* a sign-in (not one that merely
-    names the sign-in page — the language-picker rows act on that page and must stay anonymous)
+    names the sign-in page â€” the language-picker rows act on that page and must stay anonymous)
     opens a window, and any later step that ACTS means the row works on a screen behind the
     sign-in. Verb classification is reused from `ai/knowledge/requirements.ts`, not re-listed.
     `GroupSession` gates on `explorationNeedsAuth`; `context.ts` and `independence.ts` keep using
@@ -4014,7 +5035,7 @@ Retained from the previous session, all still green: per-recorded-case spec file
 
 20. **P1: the enterprise authoring model.** Seven optional canonical fields (Requirement ID,
     Test Type, Business Risk, Environment, User Role, Authentication Profile, Test Owner), plus
-    Description and Preconditions finally authorable — both were parsed and consumed since the
+    Description and Preconditions finally authorable â€” both were parsed and consumed since the
     beginning, and neither had an input, which is why every hand-written row had no preconditions
     and the framework had to infer a signed-in start from step prose.
 
@@ -4103,10 +5124,10 @@ that could be gated - see below.
   by the same generated id, `#tc_summary_636432`, which names one Bugasura issue rather than one
   element. To automate either, re-record asserting something true of any row (the list heading,
   a count, the project name), or give the summary element a Page Object method by hand. 036 also
-  asserts "Welcome to Bugasura" through `getByRole('strong')`, whose own text is "Bugasura" —
+  asserts "Welcome to Bugasura" through `getByRole('strong')`, whose own text is "Bugasura" â€”
   flagged suspicious, never rewritten.
 - **Re-record TC_LOGIN_031 and TC_LOGIN_033.** Their quarantines are now understood as
-  `RECORDED_ASSEMBLY_ERROR` — assertions were moved out of position by the old assembler. The
+  `RECORDED_ASSEMBLY_ERROR` â€” assertions were moved out of position by the old assembler. The
   fix is in, but their artifacts were deleted under the old lifecycle, so the evidence is gone
   and only a new recording can prove the fix on a real case.
 - **TC_LOGIN_034 and TC_LOGIN_035 are genuine.** 034 recorded a one-time onboarding tour
@@ -4185,20 +5206,20 @@ Then, still open from P0.7: **re-record TC_LOGIN_063 with `RECORDER_TRANSPORT=li
 `measuredAt: 'press'` with `identityMatched: true`. That is the only thing that can prove P0.7
 on a real case; everything else about it is already pinned offline.
 
-Nothing else is queued. The mapping is consistent — no entry names a spec that is not on disk — and
+Nothing else is queued. The mapping is consistent â€” no entry names a spec that is not on disk â€” and
 no work is in progress.
 
 When the next phase is wanted, it is **safe deterministic Page Object creation**, and its input
 (`recorded.pageObjectRequired`) is already produced by the recorded pipeline. Before that, the
 cheapest useful step is to re-record TC_LOGIN_031 or TC_LOGIN_033 and confirm on a real case
-that assertions now run where they were recorded — their original artifacts were destroyed by
+that assertions now run where they were recorded â€” their original artifacts were destroyed by
 the old discard-at-assembly lifecycle, so only a new recording can prove it.
 
 **Do not run `excel:mapping sync` on this workbook.** It pairs runners only from
 `cache.cases`, so it would delete TC_LOGIN_018 (a rejected data-driven contract whose spec
 exists); without `--workbook` it would delete all nine data-driven registrations too.
 
-## P1.2a + P1.2b — assertion picker discoverability and associated-control semantics (2026-08-16)
+## P1.2a + P1.2b â€” assertion picker discoverability and associated-control semantics (2026-08-16)
 
 Done and verified. Discoverability: the pill moved to `right: 24, bottom: 120` (clear of
 Bugasura's Freshchat launcher, measured 30px on the live page), the dashboard now names the
@@ -4209,19 +5230,63 @@ recorded click is untouched. 1356 offline checks across 24 fixtures, 0 failures.
 
 **The one thing left is the human acceptance recording**, exactly as specified:
 
-1. **Restart the dashboard** — the running server loaded these modules at startup and still has
+1. **Restart the dashboard** â€” the running server loaded these modules at startup and still has
    the old ones. This is not incidental: it is what made the P1.2 diagnosis hard.
    `RECORDER_TRANSPORT=live npm run excel:dashboard`
 2. Record a case, open Notifications, click the panel's **Notification settings** button
    (`[data-original-title="Notification settings"]`), click the **Assert** pill, select the
    **Enable Notifications** switch thumb.
-3. Expect: the card headed `Enable Notifications…`, a note saying it resolved through the label
-   inside `span.ba-switch`, state `✓ Visible ✓ Enabled ✓ ON`, and six choices — ON, OFF, Enabled,
+3. Expect: the card headed `Enable Notificationsâ€¦`, a note saying it resolved through the label
+   inside `span.ba-switch`, state `âœ“ Visible âœ“ Enabled âœ“ ON`, and six choices â€” ON, OFF, Enabled,
    Disabled, Visible, Hidden.
 4. Record ON or OFF, stop, save. The saved recording should carry a `checked` assertion whose
    `locator` is the checkbox (`getByLabel(...)`) and whose `interactionTarget` is
-   `page.locator(".ba-switch__thumb")` — the element that was actually clicked.
+   `page.locator(".ba-switch__thumb")` â€” the element that was actually clicked.
 
 Driven programmatically against the live application it already produces exactly that, and the
 resulting assertion matches one element, passes, and fails when negated. What the human pass adds
 is the part no harness can stand in for: that a person finds the pill and reads the card.
+
+
+## Recorded-flow continuity, 2026-09-12
+
+**PROVEN FROM REPOSITORY:** authentication composes identity-proven application Page Object
+controls with active-environment credentials; a composite is reused only when its complete
+body matches those controls. New live recordings preserve explicit entry intent and observed
+navigation causes. Legacy unknown navigation stops generation; transient destinations are
+withheld from emitted commands and normal mapping diagnostics. Assertion targets with proven
+identity can bootstrap their route owner and create its class. Navigation is excluded from
+DOM lifecycle counts; composite authentication retains its constituent controls. Deterministic
+mapping failures retain evidence and stop before generic AI generation.
+
+**Actual case retry:** `2026-09-12T17-56-34-402Z-mgixhq`, TC_SMOKE_002: created the heading
+capability, four reused element actions, one created, zero refused; blocked on six unknown
+navigation events. CLI exit 0 reports a completed orchestration, not an accepted/generated test.
+Original recording, evidence, authoring, workbook and registry were unchanged. Only the scoped
+heading PO/knowledge, fixture registration and ordinary generation diagnostics were written.
+
+**Remaining / next action:** first resolve the LF-sensitive source assertion in
+`semantic-candidates.fixture.ts:442` (restore original source LF or normalize test input),
+with a focused check. The full result remains 83/84; do not relabel it green. Concurrent
+TC_SMOKE_003/004 dashboard activity updated the workbook/artifacts during validation; preserve
+those newer files. Re-record navigation using the live transport, then regenerate
+and run clean/mutated execution. No heading re-pick is required by the existing evidence.
+Historical goto order cannot prove authored intent; do not edit causality into old recordings.
+The live Chromium transport proves HTTP redirects and supported browser initiators; missing
+initiators on other transports still require review. Intentional URLs with query/fragment or
+transient authentication paths require review rather than string substitution. MFA/ambiguous
+credential flows remain unsupported unless their controls and sequencing are proven.
+Copilot remains **not implemented**. See [validation](../validation/RECORDED-FLOW-VALIDATION.md).
+
+## Navigation causality follow-up, 2026-09-13
+
+Generalized request/loader correlation and browser initiator capture replace the exact-URL,
+arrival-order join. Fragments, refreshes, form and history navigation have synthetic browser
+coverage. Main-frame identity, unique correlation and ambiguous-visit refusal are enforced;
+new markers retain safe reason codes and IDs. A protocol reply drains events before saving.
+Review steps no longer display ok. Original LF restored; focused semantic-candidates is green.
+
+TC_SMOKE_005 maps all five PO actions; its old event 3 still has no recoverable provenance.
+Restart the dashboard to load the fix and record with live Chromium. No old marker was changed,
+no application-specific exception was added, and no runtime AI was invoked. Final validation
+pending. See [navigation validation](../validation/NAVIGATION-CAUSALITY-VALIDATION.md).

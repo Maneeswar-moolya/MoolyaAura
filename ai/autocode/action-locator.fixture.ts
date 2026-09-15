@@ -1,4 +1,5 @@
 import '../testing/isolated-checkout';
+import { syntheticLoginEvidence, targetEvidence } from '../testing/synthetic-data';
 /**
  * What locator a recorded ACTION gets, and when a dynamic scope may be dropped.
  *
@@ -35,7 +36,7 @@ const check = (label: string, ok: boolean, detail = '') => {
     failures++;
 };
 
-const SIGN_IN = `  await page.goto('https://portal.fixture.invalid/');
+const SIGN_IN = `  await page.goto('https://portal.fixture.invalid/'); // @aura-navigation intentional
   await page.getByRole('textbox', { name: 'Email' }).fill('someone@moolya.com');
   await page.getByRole('textbox', { name: 'Password' }).fill('[type=password]');
   await page.getByRole('button', { name: 'Sign In', exact: true }).click();
@@ -49,7 +50,7 @@ ${SIGN_IN}${body}});`;
 function mapped(script: string, evidence?: TargetEvidence[]) {
   return mapRecording(parseRecording(script, {
     startUrl: '', browser: '', durationMs: 0,
-    ...(evidence ? { evidence: sanitiseEvidence(evidence, 'x') } : {}),
+    evidence: syntheticLoginEvidence([targetEvidence("page.locator('#project_banner')"), ...(evidence ?? [])]),
   }));
 }
 
@@ -151,8 +152,8 @@ function main(): void {
       [...po.values()].some(code => code.includes('loginPage.signIn(')));
   check('4: no raw sign-in locator was emitted',
       ![...po.values()].some(code => code.includes("getByRole('button', { name: 'Sign In'")));
-  check('4: navigation reused the Page Object opener',
-      [...po.values()].some(code => code.includes('loginPage.open()')));
+  check('4: explicit navigation is retained',
+      [...po.values()].some(code => code.includes('page.goto(')));
 
   process.stdout.write('\n== CASE 5 — no dynamic id, but text alone is still not identity ==\n');
   // This case used to assert that a recorded `getByText` stood untouched when no

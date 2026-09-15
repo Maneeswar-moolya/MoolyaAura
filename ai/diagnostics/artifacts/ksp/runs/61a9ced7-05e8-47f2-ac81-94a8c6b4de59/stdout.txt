@@ -1,0 +1,52 @@
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › tests-e2e\generated\ksp\TC_SMOKE_024.spec.ts:11:7 › Test Cases › TC_SMOKE_024 - Log In â€” form contains "Email:"
+  1) [chromium] › tests-e2e\generated\ksp\TC_SMOKE_024.spec.ts:11:7 › Test Cases › TC_SMOKE_024 - Log In â€” form contains "Email:" 
+
+    Error: Select a configured source environment for execution
+
+       at support\execution-environment.ts:10
+
+       8 |   const application = readRegistry().applications.find(a => a.applicationId === scope.applicationId)!;
+       9 |   const sourceId = process.env.AURA_SOURCE_ENVIRONMENT;
+    > 10 |   if (!sourceId || !Object.hasOwn(application.environments, sourceId)) throw Error('Select a configured source environment for execution');
+         |                                                                              ^
+      11 |   const target = new URL(scope.baseUrl);
+      12 |   const source = new URL(application.environments[sourceId].baseUrl);
+      13 |   const candidate = new URL(raw, target);
+        at executionUrl (C:\Users\[REDACTED]\ClientProjects\MoolyaAura\MoolyaAura\tests-e2e\support\execution-environment.ts:10:78)
+        at _Page.goto (C:\Users\[REDACTED]\ClientProjects\MoolyaAura\MoolyaAura\tests-e2e\support\base-fixtures.ts:71:52)
+        at body (C:\Users\[REDACTED]\ClientProjects\MoolyaAura\MoolyaAura\tests-e2e\generated\ksp\TC_SMOKE_024.spec.ts:23:18)
+        at runStep (C:\Users\[REDACTED]\ClientProjects\MoolyaAura\MoolyaAura\tests-e2e\support\steps.ts:167:26)
+        at C:\Users\[REDACTED]\ClientProjects\MoolyaAura\MoolyaAura\tests-e2e\generated\ksp\TC_SMOKE_024.spec.ts:22:5
+
+    attachment #8: PRE_STEP-1 (image/png) ──────────────────────────────────────────────────────────
+    ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-DYhVNh\artifacts\generated-ksp-TC_SMOKE_024-d8ac0-In-â€”-form-contains-Email--chromium\attachments\PRE-STEP-1-0a78f1ee0934841c6a61f74da43f725cfcdcd850.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #9: FAILURE-1 (image/png) ───────────────────────────────────────────────────────────
+    ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-DYhVNh\artifacts\generated-ksp-TC_SMOKE_024-d8ac0-In-â€”-form-contains-Email--chromium\attachments\FAILURE-1-ae805841d86c64904d0a14d9e8bc6bc5efae156c.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #10: step-1 (image/png) ─────────────────────────────────────────────────────────────
+    ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-DYhVNh\artifacts\generated-ksp-TC_SMOKE_024-d8ac0-In-â€”-form-contains-Email--chromium\attachments\step-1-7ba72420ca78238828635795219184d7a9e42e6d.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #11: screenshot (image/png) ─────────────────────────────────────────────────────────
+    ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-DYhVNh\artifacts\generated-ksp-TC_SMOKE_024-d8ac0-In-â€”-form-contains-Email--chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-DYhVNh\artifacts\generated-ksp-TC_SMOKE_024-d8ac0-In-â€”-form-contains-Email--chromium\error-context.md
+
+    attachment #13: trace (application/zip) ────────────────────────────────────────────────────────
+    ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-DYhVNh\artifacts\generated-ksp-TC_SMOKE_024-d8ac0-In-â€”-form-contains-Email--chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\..\..\..\MANEES~2\AppData\Local\Temp\autocode-DYhVNh\artifacts\generated-ksp-TC_SMOKE_024-d8ac0-In-â€”-form-contains-Email--chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+  1 failed
+    [chromium] › tests-e2e\generated\ksp\TC_SMOKE_024.spec.ts:11:7 › Test Cases › TC_SMOKE_024 - Log In â€” form contains "Email:" 

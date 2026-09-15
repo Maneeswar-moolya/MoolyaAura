@@ -1,4 +1,23 @@
 {
   "schemaVersion": 1,
-  "applications": []
+  "applications": [
+    {
+      "applicationId": "ksp",
+      "displayName": "Keysight",
+      "defaultEnvironmentId": "stg",
+      "environments": {
+        "stg": {
+          "displayName": "stg-guest",
+          "baseUrl": "https://stgsupport.keysight.com/us/en/home"
+        },
+        "qa": {
+          "displayName": "qa",
+          "baseUrl": "https://qasupport.keysight.com/us/en/home"
+        }
+      },
+      "workbooks": [
+        "excel/ksp-test-cases.xlsx"
+      ]
+    }
+  ]
 }

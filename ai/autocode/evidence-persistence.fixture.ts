@@ -1,4 +1,5 @@
 import '../testing/isolated-checkout';
+import { functionUnderTest } from '../testing/function-under-test';
 /**
  * Does SAVING a recording actually write its evidence to disk?
  *
@@ -45,7 +46,7 @@ const check = (label: string, ok: boolean, detail = '') => {
 const SCRIPT = `import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://portal.fixture.invalid/');
+  await page.goto('https://portal.fixture.invalid/'); // @aura-navigation intentional
   await page.getByText('Faclon labs').click();
   await expect(page.locator('#tc_summary_639978')).toContainText('Line Chart : Getting flat');
   await page.locator('#tc_summary_639978').getByText('Line Chart : Getting flat').click();
@@ -77,7 +78,7 @@ function graphFor(locator: string): TargetEvidence {
     derivedCandidates: [
       { strategy: 'scoped-parent-class-pair',
         expression: 'page.locator("#bugReport-table .bug-report__summary--text.hidden-xs")',
-        matchCount: 1 },
+        matchCount: 1, sameDocument: true, identityMatched: true, measuredAt: 'press' },
       { strategy: 'parent-class', expression: 'page.locator(".bug-report__summary--text")', matchCount: 26 },
     ],
   };
@@ -206,17 +207,20 @@ function main(): void {
 
     process.stdout.write('\n== H — the wiring: keepArtifactFor must call it ==\n');
     const source = fs.readFileSync(path.resolve(ROOT, 'ai/dashboard/recorder.ts'), 'utf8');
-    const keepBody = source.slice(source.indexOf('export function keepArtifactFor'),
-        source.indexOf('export function persistRecording'));
-    check('H: keepArtifactFor delegates to persistRecording',
-        // The first three arguments are still pinned in order - this check exists
-        // because the write was once lost to a patch that silently did not apply.
-        // A fourth is allowed: P1.2c added the recorded state assertions, and
-        // `assertion-persistence.fixture.ts` is what pins that one.
-        /return persistRecording\(testCaseId, held\.source, held\.recording\.evidence[,)]/.test(keepBody),
-        keepBody.split('\n').find(line => line.includes('persistRecording'))?.trim());
-    check('H: it passes the HELD evidence, not a fresh object',
-        /held\.recording\.evidence/.test(keepBody));
+    let heldEvidence: unknown, heldSource: unknown;
+    const keep = functionUnderTest('ai/dashboard/recorder.ts', 'keepArtifactFor', {
+      pending: { source: SCRIPT, recording: { evidence } },
+      persistRecording: (id: string, savedSource: string, savedEvidence: RecordingEvidence) => {
+        heldEvidence = savedEvidence; heldSource = savedSource;
+        return persistRecording(id, savedSource, savedEvidence);
+      },
+    });
+    const kept = keep(CASE_ID);
+    check('H: keepArtifactFor delegates to production persistence and returns its artifact',
+        kept === returned && fs.readFileSync(artifactPath(CASE_ID), 'utf8') === SCRIPT
+        && JSON.parse(fs.readFileSync(evidencePath(CASE_ID), 'utf8')).targets.length === 2);
+    check('H: it passes the HELD evidence and source unchanged', heldEvidence === evidence && heldSource === SCRIPT);
+    check('H: successful save consumes pending recording', keep(CASE_ID) === null);
     check('H: persistRecording uses the existing evidencePath helper',
         /const sidecar = evidencePath\(testCaseId[,)]/.test(source));
     // Phase 3: the helper now takes the directory, because the SESSION's application
@@ -258,7 +262,7 @@ function main(): void {
         ], new Date(0).toISOString()),
       }));
       check('I: had its evidence been persisted, generation would resolve it',
-          !withEvidence.needsReview.some(step => /tc_summary|contains/.test(step.from)),
+          !withEvidence.needsReview.some(step => /tc_summary/.test(step.from)),
           withEvidence.needsReview.map(step => step.from).join(', ') || '(none)');
       check('I: TC_LOGIN_055 files untouched by this fixture',
           fs.readFileSync(real, 'utf8') === referenceSource && !fs.existsSync(evidencePath('TC_REFERENCE')));

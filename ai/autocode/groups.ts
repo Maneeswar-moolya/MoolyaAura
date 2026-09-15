@@ -141,6 +141,7 @@ const PERFORMS_SIGN_IN = /\b(?:log|sign)\s*-?\s*in\b|\blogs?\s*in\b/i;
 const NAMES_THE_SIGN_IN_SCREEN = /\b(?:log\s*-?\s*in|sign\s*-?\s*in|signin|login)\s+(?:page|screen)\b/gi;
 
 export interface Group {
+  executionContext?: import('../projects/execution-context').ExecutionContext;
   /** Stable, readable, and what the metrics record. */
   key: string;
   /** Base URL. Also the environment - one URL is one environment. */
@@ -268,7 +269,7 @@ function screenOf(testCase: TestCase): string {
  * row number they came from - so two runs over the same workbook group and
  * sequence identically, and a benchmark is comparable to the one before it.
  */
-export function groupWork(items: WorkItem[]): Group[] {
+export function groupWork(items: WorkItem[], executionContext?: import('../projects/execution-context').ExecutionContext): Group[] {
   // IDENTITY IS DECLARED, NOT PARSED OUT OF THE URL. This read
   // `new URL(BASE_URL).host`, which is a host name wearing the word `application`:
   // two applications behind one host would have shared a grouping key, and one
@@ -284,7 +285,7 @@ export function groupWork(items: WorkItem[]): Group[] {
     // The NAME of the variable the account comes from, never the account. A row
     // whose browser stays signed out is `anonymous`, as it has always been.
     const identity = auth.explorationNeedsAuth ? explorationIdentity() : 'anonymous';
-    const key = `${application}|${auth.testStartsSignedIn ? 'test-auth' : 'test-anon'}`
+    const key = `${application}|${executionContext ? JSON.stringify(executionContext) : ''}|${auth.testStartsSignedIn ? 'test-auth' : 'test-anon'}`
       + `|${auth.explorationNeedsAuth ? 'explore-auth' : 'explore-anon'}|${identity}|${worksheet}`;
 
     const existing = groups.get(key);
@@ -293,7 +294,7 @@ export function groupWork(items: WorkItem[]): Group[] {
       continue;
     }
     groups.set(key, {
-      key, environment, application,
+      key, environment, application, executionContext,
       testStartsSignedIn: auth.testStartsSignedIn,
       explorationNeedsAuth: auth.explorationNeedsAuth,
       authIdentity: identity,

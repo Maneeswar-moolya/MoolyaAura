@@ -1,0 +1,170 @@
+[
+  {
+    "name": "recording-pictures",
+    "file": "ai/diagnostics/recording-pictures.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 9407
+  },
+  {
+    "name": "runtime-pictures",
+    "file": "ai/diagnostics/runtime-pictures.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 20780
+  },
+  {
+    "name": "quarantine-guard",
+    "file": "ai/autocode/quarantine-diagnostics.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 15230
+  },
+  {
+    "name": "quarantine-package",
+    "file": "ai/dashboard/quarantine-workspace.fixture.ts",
+    "args": [
+      "--phase=package"
+    ],
+    "exitCode": 0,
+    "milliseconds": 32745
+  },
+  {
+    "name": "quarantine-browser",
+    "file": "ai/dashboard/quarantine-browser.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 71550
+  },
+  {
+    "name": "quarantine-editing",
+    "file": "ai/dashboard/quarantine-workspace.fixture.ts",
+    "args": [
+      "--phase=editing"
+    ],
+    "exitCode": 0,
+    "milliseconds": 54614
+  },
+  {
+    "name": "quarantine-route",
+    "file": "ai/dashboard/quarantine-workspace.fixture.ts",
+    "args": [
+      "--phase=route"
+    ],
+    "exitCode": 0,
+    "milliseconds": 20760
+  },
+  {
+    "name": "quarantine-security",
+    "file": "ai/diagnostics/security.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 3977
+  },
+  {
+    "name": "authoring-catalog",
+    "file": "ai/dashboard/recording-mapping.fixture.ts",
+    "args": [
+      "--phase=catalog"
+    ],
+    "exitCode": 0,
+    "milliseconds": 18031
+  },
+  {
+    "name": "authoring-save",
+    "file": "ai/dashboard/recording-mapping.fixture.ts",
+    "args": [
+      "--phase=save"
+    ],
+    "exitCode": 0,
+    "milliseconds": 28636
+  },
+  {
+    "name": "authoring-reuse",
+    "file": "ai/dashboard/recording-mapping.fixture.ts",
+    "args": [
+      "--phase=reuse"
+    ],
+    "exitCode": 0,
+    "milliseconds": 35766
+  },
+  {
+    "name": "authoring-isolation",
+    "file": "ai/dashboard/recording-mapping.fixture.ts",
+    "args": [
+      "--phase=isolation"
+    ],
+    "exitCode": 0,
+    "milliseconds": 16127
+  },
+  {
+    "name": "explicit-authoring",
+    "file": "ai/dashboard/explicit-authoring.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 22145
+  },
+  {
+    "name": "code-workspace",
+    "file": "ai/dashboard/authoring-workspace.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 103162
+  },
+  {
+    "name": "authoring-browser",
+    "file": "ai/dashboard/authoring-browser.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 98937
+  },
+  {
+    "name": "user-confirmed-auth",
+    "file": "ai/autocode/user-confirmed-auth.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 4944
+  },
+  {
+    "name": "ownership-reuse",
+    "file": "ai/autocode/ownership-reuse.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 4862
+  },
+  {
+    "name": "recorded-flow",
+    "file": "ai/autocode/recorded-flow.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 5849
+  },
+  {
+    "name": "navigation-causality",
+    "file": "ai/dashboard/navigation-causality.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 6187
+  },
+  {
+    "name": "dashboard-startup",
+    "file": "ai/dashboard/dashboard-startup.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 8512
+  },
+  {
+    "name": "recorder",
+    "file": "ai/dashboard/recorder.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 4525
+  },
+  {
+    "name": "evidence-sidecar",
+    "file": "ai/autocode/evidence-sidecar.fixture.ts",
+    "args": [],
+    "exitCode": 0,
+    "milliseconds": 5234
+  }
+]

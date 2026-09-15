@@ -1,3 +1,4 @@
+import type { ApplicationScope } from '../projects/scope';
 /**
  * Proving a generated spec is worth keeping.
  *
@@ -28,6 +29,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 import { parseResults } from '../excel/results';
 import { workbookOwner } from '../projects/registry';
@@ -39,6 +41,12 @@ import { isPositionProven, positionalExpression } from './dom-evidence';
 // how it came to know about only half of it.
 import { archivedPath, evidencePath } from '../dashboard/recorder';
 import { unstableTitleReason } from './scenario-title';
+import { resolveScope } from '../projects/scope';
+import { retainAttempt } from '../diagnostics/runtime';
+import { diagnosticText } from '../diagnostics/artifacts';
+import { sourceSteps } from '../diagnostics/manifest';
+import { resolveExecutionContext, executionContextFromTransport, executionSelectionFromTransport, executionEnvironment, executionBrowserArgs, preflightAuthentication, ExecutionConfigurationError, type ExecutionContext } from '../projects/execution-context';
+import type { ExecutionSelection } from '../test-data/execution';
 
 const ROOT = process.cwd();
 
@@ -184,7 +192,7 @@ const CANONICAL_TITLE = /['"`]\s*((?:TC|TS)[_-][A-Za-z0-9_-]+)\s*-\s*([^'"`]+?)\
 /**
  * Checks that do not need the application, run before spending a browser on it.
  */
-export function staticCheck(source: string, testCaseId: string, scenario: string): StaticProblem[] {
+export function staticCheck(source: string, testCaseId: string, scenario: string, scope?: ApplicationScope): StaticProblem[] {
   const problems: StaticProblem[] = [];
 
   // THE IDENTITY IS THE TEST CASE ID, NOT THE AUTHORED SENTENCE.
@@ -232,10 +240,10 @@ export function staticCheck(source: string, testCaseId: string, scenario: string
   if (!/\bexpect\s*\(/.test(source))
     problems.push({ message: 'The spec contains no expect() at all - it cannot fail, so it proves nothing.' });
 
-  for (const problem of positionalIdentity(source, testCaseId))
+  for (const problem of positionalIdentity(source, testCaseId, scope))
     problems.push(problem);
 
-  for (const problem of undeclaredFixtures(source))
+  for (const problem of undeclaredFixtures(source, scope))
     problems.push(problem);
 
   return problems;
@@ -255,13 +263,13 @@ export function staticCheck(source: string, testCaseId: string, scenario: string
  * Refused as a STATIC problem rather than left to the run, because a run cannot say
  * anything useful about it: the suite never builds, so no assertion is ever evaluated.
  */
-function undeclaredFixtures(source: string): StaticProblem[] {
+function undeclaredFixtures(source: string, scope?: ApplicationScope): StaticProblem[] {
   // Playwright's own, which no fixtures module declares and every spec may ask for.
   const BUILT_IN = ['page', 'context', 'browser', 'browserName', 'request', 'playwright'];
   let declared: string[];
   try {
     const { buildIndex } = require('../knowledge/index') as typeof import('../knowledge/index');
-    declared = buildIndex().fixtures;
+    declared = buildIndex(scope).fixtures;
   } catch {
     // The index could not be built. Say nothing rather than refuse every spec: a check
     // that cannot read the framework has no opinion about a spec.
@@ -326,7 +334,7 @@ function undeclaredFixtures(source: string): StaticProblem[] {
  * that was enough to quarantine TC_DASHBOARD_023, whose index was the one thing about
  * it that had actually been measured.
  */
-function provenPositionalExpressions(testCaseId: string): Set<string> {
+function provenPositionalExpressions(testCaseId: string, scope?: ApplicationScope): Set<string> {
   const allowed = new Set<string>();
   if (!testCaseId)
     return allowed;
@@ -348,7 +356,7 @@ function provenPositionalExpressions(testCaseId: string): Set<string> {
   // refused exactly as before. The paths come from the recorder's own accessors rather
   // than being spelled again here, so there is one archive convention and this file no
   // longer carries a second copy of the live one.
-  const sources = [evidencePath(testCaseId), archivedPath(testCaseId, '.evidence.json')];
+  const sources = scope ? [path.join(scope.paths.recordingsDir, `${testCaseId}.evidence.json`), path.join(scope.paths.recordingsDir, 'accepted', `${testCaseId}.evidence.json`)] : [evidencePath(testCaseId), archivedPath(testCaseId, '.evidence.json')];
   let body: { targets?: Array<{ positionProvenCandidates?: unknown[] }> } | null = null;
   for (const file of sources) {
     try {
@@ -380,9 +388,9 @@ function provenPositionalExpressions(testCaseId: string): Set<string> {
   return allowed;
 }
 
-function positionalIdentity(source: string, testCaseId = ''): StaticProblem[] {
+function positionalIdentity(source: string, testCaseId = '', scope?: ApplicationScope): StaticProblem[] {
   const problems: StaticProblem[] = [];
-  const allowed = provenPositionalExpressions(testCaseId);
+  const allowed = provenPositionalExpressions(testCaseId, scope);
   const pattern = /page\s*\.\s*(?:locator|getBy[A-Za-z]+)\s*\([^;]*?\)\s*(?:\.\s*[a-z]\w*\s*\([^;]*?\)\s*)*\.\s*(first|last|nth)\s*\(/g;
   for (const line of source.split('\n')) {
     pattern.lastIndex = 0;
@@ -411,6 +419,7 @@ export interface GateResult {
   reason: string;
   /** What each stage did, for the log and the run record. */
   detail: {
+    executionContext?: ExecutionContext;
     staticProblems: string[];
     mutationsApplied: string[];
     cleanStatus?: string;
@@ -434,6 +443,8 @@ export interface GateResult {
     location?: string;
     fixture?: string;
     collected?: number;
+    diagnostics?: string;
+    mutationDiagnostics?: string;
   };
 }
 
@@ -444,7 +455,7 @@ export interface GateResult {
  * locator in the spec was ever exercised and nothing may be concluded about one.
  * `execution` means the test ran. `static` never reaches here.
  */
-export type FailurePhase = 'collection' | 'execution';
+export type FailurePhase = 'configuration' | 'collection' | 'execution';
 
 /**
  * WHY, as a code rather than a sentence.
@@ -459,6 +470,13 @@ export type FailurePhase = 'collection' | 'execution';
  * failure to whoever reads the workbook, and it is still what fills that column.
  */
 export type FailureCode =
+  | 'SOURCE_ENVIRONMENT_CONFIGURATION_FAILURE'
+  | 'EXECUTION_CONFIGURATION_FAILURE'
+  | 'BROWSER_CONFIGURATION_FAILURE'
+  | 'BROWSER_ENVIRONMENT_ACCESS_FAILURE'
+  | 'PAGE_READINESS_TIMEOUT'
+  | 'LOCATOR_NOT_FOUND_AFTER_READY'
+  | 'AUTHENTICATION_FAILURE'
   /** The spec names a Playwright fixture the framework does not declare. */
   | 'UNKNOWN_FIXTURE'
   /** The suite built, but no test carrying this Test Case ID was in it. */
@@ -476,6 +494,10 @@ export type FailureCode =
    * environment fault.
    */
   | 'GLOBAL_SETUP_FAILURE'
+  | 'CREDENTIAL_CONFIGURATION_FAILURE'
+  | 'DATA_CONFIGURATION_FAILURE'
+  | 'ENVIRONMENT_FAILURE'
+  | 'TEST_SKIPPED'
   /** A locator matched more than one element. */
   | 'STRICT_MODE_FAILURE'
   /** An expect() did not hold. */
@@ -486,6 +508,7 @@ export type FailureCode =
   | 'RUNTIME_FAILURE';
 
 interface RunOutcome {
+  diagnostics?: string;
   /** 'Passed' | 'Failed' | 'Skipped' | ... , or 'Not Collected' when no test ran. */
   status: string;
   failureReason: string;
@@ -520,7 +543,7 @@ interface RunOutcome {
  */
 function plain(message: string): string {
   const ESC = String.fromCharCode(27);
-  return String(message ?? '')
+  return diagnosticText(message)
       .split(new RegExp(ESC + '\\[[0-9;]*m', 'g')).join('')
       .replace(/\[[0-9;]*m/g, '')
       .split(/\r?\n/)
@@ -578,6 +601,12 @@ export function classifyCollectionError(
  */
 export function classifyExecutionFailure(failureReason: string): FailureCode {
   const text = plain(failureReason);
+  for (const code of ['SOURCE_ENVIRONMENT_CONFIGURATION_FAILURE','EXECUTION_CONFIGURATION_FAILURE','BROWSER_CONFIGURATION_FAILURE',
+    'BROWSER_ENVIRONMENT_ACCESS_FAILURE','PAGE_READINESS_TIMEOUT','LOCATOR_NOT_FOUND_AFTER_READY','AUTHENTICATION_FAILURE'] as const)
+    if (text.includes(code)) return code;
+  if (/CREDENTIAL_CONFIGURATION_FAILURE/i.test(text)) return 'CREDENTIAL_CONFIGURATION_FAILURE';
+  if (/DATA_CONFIGURATION_FAILURE/i.test(text)) return 'DATA_CONFIGURATION_FAILURE';
+  if (/cloudflare.*(?:403|blocked)|(?:403|blocked).*cloudflare/i.test(text)) return 'BROWSER_ENVIRONMENT_ACCESS_FAILURE';
   if (/strict mode violation/i.test(text))
     return 'STRICT_MODE_FAILURE';
   if (/expect\(.*\)\.(?:to|not)|Expected string|Received string|toHaveText|toBeVisible|toBeChecked|toHaveURL|toContainText/i.test(text))
@@ -617,25 +646,42 @@ function countTests(report: any): number {
  * verification run must not destroy the results of the suite run that is
  * probably what someone is looking at.
  */
-function runOne(specFile: string, testCaseId: string, workbook: string): RunOutcome {
+function runOne(specFile: string, testCaseId: string, workbook: string, kind: 'clean'|'mutation',runId:string,context:ExecutionContext,selection?:ExecutionSelection): RunOutcome {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'autocode-'));
   const jsonPath = path.join(scratch, 'results.json');
   const startedMs = Date.now();
   const elapsed = () => Date.now() - startedMs;
+  const executedSource=fs.readFileSync(path.resolve(ROOT,specFile),'utf8');
+  const stepManifest=path.join(scratch,'generated-steps.json');
+  fs.writeFileSync(stepManifest,JSON.stringify({steps:sourceSteps(path.resolve(ROOT,specFile),executedSource,true)}));
+  const scope=resolveScope(context);
+  // Resolve and snapshot executable application dependencies BEFORE the child starts.
+  // Dynamic loading avoids adding a dashboard dependency to import-time startup.
+  try{
+    const dependencies:Map<string,string>=require('../dashboard/code-workspace').codeDependencySources(scope,testCaseId,new Map([[path.resolve(ROOT,specFile),executedSource]]));
+    const files:Record<string,string>={};
+    for(const [file,text]of dependencies){const relative=path.relative(scope.paths.pagesDir,file);if(file===scope.paths.fixturesFile||file===path.resolve(ROOT,'tests-e2e/pages/base.page.ts')||(!relative.startsWith('..')&&!path.isAbsolute(relative)))files[path.relative(ROOT,file).replace(/\\/g,'/')]=text;}
+    fs.writeFileSync(path.join(scratch,'executed-dependencies.json'),JSON.stringify({files}));
+  }catch(error){fs.writeFileSync(path.join(scratch,'dependency-unavailable.json'),JSON.stringify({reason:diagnosticText(String(error))}));}
+  let retained: string | undefined;
   try {
     const result = spawnSync(process.execPath, [
       require.resolve('@playwright/test/cli'), 'test',
       '--config=playwright.excel.config.ts',
       specFile,
       '--grep', testCaseId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
-      '--reporter=json',
+      selection ? '--reporter=./ai/test-data/reporter.ts' : '--reporter=json',
       '--retries=0',
       '--workers=1',
+      ...executionBrowserArgs(context),
       `--output=${path.join(scratch, 'artifacts')}`,
     ], {
       cwd: ROOT,
       shell: false,
       encoding: 'utf8',
+      timeout: 180_000,
+      maxBuffer: 16 * 1024 * 1024,
+      windowsHide: true,
       env: {
         ...process.env,
         EXCEL_WORKBOOK: workbook,
@@ -643,22 +689,29 @@ function runOne(specFile: string, testCaseId: string, workbook: string): RunOutc
         // `tests-e2e/support/data-driven.ts` now refuses a workbook whose declared owner
         // is not the active application, so sending one without the other is a
         // contradiction the suite would (correctly) reject.
-        AURA_APPLICATION: workbookOwner(workbook),
+        ...executionEnvironment(context,selection),
         PLAYWRIGHT_JSON_OUTPUT_NAME: jsonPath,
         // Keep the gate's two runs out of ai/reports/steps. The mutated run is
         // deliberately red, and leaving its step list behind would have the
         // dashboard showing a failed step list for a passing test.
         EXCEL_STEPS_DIR: path.join(scratch, 'steps'),
+        AURA_DIAGNOSTICS: '1',
+        AURA_RUN_ID:runId,
+        AURA_DIAGNOSTIC_MANIFEST:stepManifest,
+        EXCEL_VIDEO: 'off',
+        EXCEL_TRACE: 'off',
         FORCE_COLOR: '0',
       },
     });
+    retained = retainAttempt(scope,
+      scratch,path.resolve(ROOT,specFile),testCaseId,kind,result.stdout || '',result.stderr || '',runId,executedSource,context);
 
     if (!fs.existsSync(jsonPath)) {
       // No report at all. Playwright could not get far enough to write one, and its own
       // words are the only evidence there is - so they are carried, not summarised.
-      const said = plain([result.stdout, result.stderr].filter(Boolean).join(' | '));
+      const said = plain(diagnosticText([result.stdout, result.stderr, result.error?.message].filter(Boolean).join(' | ')));
       return { status: 'Not Collected', durationMs: elapsed(),
-        phase: 'collection', code: 'COMPILE_ERROR', collected: 0,
+        diagnostics:retained, phase: 'collection', code: result.error?.message.includes('ETIMEDOUT') ? 'TIMEOUT' : 'COMPILE_ERROR', collected: 0,
         playwrightMessage: said,
         failureReason: `COMPILE_ERROR: Playwright wrote no report. ${said}`.trim() };
     }
@@ -679,6 +732,7 @@ function runOne(specFile: string, testCaseId: string, workbook: string): RunOutc
         : undefined;
       return {
         status: 'Not Collected', durationMs: elapsed(), phase: 'collection', code,
+        diagnostics:retained,
         collected, playwrightMessage: plain(firstError.message),
         ...(where ? { location: where } : {}),
         ...(fixture ? { fixture } : {}),
@@ -693,6 +747,7 @@ function runOne(specFile: string, testCaseId: string, workbook: string): RunOutc
       // The suite built and this ID was not in it. A real and different problem from the
       // two above: the title does not carry the ID, or --grep excluded it.
       return { status: 'Not Collected', durationMs: elapsed(),
+        diagnostics:retained,
         phase: 'collection', code: 'NO_MATCHING_TEST', collected,
         failureReason: `NO_MATCHING_TEST: the suite built and contained ${collected} test(s), `
           + `but none carrying ${testCaseId}. Check the test title starts "${testCaseId} - ".` };
@@ -700,9 +755,15 @@ function runOne(specFile: string, testCaseId: string, workbook: string): RunOutc
 
     const outcome = records[0];
     if (outcome.executionStatus === 'Passed')
-      return { status: outcome.executionStatus, failureReason: outcome.failureReason, durationMs: elapsed() };
+      return { status: outcome.executionStatus, failureReason: outcome.failureReason, durationMs: elapsed(),diagnostics:retained };
+    if (outcome.executionStatus === 'Skipped') {
+      const reason = diagnosticText(outcome.skipReason || 'Playwright skipped this test; no skip description was supplied.');
+      return {status:'Skipped',failureReason:reason,playwrightMessage:plain(reason),durationMs:elapsed(),phase:'execution',collected,diagnostics:retained,
+        code:/credential|declares no|registered address|environment variable/i.test(reason) ? 'CREDENTIAL_CONFIGURATION_FAILURE' : 'TEST_SKIPPED'};
+    }
     return {
-      status: outcome.executionStatus, failureReason: outcome.failureReason, durationMs: elapsed(),
+      diagnostics:retained,
+      status: outcome.executionStatus, failureReason: diagnosticText(outcome.failureReason), durationMs: elapsed(),
       phase: 'execution', code: classifyExecutionFailure(outcome.failureReason), collected,
       playwrightMessage: plain(outcome.failureReason),
     };
@@ -723,10 +784,27 @@ export function gate(
   scenario: string,
   workbook: string,
   onLog: (text: string) => void = () => {},
+  options:{runId?:string;executionContext?:ExecutionContext;executionSelection?:ExecutionSelection}={},
 ): GateResult {
   const absolute = path.resolve(ROOT, specFile);
   const original = fs.readFileSync(absolute, 'utf8');
   const detail: GateResult['detail'] = { staticProblems: [], mutationsApplied: [] };
+  let context:ExecutionContext;
+  let selection:ExecutionSelection|undefined;
+  try {
+    selection=options.executionSelection;
+    const scope=resolveScope({applicationId:workbookOwner(workbook),environmentId:options.executionContext?.environmentId});
+    context=resolveExecutionContext(scope,options.executionContext,selection);
+    if(selection && selection.testCaseId!==testCaseId) throw new ExecutionConfigurationError('CREDENTIAL_CONFIGURATION_FAILURE','Execution row belongs to another test case.');
+    preflightAuthentication(scope,selection,/\bappCredentials\b/.test(original));
+    detail.executionContext=context;
+  } catch(error) {
+    const message=diagnosticText(error instanceof Error ? error.message : String(error));
+    detail.phase='configuration'; detail.code=error instanceof ExecutionConfigurationError ? error.code : classifyExecutionFailure(message);
+    if(detail.code==='RUNTIME_FAILURE')detail.code='EXECUTION_CONFIGURATION_FAILURE';
+    detail.collected=0; detail.cleanStatus='Not Run';detail.playwrightMessage=message;
+    return {verdict:'quarantined',detail,reason:`Phase: CONFIGURATION | Reason: ${detail.code}. ${message}`};
+  }
   const staticStartedMs = Date.now();
 
   const staticProblems = staticCheck(original, testCaseId, scenario);
@@ -747,8 +825,10 @@ export function gate(
   }
 
   onLog(`  clean run: ${testCaseId}\n`);
-  const clean = runOne(specFile, testCaseId, workbook);
+  const runId=options.runId??process.env.AURA_RUN_ID??randomUUID();
+  const clean = runOne(specFile, testCaseId, workbook,'clean',runId,context,selection);
   detail.cleanStatus = clean.status;
+  detail.diagnostics = clean.diagnostics;
   detail.cleanRunMs = clean.durationMs;
   if (clean.status !== 'Passed') {
     detail.cleanFailure = clean.failureReason;
@@ -775,7 +855,8 @@ export function gate(
   onLog(`  mutated run (${applied.length} mutation type(s)): ${testCaseId}\n`);
   try {
     fs.writeFileSync(absolute, mutated, 'utf8');
-    const broken = runOne(specFile, testCaseId, workbook);
+    const broken = runOne(specFile, testCaseId, workbook, 'mutation',runId,context,selection);
+    detail.mutationDiagnostics = broken.diagnostics;
     detail.mutatedStatus = broken.status;
     detail.mutationRunMs = broken.durationMs;
     if (broken.status === 'Passed') {
@@ -783,6 +864,8 @@ export function gate(
         reason: 'The spec still passes with every assertion broken, so it is not checking the ' +
           'application. This is the false positive the gate exists to catch.' };
     }
+    if (broken.status !== 'Failed' || broken.phase !== 'execution')
+      return {verdict:'quarantined',detail,reason:`The assertion mutation was not falsified by a failing execution (${broken.status}). ${broken.failureReason}`};
   } finally {
     // Always. A mutated spec left behind would fail forever for a reason that
     // appears nowhere in the workbook.

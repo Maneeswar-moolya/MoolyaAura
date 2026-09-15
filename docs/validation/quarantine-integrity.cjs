@@ -1,0 +1,9 @@
+const fs=require('fs'),path=require('path'),crypto=require('crypto');
+const normalize=file=>file.replaceAll('\\','/'),hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const baseline=Object.fromEntries(Object.entries(JSON.parse(fs.readFileSync('docs/validation/quarantine-before-hashes.json'))).map(([file,digest])=>[normalize(file),digest]));
+const current={};function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isSymbolicLink())continue;if(entry.isDirectory())walk(file);else current[normalize(file)]=hash(file);}}
+for(const root of ['ai','tests-e2e','excel'])walk(root);for(const file of Object.keys(baseline))if(!file.includes('/')&&fs.existsSync(file))current[file]=hash(file);
+const changed=Object.keys(baseline).filter(file=>current[file]!==baseline[file]),added=Object.keys(current).filter(file=>!(file in baseline));
+const application=file=>/^(?:ai\/dashboard\/(?:recordings|generations)\/|ai\/knowledge\/page\/|ai\/autocode\/(?:quarantine\/|state\.json$)|ai\/reports\/|excel\/|tests-e2e\/generated\/|tests-e2e\/pages\/ksp\/|tests-e2e\/ksp\.fixtures\.ts$|ai\/projects\/registry\.json$)/.test(file);
+const result={baselineFiles:Object.keys(baseline).length,changedExistingFiles:changed,addedFiles:added,applicationChanged:changed.filter(application),applicationAdded:added.filter(application),applicationBaselineFiles:Object.keys(baseline).filter(application).length};
+fs.writeFileSync('docs/validation/quarantine-artifact-integrity.json',JSON.stringify(result,null,2));console.log(JSON.stringify({baselineFiles:result.baselineFiles,applicationBaselineFiles:result.applicationBaselineFiles,applicationChanged:result.applicationChanged,applicationAdded:result.applicationAdded,frameworkChanged:changed.filter(file=>!application(file))},null,2));

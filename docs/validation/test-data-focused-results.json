@@ -1,0 +1,105 @@
+[
+  {
+    "args": [
+      "ai/dashboard/test-data.fixture.ts"
+    ],
+    "exitCode": 0,
+    "milliseconds": 15045
+  },
+  {
+    "args": [
+      "ai/dashboard/test-data.browser.fixture.ts",
+      "--runtime"
+    ],
+    "exitCode": 0,
+    "milliseconds": 48154
+  },
+  {
+    "args": [
+      "ai/dashboard/test-data.security.fixture.ts"
+    ],
+    "exitCode": 0,
+    "milliseconds": 5293
+  },
+  {
+    "args": [
+      "ai/autocode/user-confirmed-auth.fixture.ts"
+    ],
+    "exitCode": 0,
+    "milliseconds": 5336
+  },
+  {
+    "args": [
+      "ai/dashboard/recording-mapping.fixture.ts"
+    ],
+    "exitCode": 0,
+    "milliseconds": 118454
+  },
+  {
+    "args": [
+      "ai/dashboard/authoring-browser.fixture.ts"
+    ],
+    "exitCode": 0,
+    "milliseconds": 131483
+  },
+  {
+    "args": [
+      "ai/dashboard/authoring-workspace.fixture.ts"
+    ],
+    "exitCode": 0,
+    "milliseconds": 143144
+  },
+  {
+    "args": [
+      "ai/dashboard/quarantine-workspace.fixture.ts",
+      "--phase=package"
+    ],
+    "exitCode": 0,
+    "milliseconds": 38966
+  },
+  {
+    "args": [
+      "ai/dashboard/quarantine-workspace.fixture.ts",
+      "--phase=editing"
+    ],
+    "exitCode": 0,
+    "milliseconds": 78605
+  },
+  {
+    "args": [
+      "ai/dashboard/quarantine-workspace.fixture.ts",
+      "--phase=rerun"
+    ],
+    "exitCode": 0,
+    "milliseconds": 140027
+  },
+  {
+    "args": [
+      "ai/dashboard/quarantine-workspace.fixture.ts",
+      "--phase=route"
+    ],
+    "exitCode": 0,
+    "milliseconds": 29724
+  },
+  {
+    "args": [
+      "ai/dashboard/secret-redaction.fixture.ts"
+    ],
+    "exitCode": 0,
+    "milliseconds": 5484
+  },
+  {
+    "args": [
+      "ai/projects/execution-isolation.fixture.ts"
+    ],
+    "exitCode": 0,
+    "milliseconds": 6054
+  },
+  {
+    "args": [
+      "ai/dashboard/environment-execution.fixture.ts"
+    ],
+    "exitCode": 0,
+    "milliseconds": 66529
+  }
+]

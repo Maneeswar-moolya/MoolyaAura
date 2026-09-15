@@ -1,0 +1,96 @@
+{
+  "config": {
+    "rootDir": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-nTlCX1\\tests-e2e"
+  },
+  "suites": [
+    {
+      "title": "chromium",
+      "suites": [
+        {
+          "title": "generated\\ksp\\TC_SMOKE_022.spec.ts",
+          "file": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-nTlCX1\\tests-e2e\\generated\\ksp\\TC_SMOKE_022.spec.ts",
+          "line": 0,
+          "column": 0,
+          "suites": [
+            {
+              "title": "Test Cases",
+              "file": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-nTlCX1\\tests-e2e\\generated\\ksp\\TC_SMOKE_022.spec.ts",
+              "line": 13,
+              "column": 6,
+              "suites": [],
+              "specs": [
+                {
+                  "title": "TC_SMOKE_022 - Log In â€” Main navigation contains \"Home\"",
+                  "file": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-nTlCX1\\tests-e2e\\generated\\ksp\\TC_SMOKE_022.spec.ts",
+                  "line": 14,
+                  "column": 7,
+                  "ok": false,
+                  "id": "cae13a71b32d7e9cbcaf-a770948dde80ae89d17a",
+                  "tests": [
+                    {
+                      "projectName": "chromium",
+                      "expectedStatus": "passed",
+                      "status": "unexpected",
+                      "annotations": [
+                        {
+                          "type": "execution-profile",
+                          "description": "{\"applicationId\":\"ksp\",\"environmentId\":\"stg\",\"testCaseId\":\"TC_SMOKE_022\",\"executionRowId\":\"override-1-1\",\"credentialProfileId\":\"cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed\",\"credentialProfileName\":\"kspuserCommon\",\"role\":\"custom\",\"dataProfileId\":null,\"tags\":[\"ksp\"]}"
+                        },
+                        {
+                          "type": "test-case-id",
+                          "description": "TC_SMOKE_022"
+                        },
+                        {
+                          "type": "module",
+                          "description": ""
+                        },
+                        {
+                          "type": "scenario",
+                          "description": "Log In â€” Main navigation contains \"Home\""
+                        },
+                        {
+                          "type": "source",
+                          "description": "ksp-test-cases.xlsx :: Test Cases"
+                        }
+                      ],
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 21705,
+                          "startTime": "2026-09-13T15:27:52.827Z",
+                          "retry": 0,
+                          "errors": [
+                            {
+                              "message": "TimeoutError: locator.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('header').getByRole('link', { name: 'Log In' })\u001b[22m\n",
+                              "stack": "TimeoutError: locator.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('header').getByRole('link', { name: 'Log In' })\u001b[22m\n\n    at C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-nTlCX1\\tests-e2e\\generated\\ksp\\TC_SMOKE_022.spec.ts:30:48\n    at runStep (C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-nTlCX1\\tests-e2e\\support\\steps.ts:167:20)\n    at C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-nTlCX1\\tests-e2e\\generated\\ksp\\TC_SMOKE_022.spec.ts:29:5"
+                            }
+                          ],
+                          "error": {
+                            "message": "TimeoutError: locator.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('header').getByRole('link', { name: 'Log In' })\u001b[22m\n",
+                            "stack": "TimeoutError: locator.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('header').getByRole('link', { name: 'Log In' })\u001b[22m\n\n    at C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-nTlCX1\\tests-e2e\\generated\\ksp\\TC_SMOKE_022.spec.ts:30:48\n    at runStep (C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-nTlCX1\\tests-e2e\\support\\steps.ts:167:20)\n    at C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-nTlCX1\\tests-e2e\\generated\\ksp\\TC_SMOKE_022.spec.ts:29:5"
+                          },
+                          "stdout": [],
+                          "stderr": [],
+                          "attachments": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "specs": []
+        }
+      ],
+      "specs": []
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-13T15:27:48.368Z",
+    "duration": 26649.236
+  }
+}

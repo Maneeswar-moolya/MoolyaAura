@@ -1,0 +1,74 @@
+/**
+ * Assembled from a Playwright Codegen recording of TC_SMOKE_039.
+ *
+ * Recorded actions use explicit user bindings or automatically resolved controls.
+ * Assembly opened no browser and used no model; it does not prove runtime validity.
+ *
+ * Authentication uses the application credential fixture; recorded credential
+ * values are not emitted into this spec.
+ *
+ * The title is DERIVED, not authored: the workbook's Scenario cell says
+ * the title contains a class or id token, so it cannot name this test stably. This title comes from the
+ * semantic journey instead (action method + screen). The cell itself is unchanged.
+ */
+
+import { expect, requireCredentials, test, trace } from '../../ksp.fixtures';
+
+test.describe('Test Cases', () => {
+  test('TC_SMOKE_039 - Verify notifications header on the notifications', async ({ page, appCredentials, step, initialLandingPage, notifications, ssoauthLoginPage, usEnHomePage }) => {
+    requireCredentials(appCredentials);
+
+    await trace({
+      testCaseId: 'TC_SMOKE_039',
+      module: '',
+      scenario: 'Verify notifications header on the notifications',
+      sourceWorkbook: 'ksp-test-cases.xlsx',
+      sourceWorksheet: 'Test Cases',
+    });
+
+    // @aura-step {"recordingStepKey":"action:0","label":"Open recorded destination","locator":"","provenance":"AUTO","executionMode":"AUTO"}
+    await step('Open recorded destination', async () => {
+      await page.goto('https://stgsupport.keysight.com/us/en/home');
+    });
+
+    // @aura-step {"recordingStepKey":"action:1","label":"Use Log In","page":"initialLandingPage","pageObject":"InitialLandingPage","method":"logIn","locator":"page.locator('header').getByRole('link', { name: 'Log In' })","provenance":"USER_CONFIRMED","executionMode":"PAGE_OBJECT_METHOD","validationStatus":"USER AUTHORED — NOT VALIDATED"}
+    await step('Use Log In', async () => {
+      await (await initialLandingPage.logIn()).click();
+    });
+
+    // @aura-step {"recordingStepKey":"action:2","label":"Use Enter email","page":"ksp__ssoauth-login","pageObject":"SsoauthLoginPage","method":"enterEmailField","locator":"page.getByRole('textbox', { name: 'Enter email' })","provenance":"USER_CONFIRMED","executionMode":"PAGE_OBJECT_METHOD"}
+    await step('Use Enter email', async () => {
+      await (await ssoauthLoginPage.enterEmailField()).click();
+    });
+
+    // @aura-step {"recordingStepKey":"action:3","label":"Enter account from configured credentials","page":"ksp__ssoauth-login","pageObject":"SsoauthLoginPage","method":"enterEmailField","locator":"page.getByRole('textbox', { name: 'Enter email' })","provenance":"USER_CONFIRMED","executionMode":"PAGE_OBJECT_METHOD"}
+    await step('Enter account from configured credentials', async () => {
+      await (await ssoauthLoginPage.enterEmailField()).fill(appCredentials.email);
+    });
+
+    // @aura-step {"recordingStepKey":"action:4","label":"Enter password from configured credentials","page":"ksp__ssoauth-login","pageObject":"SsoauthLoginPage","method":"passwordField","locator":"page.getByRole('textbox', { name: 'Password' })","provenance":"USER_CONFIRMED","executionMode":"PAGE_OBJECT_METHOD"}
+    await step('Enter password from configured credentials', async () => {
+      await (await ssoauthLoginPage.passwordField()).fill(appCredentials.password);
+    });
+
+    // @aura-step {"recordingStepKey":"action:5","label":"Use Log In","page":"ksp__ssoauth-login","pageObject":"SsoauthLoginPage","method":"logInButton","locator":"page.getByRole('button', { name: 'Log In' })","provenance":"USER_CONFIRMED","executionMode":"PAGE_OBJECT_METHOD"}
+    await step('Use Log In', async () => {
+      await (await ssoauthLoginPage.logInButton()).click();
+    });
+
+    // @aura-step {"recordingStepKey":"action:10","label":"Click Settings","page":"ksp__us-en-home","pageObject":"UsEnHomePage","method":"settionsIcon","locator":"page.getByRole('button', { name: 'Settings' })","provenance":"USER_CONFIRMED","executionMode":"PAGE_OBJECT_METHOD","validationStatus":"USER AUTHORED — NOT VALIDATED"}
+    await step('Click Settings', async () => {
+      await (await usEnHomePage.settionsIcon()).click();
+    });
+
+    // @aura-step {"recordingStepKey":"action:11","label":"Click Account Settings","page":"ksp__us-en-home","pageObject":"UsEnHomePage","method":"accountSettingsUnderSettingsIconMenu","locator":"page.getByRole('menuitem', { name: 'Account Settings' })","provenance":"USER_CONFIRMED","executionMode":"PAGE_OBJECT_METHOD","validationStatus":"USER AUTHORED — NOT VALIDATED"}
+    await step('Click Account Settings', async () => {
+      await (await usEnHomePage.accountSettingsUnderSettingsIconMenu()).click();
+    });
+
+    // @aura-step {"recordingStepKey":"assertion:0","label":"c-notifications-settings-header contains \"Notifications\"","pageObject":"Notifications","method":"notificationsHeader","locator":"page.locator('c-notifications-settings-header')"}
+    await step('c-notifications-settings-header contains "Notifications"', async () => {
+      await expect(await notifications.notificationsHeader()).toContainText('__autocode_mutant_no_match__');
+    });
+  });
+});

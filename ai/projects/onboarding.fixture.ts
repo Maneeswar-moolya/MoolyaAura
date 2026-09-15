@@ -8,6 +8,7 @@ import path from 'node:path';
 import os from 'node:os';
 import http from 'node:http';
 import { spawn } from 'node:child_process';
+import { waitForFixtureHttp, stopFixtureProcess } from '../testing/process-fixture';
 import { enterIsolatedArtefactRoot, leaveIsolatedArtefactRoot, removeFixtureTree } from './fixture-safety';
 
 const SOURCE = path.resolve(__dirname, '../..');
@@ -34,7 +35,7 @@ function write(file: string, contents: string): void {
   fs.writeFileSync(file, contents);
 }
 async function run(args: string[], cwd: string, env = process.env): Promise<{ code: number | null; output: string }> {
-  const child = spawn(process.execPath, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawn(process.execPath, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
   let output = '';
   child.stdout.on('data', data => output += data);
   child.stderr.on('data', data => output += data);
@@ -136,14 +137,9 @@ async function worker(): Promise<void> {
   const url = `http://127.0.0.1:${port}`;
   try {
     await check('dashboard empty -> first -> second -> third via HTTP', async () => {
-      let ready = false;
-      const deadline = Date.now() + 30_000;
-      while (Date.now() < deadline && server.exitCode === null) {
-        try { ready = (await fetch(url + '/api/health')).ok; } catch {}
-        if (ready) break;
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      assert.ok(ready, `Dashboard readiness timed out (exit ${server.exitCode}): ${serverLog}`);
+      await waitForFixtureHttp(server, url + '/api/health', () => serverLog);
+      for (const asset of ['/authoring-workspace.js', '/authoring-workspace.css', '/recording-review.js'])
+        assert.equal((await fetch(url + asset)).status, 200, `isolated onboarding includes ${asset}`);
       const empty = await fetch(url + '/api/projects'); assert.equal(empty.status, 200);
       assert.deepEqual((await empty.json() as any).projects, []);
       const { chromium } = await import('playwright');
@@ -168,7 +164,7 @@ async function worker(): Promise<void> {
         assert.deepEqual(body.workbooks, [`excel/${id}-test-cases.xlsx`]);
       }
     });
-  } finally { server.kill(); await new Promise<void>(resolve => server.exitCode !== null ? resolve() : server.once('exit', () => resolve())); }
+  } finally { await stopFixtureProcess(server); }
 
   // Collection uses real Playwright and identical titles, with foreign flat/scoped canaries.
   const { collectionIgnoreFor } = await import('../../tests-e2e/support/collection-scope');
@@ -247,7 +243,7 @@ async function main(): Promise<void> {
     for (const dir of ['ai', 'tests-e2e/support', 'tests-e2e/generic']) {
       fs.cpSync(path.join(SOURCE, dir), path.join(root, dir), { recursive: true, filter: file => {
         if (fs.statSync(file).isDirectory()) return !['recordings', 'reports', 'page', 'framework'].includes(path.basename(file));
-        return file.endsWith('.ts') || file.endsWith('index.html');
+        return /\.(?:ts|js|css|html)$/.test(file);
       } });
     }
     fs.symlinkSync(path.join(SOURCE, 'node_modules'), path.join(root, 'node_modules'), 'junction');

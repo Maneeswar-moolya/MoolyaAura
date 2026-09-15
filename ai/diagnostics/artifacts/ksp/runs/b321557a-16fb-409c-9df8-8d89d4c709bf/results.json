@@ -1,0 +1,96 @@
+{
+  "config": {
+    "rootDir": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-ZUvbHv\\tests-e2e"
+  },
+  "suites": [
+    {
+      "title": "chromium",
+      "suites": [
+        {
+          "title": "generated\\ksp\\TC_SMOKE_021.spec.ts",
+          "file": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-ZUvbHv\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts",
+          "line": 0,
+          "column": 0,
+          "suites": [
+            {
+              "title": "Test Cases",
+              "file": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-ZUvbHv\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts",
+              "line": 13,
+              "column": 6,
+              "suites": [],
+              "specs": [
+                {
+                  "title": "TC_SMOKE_021 - Log In â€” dashboard-heading contains \"My Dashboard\"",
+                  "file": "C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-ZUvbHv\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts",
+                  "line": 14,
+                  "column": 7,
+                  "ok": false,
+                  "id": "42b6934190a2279894e1-c0d6636e49e5132dfc4e",
+                  "tests": [
+                    {
+                      "projectName": "chromium",
+                      "expectedStatus": "passed",
+                      "status": "unexpected",
+                      "annotations": [
+                        {
+                          "type": "execution-profile",
+                          "description": "{\"applicationId\":\"ksp\",\"environmentId\":\"stg\",\"testCaseId\":\"TC_SMOKE_021\",\"executionRowId\":\"override-1-1\",\"credentialProfileId\":\"cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed\",\"credentialProfileName\":\"kspuserCommon\",\"role\":\"custom\",\"dataProfileId\":null,\"tags\":[\"ksp\"]}"
+                        },
+                        {
+                          "type": "test-case-id",
+                          "description": "TC_SMOKE_021"
+                        },
+                        {
+                          "type": "module",
+                          "description": ""
+                        },
+                        {
+                          "type": "scenario",
+                          "description": "Log In â€” dashboard-heading contains \"My Dashboard\""
+                        },
+                        {
+                          "type": "source",
+                          "description": "ksp-test-cases.xlsx :: Test Cases"
+                        }
+                      ],
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 55995,
+                          "startTime": "2026-09-14T08:25:01.376Z",
+                          "retry": 0,
+                          "errors": [
+                            {
+                              "message": "LocatorPolicyError: UI_OPERATION_TIMEOUT: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'My Dashboard', exact: true })\nExpected substring: \u001b[32m\"__autocode_mutant_no_match__\"\u001b[39m\nReceived string:    \u001b[31m\"My Dashboard\"\u001b[39m\nTimeout: 31154ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 31154ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'My Dashboard', exact: true })\u001b[22m\n\u001b[2m    64 × locator resolved to <h1 data-testid=\"dashboard-heading\" class=\"text-[18px] min-[840px]:text-[24px] font-bold leading-[24px] text-[#202636] font-['Roboto']\">My Dashboard</h1>\u001b[22m\n\u001b[2m       - unexpected value \"My Dashboard\"\u001b[22m\n",
+                              "stack": "LocatorPolicyError: UI_OPERATION_TIMEOUT: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'My Dashboard', exact: true })\nExpected substring: \u001b[32m\"__autocode_mutant_no_match__\"\u001b[39m\nReceived string:    \u001b[31m\"My Dashboard\"\u001b[39m\nTimeout: 31154ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 31154ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'My Dashboard', exact: true })\u001b[22m\n\u001b[2m    64 × locator resolved to <h1 data-testid=\"dashboard-heading\" class=\"text-[18px] min-[840px]:text-[24px] font-bold leading-[24px] text-[#202636] font-['Roboto']\">My Dashboard</h1>\u001b[22m\n\u001b[2m       - unexpected value \"My Dashboard\"\u001b[22m\n\n    at Proxy.<anonymous> (C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-ZUvbHv\\tests-e2e\\support\\locator-policy.ts:208:82)\n    at C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-ZUvbHv\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts:50:7\n    at runStep (C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-ZUvbHv\\tests-e2e\\support\\steps.ts:171:20)\n    at C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-ZUvbHv\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts:49:5"
+                            }
+                          ],
+                          "error": {
+                            "message": "LocatorPolicyError: UI_OPERATION_TIMEOUT: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'My Dashboard', exact: true })\nExpected substring: \u001b[32m\"__autocode_mutant_no_match__\"\u001b[39m\nReceived string:    \u001b[31m\"My Dashboard\"\u001b[39m\nTimeout: 31154ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 31154ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'My Dashboard', exact: true })\u001b[22m\n\u001b[2m    64 × locator resolved to <h1 data-testid=\"dashboard-heading\" class=\"text-[18px] min-[840px]:text-[24px] font-bold leading-[24px] text-[#202636] font-['Roboto']\">My Dashboard</h1>\u001b[22m\n\u001b[2m       - unexpected value \"My Dashboard\"\u001b[22m\n",
+                            "stack": "LocatorPolicyError: UI_OPERATION_TIMEOUT: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'My Dashboard', exact: true })\nExpected substring: \u001b[32m\"__autocode_mutant_no_match__\"\u001b[39m\nReceived string:    \u001b[31m\"My Dashboard\"\u001b[39m\nTimeout: 31154ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 31154ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'My Dashboard', exact: true })\u001b[22m\n\u001b[2m    64 × locator resolved to <h1 data-testid=\"dashboard-heading\" class=\"text-[18px] min-[840px]:text-[24px] font-bold leading-[24px] text-[#202636] font-['Roboto']\">My Dashboard</h1>\u001b[22m\n\u001b[2m       - unexpected value \"My Dashboard\"\u001b[22m\n\n    at Proxy.<anonymous> (C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-ZUvbHv\\tests-e2e\\support\\locator-policy.ts:208:82)\n    at C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-ZUvbHv\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts:50:7\n    at runStep (C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-ZUvbHv\\tests-e2e\\support\\steps.ts:171:20)\n    at C:\\Users\\MANEES~2\\AppData\\Local\\Temp\\aura-quarantine-ZUvbHv\\tests-e2e\\generated\\ksp\\TC_SMOKE_021.spec.ts:49:5"
+                          },
+                          "stdout": [],
+                          "stderr": [],
+                          "attachments": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "specs": []
+        }
+      ],
+      "specs": []
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-14T08:24:57.377Z",
+    "duration": 60717.314999999995
+  }
+}

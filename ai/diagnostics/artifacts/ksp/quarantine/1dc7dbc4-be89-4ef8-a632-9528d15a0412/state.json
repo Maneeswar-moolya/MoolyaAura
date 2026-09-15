@@ -1,0 +1,60 @@
+{
+  "revisionId": "442c14d2-a216-4d8f-b050-098fb5c7c88a",
+  "runs": [
+    {
+      "runId": "323f15f8-277f-40c0-aa66-b27de6296f9f",
+      "revisionId": "442c14d2-a216-4d8f-b050-098fb5c7c88a",
+      "environmentId": "stg",
+      "at": "2026-09-13T15:28:18.481Z",
+      "result": {
+        "verdict": "quarantined",
+        "detail": {
+          "staticProblems": [],
+          "mutationsApplied": [
+            "expected text literal -> a string no page contains"
+          ],
+          "staticMs": 36,
+          "cleanStatus": "Failed",
+          "diagnostics": "runs/fdedacee-f07a-4fde-b52f-2a4c0bc1ab4e",
+          "cleanRunMs": 37363,
+          "cleanFailure": "TimeoutError: locator.click: Timeout 15000ms exceeded. | Call log: | - waiting for locator('header').getByRole('link', { name: 'Log In' }) | TimeoutError: locator.click: Timeout 15000ms exceeded. | Call log: | - waiting for locator('header').getByRole('link', { name: 'Log In' })",
+          "phase": "execution",
+          "code": "TIMEOUT",
+          "playwrightMessage": "TimeoutError: locator.click: Timeout 15000ms exceeded. | Call log: | - waiting for locator('header').getByRole('link', { name: 'Log In' }) | TimeoutError: locator.click: Timeout 15000ms exceeded. | Call log: | - waiting for locator('header').getByRole('link', { name: 'Log In' })",
+          "collected": 1
+        },
+        "reason": "Phase: EXECUTION | Reason: TIMEOUT | Collected tests: 1. TimeoutError: locator.click: Timeout 15000ms exceeded. | Call log: | - waiting for locator('header').getByRole('link', { name: 'Log In' }) | TimeoutError: locator.click: Timeout 15000ms exceeded. | Call log: | - waiting for locator('header').getByRole('link', { name: 'Log In' })"
+      },
+      "executionSelection": {
+        "applicationId": "ksp",
+        "environmentId": "stg",
+        "testCaseId": "TC_SMOKE_022",
+        "storeVersion": "e81642bcec67bb51e379535d4ed5f1fc1fea028d57437226eedc3e34184ef9d3",
+        "row": {
+          "id": "override-1-1",
+          "credentialProfileId": "cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed",
+          "dataProfileId": null,
+          "tags": [
+            "ksp"
+          ],
+          "overrides": {},
+          "enabled": true
+        }
+      },
+      "executionProfile": {
+        "applicationId": "ksp",
+        "environmentId": "stg",
+        "testCaseId": "TC_SMOKE_022",
+        "executionRowId": "override-1-1",
+        "credentialProfileId": "cred_6e7fe914-7889-4cac-9b98-4dbe1de759ed",
+        "credentialProfileName": "kspuserCommon",
+        "role": "custom",
+        "dataProfileId": null,
+        "tags": [
+          "ksp"
+        ]
+      }
+    }
+  ],
+  "eligible": false
+}

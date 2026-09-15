@@ -7,6 +7,7 @@
 import './load-env';
 
 import { activeScope } from '../../ai/projects/scope';
+import { runtimeSelection, resolveExecutionData } from '../../ai/test-data/execution';
 
 /** Resolve the selected environment URL; no selection is an explicit error. */
 export function resolveBaseUrl(): string {
@@ -55,6 +56,8 @@ export function credentialSource(): { email: string; password: string } | null {
 
 /** Returns credentials, or null when this application has not declared/supplied them. */
 export function credentials(): Credentials | null {
+  const selection = runtimeSelection();
+  if (selection?.row.credentialProfileId) return resolveExecutionData(activeScope(), selection).appCredentials;
   const source = credentialSource();
   if (!source)
     return null;
@@ -71,6 +74,8 @@ export function credentials(): Credentials | null {
  * them on a secret they never use.
  */
 export function registeredEmail(): string | null {
+  const selection = runtimeSelection();
+  if (selection?.row.credentialProfileId) return credentials()?.email ?? null;
   const source = credentialSource();
   return source ? process.env[source.email] ?? null : null;
 }

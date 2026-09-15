@@ -1,0 +1,1 @@
+TC_SMOKE_021: passed
